@@ -1,7 +1,8 @@
 // Handler module for all proxy endpoints (REST API)
 use axum::{extract::Path, Json};
 use serde::{Deserialize, Serialize};
-use crate::cics::mapping::{self, TransactionMap};
+use crate::cics::mapping::{TransactionMap, TransactionConfig};
+use crate::cics::mapping;
 use std::sync::OnceLock;
 use lu62::Lu62Handler;
 use mq::MqHandler;
@@ -35,12 +36,12 @@ fn get_transaction_map() -> &'static TransactionMap {
     })
 }
 
-// Returns a boxed protocol handler for the given protocol string, or None if unsupported
-fn get_protocol_handler(protocol: &str) -> Option<Box<dyn ProtocolHandler>> {
-    match protocol.to_lowercase().as_str() {
+// Returns a boxed protocol handler for the given transaction config, or None if unsupported
+fn get_protocol_handler(tx: &TransactionConfig) -> Option<Box<dyn ProtocolHandler>> {
+    match tx.protocol.to_lowercase().as_str() {
         "lu62" => Some(Box::new(Lu62Handler)),
         "mq" => Some(Box::new(MqHandler)),
-        "rest" => Some(Box::new(RestHandler)),
+        "rest" => Some(Box::new(RestHandler::new(tx.server.clone(), None))),
         "tcp" => Some(Box::new(TcpHandler)),
         "jca" => Some(Box::new(JcaHandler)),
         _ => None,
@@ -55,9 +56,9 @@ pub async fn invoke_handler(Json(payload): Json<InvokeRequest>) -> Json<InvokeRe
     if let Some(tx) = map.transactions.get(&payload.transaction_id) {
         info!(tx = %payload.transaction_id, protocol = %tx.protocol, "Ejecutando transacción");
         // Get protocol handler for this transaction
-        if let Some(handler) = get_protocol_handler(&tx.protocol) {
-            // Call protocol handler
-            let result = handler.invoke_transaction(&payload.transaction_id, payload.parameters.clone());
+        if let Some(handler) = get_protocol_handler(tx) {
+            // Call protocol handler (async)
+            let result = handler.invoke_transaction(&payload.transaction_id, payload.parameters.clone()).await;
             match result {
                 Ok(res) => {
                     info!(tx = %payload.transaction_id, "Transacción ejecutada correctamente");

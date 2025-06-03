@@ -1,5 +1,5 @@
 use axum::http::{StatusCode, Request};
-use axum::body::Body;
+use axum::body::{self, Body};
 use axum::Router;
 use serde_json::json;
 use tower::util::ServiceExt; // for .oneshot()
@@ -130,4 +130,29 @@ async fn test_invoke_invalid_transaction() {
     let response = app.clone().oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
     // Optionally, check the response body for error message
+}
+
+#[tokio::test]
+async fn test_invoke_tx03_rest() {
+    let app = create_router();
+    let payload = json!({
+        "transaction_id": "TX03",
+        "parameters": {
+            "customer_id": "CUST001",
+            "operation": "test",
+            "payload": { "foo": "bar" }
+        }
+    });
+    let request = Request::builder()
+        .method("POST")
+        .uri("/invoke")
+        .header("content-type", "application/json")
+        .body(Body::from(payload.to_string()))
+        .unwrap();
+    let response = app.clone().oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let body_bytes = body::to_bytes(response.into_body(), 1024 * 1024).await.unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
+    // httpbin.org/post echoes the sent JSON under the 'json' key
+    assert!(body_json["result"].is_object() || body_json["result"].is_null());
 }

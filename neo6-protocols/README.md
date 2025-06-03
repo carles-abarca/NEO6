@@ -52,7 +52,7 @@ El objetivo de este módulo es proporcionar una capa de interoperabilidad que pe
 ## 📝 Ejemplo de uso
 
 ```rust
-use neo6_protocols::protocol::{ProtocolHandler, log_protocol_invoke};
+use neo6_protocols_lib::protocol::{ProtocolHandler, log_protocol_invoke};
 
 struct MyProtocol;
 
