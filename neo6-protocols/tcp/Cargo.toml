@@ -1,0 +1,8 @@
+[package]
+name = "tcp"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+neo6-protocols-lib = { path = "../neo6-protocols-lib" }
+serde_json = "1.0"

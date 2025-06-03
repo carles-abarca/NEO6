@@ -1,0 +1,36 @@
+# Rust build output
+/target/
+**/target/
+**/*.rlib
+**/*.exe
+**/*.dll
+**/*.so
+**/*.dylib
+**/*.rmeta
+**/*.d
+
+# Executables
+**/neo6-proxy
+**/neo6-proxy.exe
+
+# By default, ignore Cargo.lock for libraries, but keep for binaries
+# Uncomment if you want to ignore for all
+# Cargo.lock
+
+# IDE/editor files
+/.vscode/
+/.idea/
+*.swp
+*.swo
+
+# Misc
+.DS_Store
+
+# Ignore all build artifacts in subprojects
+neo6-proxy/target/
+neo6-protocols/target/
+**/build/
+**/deps/
+**/incremental/
+**/examples/
+**/tmp/

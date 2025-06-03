@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "lu62",
+    "mq",
+    "rest",
+    "tcp",
+    "jca"
+]
