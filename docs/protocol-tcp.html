@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>TCP/IP Proprietary | NEO6</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="header-meta">
+  <span>3 de junio de 2025</span>
+  <span>TCP/IP Proprietary</span>
+  <span>v0.1.0 (neo6-protocols-lib)</span>
+</div>
+<h1>TCP/IP Proprietary</h1>
+<p>Protocolo binario personalizado sobre TCP/IP, útil para integraciones de alto rendimiento o requisitos legacy específicos.</p>
+<h2>Ejemplo de definición en <code>transactions.yaml</code></h2>
+<pre><code>transactions:
+  TCP01:
+    protocol: "tcp"
+    server: "tcp-server-1"
+    parameters:
+      - name: "payload"
+        type: "binary"
+        required: true
+      - name: "destination"
+        type: "string"
+        required: true
+    expected_response:
+      status: "ok"
+      fields:
+        - name: "response_code"
+          type: "int"
+</code></pre>
+<h2>Ejemplo de implementación</h2>
+<pre><code>struct TcpHandler;
+
+#[async_trait]
+impl ProtocolHandler for TcpHandler {
+    async fn invoke_transaction(&self, transaction_id: &str, parameters: Value) -> Result<Value, String> {
+        // ...
+    }
+}
+</code></pre>
+</body>
+</html>

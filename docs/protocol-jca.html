@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>JCA / CICS TG | NEO6</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="header-meta">
+  <span>3 de junio de 2025</span>
+  <span>JCA / CICS TG</span>
+  <span>v0.1.0 (neo6-protocols-lib)</span>
+</div>
+<h1>JCA / CICS TG</h1>
+<p>Conectividad Java EE mediante CICS Transaction Gateway, permitiendo la integración de aplicaciones Java empresariales con sistemas mainframe.</p>
+<h2>Ejemplo de definición en <code>transactions.yaml</code></h2>
+<pre><code>transactions:
+  JCA01:
+    protocol: "jca"
+    server: "cics-tg-server"
+    parameters:
+      - name: "transaction"
+        type: "string"
+        required: true
+      - name: "data"
+        type: "object"
+        required: true
+    expected_response:
+      status: "ok"
+      fields:
+        - name: "result"
+          type: "object"
+</code></pre>
+<h2>Ejemplo de implementación</h2>
+<pre><code>struct JcaHandler;
+
+#[async_trait]
+impl ProtocolHandler for JcaHandler {
+    async fn invoke_transaction(&self, transaction_id: &str, parameters: Value) -> Result<Value, String> {
+        // ...
+    }
+}
+</code></pre>
+</body>
+</html>

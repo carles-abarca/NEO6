@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>LU6.2 / APPC | NEO6</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="header-meta">
+  <span>3 de junio de 2025</span>
+  <span>LU6.2 / APPC</span>
+  <span>v0.1.0 (neo6-protocols-lib)</span>
+</div>
+<h1>LU6.2 / APPC</h1>
+<p>Protocolo legacy para integración directa con CICS y mainframe IBM. Permite la invocación de transacciones COBOL a través de LU6.2 sobre TCP/IP.</p>
+<h2>Ejemplo de definición en <code>transactions.yaml</code></h2>
+<pre><code>transactions:
+  LU6201:
+    protocol: "lu62"
+    server: "mainframe-cics"
+    parameters:
+      - name: "account_number"
+        type: "string"
+        required: true
+    expected_response:
+      status: "success"
+      fields:
+        - name: "balance"
+          type: "float"
+</code></pre>
+<h2>Ejemplo de implementación</h2>
+<pre><code>use neo6_protocols_lib::protocol::ProtocolHandler;
+use serde_json::Value;
+
+struct Lu62Handler;
+
+#[async_trait]
+impl ProtocolHandler for Lu62Handler {
+    async fn invoke_transaction(&self, transaction_id: &str, parameters: Value) -> Result<Value, String> {
+        // ...
+    }
+}
+</code></pre>
+</body>
+</html>

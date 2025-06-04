@@ -1,127 +1,93 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>NEO6 Documentation Wiki</title>
+  <title>NEO6 Documentación</title>
   <link rel="stylesheet" href="style.css">
+  <script>
+    function loadPage(page, el) {
+      document.getElementById('content-frame').src = page;
+      document.querySelectorAll('#sidebar a').forEach(a => a.classList.remove('active'));
+      if (el) el.classList.add('active');
+      window.location.hash = page.replace('.html','');
+    }
+    window.onload = function() {
+      let hash = window.location.hash.replace('#','');
+      let page = hash ? hash + '.html' : 'intro.html';
+      let nav = document.querySelector(`#sidebar a[data-page='${page}']`);
+      loadPage(page, nav || document.getElementById('nav-intro'));
+    };
+    window.onhashchange = function() {
+      let hash = window.location.hash.replace('#','');
+      let page = hash ? hash + '.html' : 'intro.html';
+      let nav = document.querySelector(`#sidebar a[data-page='${page}']`);
+      loadPage(page, nav || document.getElementById('nav-intro'));
+    };
+  </script>
 </head>
 <body>
-  <header>
-    <h1>NEO6 Project Documentation</h1>
-    <nav>
+  <div id="container">
+    <nav id="sidebar">
+      <div class="logo">
+        <img src="neo6.png" alt="NEO6 logo">
+      </div>
       <ul>
-        <li><a href="#overview">Overview</a></li>
-        <li><a href="#architecture">Architecture</a></li>
-        <li><a href="#modules">Module Map</a></li>
-        <li><a href="#proxy">neo6-proxy</a></li>
-        <li><a href="#protocols">neo6-protocols</a></li>
-        <li><a href="#dev">Developer Guide</a></li>
+        <li><a href="#" id="nav-intro" class="section" data-page="intro.html" onclick="loadPage('intro.html', this);return false;">Introducción</a></li>
+        <li><a href="#" class="section" data-page="architecture.html" onclick="loadPage('architecture.html', this);return false;">Arquitectura General</a></li>
+        <li><a href="#" class="section" data-page="devguide.html" onclick="loadPage('devguide.html', this);return false;">Contribución</a></li>
+        <li><a href="#" class="section" data-page="deploy.html" onclick="loadPage('deploy.html', this);return false;">Despliegue de NEO6-proxy</a></li>
+        <li><a href="#" class="section" data-page="transactions.html" onclick="loadPage('transactions.html', this);return false;">Configuración de transacciones disponibles</a></li>
+        <li><a href="#" class="section" data-page="invocation.html" onclick="loadPage('invocation.html', this);return false;">Cómo invocar transacciones</a></li>
+        <li><a href="#" class="section">Módulos</a>
+          <ul>
+            <li><a href="#" data-page="proxy.html" onclick="loadPage('proxy.html', this);return false;">Proxy</a></li>
+            <li><a href="#" data-page="protocols.html" onclick="loadPage('protocols.html', this);return false;">Protocolos</a>
+              <ul>
+                <li><a href="#" onclick="loadPage('protocol-lu62.html', this);return false;">LU6.2 / APPC</a></li>
+                <li><a href="#" onclick="loadPage('protocol-mq.html', this);return false;">IBM MQ</a></li>
+                <li><a href="#" onclick="loadPage('protocol-rest.html', this);return false;">REST</a></li>
+                <li><a href="#" onclick="loadPage('protocol-tcp.html', this);return false;">TCP/IP Proprietary</a></li>
+                <li><a href="#" onclick="loadPage('protocol-jca.html', this);return false;">JCA / CICS TG</a></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
       </ul>
     </nav>
-  </header>
-  <main>
-    <section id="overview">
-      <h2>Project Overview</h2>
-      <p>NEO6 is a modular, extensible platform for legacy modernization and interoperability, focused on enabling seamless integration between modern applications and mainframe/COBOL systems. The project is organized into several subfolders, each with a specific role in the overall architecture.</p>
-    </section>
-    <section id="architecture">
-      <h2>Architecture Diagram</h2>
-      <img src="architecture.svg" alt="NEO6 Architecture Diagram" style="max-width:100%;border:1px solid #ccc;">
-      <p>The diagram above shows the main data flows and integration points between modern clients, the NEO6 proxy, protocol adapters, and legacy COBOL backends.</p>
-    </section>
-    <section id="modules">
-      <h2>Module Map</h2>
-      <ul>
-        <li><b>agent-runtime/</b>: Core runtime and orchestration logic for NEO6 agents.</li>
-        <li><b>aiops-agent/</b>: AIOps (monitoring, anomaly detection, remediation).</li>
-        <li><b>cobol-agent-core/</b>: COBOL agent integration libraries.</li>
-        <li><b>docs/</b>: Documentation, diagrams, and technical references.</li>
-        <li><b>infra/</b>: Infrastructure-as-code, deployment scripts, CI/CD.</li>
-        <li><b>neo6-protocols/</b>: Protocol adapters and traits for all supported protocols (LU6.2, MQ, REST, TCP, JCA, etc).</li>
-        <li><b>neo6-proxy/</b>: Main proxy server, exposes REST, TCP, MQ endpoints, routes to backend.</li>
-        <li><b>python-agent-core/</b>: Python agent runtime and libraries.</li>
-        <li><b>vsr-tools/</b>: Utility tools for development, migration, and testing.</li>
-      </ul>
-    </section>
-    <section id="proxy">
-      <h2>neo6-proxy</h2>
-      <p><b>neo6-proxy</b> is a high-performance CICS transaction proxy written in Rust. It exposes REST, TCP, and MQ endpoints to modern and legacy clients, routing requests to the appropriate backend (COBOL, microservices, etc). Features include configuration, logging, metrics, and transaction mapping logic.</p>
-      <h3>REST API Endpoints</h3>
-      <table border="1" cellpadding="4" style="border-collapse:collapse;">
-        <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
-        <tr><td>POST</td><td>/invoke</td><td>Invoke a COBOL transaction synchronously.</td></tr>
-        <tr><td>POST</td><td>/invoke-async</td><td>Execute asynchronous invocation.</td></tr>
-        <tr><td>GET</td><td>/status/{id}</td><td>Query invocation status/results.</td></tr>
-        <tr><td>GET</td><td>/health</td><td>Basic health check.</td></tr>
-        <tr><td>GET</td><td>/metrics</td><td>Prometheus metrics exposition.</td></tr>
-      </table>
-      <h4>Example payload for <code>/invoke</code></h4>
-      <pre>{
-  "transaction_id": "TX01",
-  "parameters": {
-    "account_number": "1234567890",
-    "amount": 500.25
-  }
-}</pre>
-      <h3>Other Protocols</h3>
-      <ul>
-        <li><b>TCP LU6.2 Style:</b> Port 4000, binary/structured text, for legacy middleware integration.</li>
-        <li><b>IBM MQ:</b> Asynchronous, C bindings, request/response queues.</li>
-      </ul>
-    </section>
-    <section id="protocols">
-      <h2>neo6-protocols</h2>
-      <p>This subproject provides the base traits and helpers for implementing a CICS Protocol Proxy. It enables receiving and interpreting requests from multiple client applications—both modern and legacy—that consume transactions from the CICS environment.</p>
-      <h3>Supported Protocols</h3>
-      <ul>
-        <li>LU6.2 / APPC</li>
-        <li>IBM MQ</li>
-        <li>HTTP(S) + JSON/XML (REST/SOAP)</li>
-        <li>TCP/IP Proprietary Protocols</li>
-        <li>JCA / CICS Transaction Gateway</li>
-      </ul>
-      <h3>Example: Implementing a Protocol Handler</h3>
-      <pre>use neo6_protocols::protocol::{ProtocolHandler, log_protocol_invoke};
-
-struct MyProtocol;
-
-impl ProtocolHandler for MyProtocol {
-    fn invoke_transaction(&self, transaction_id: &str, parameters: serde_json::Value) -> Result<serde_json::Value, String> {
-        log_protocol_invoke("myprotocol", transaction_id, &parameters);
-        // Invocation logic...
-        Ok(serde_json::json!({"result": "ok"}))
+    <main id="main">
+      <iframe id="content-frame" src="" frameborder="0" style="width:100%;height:100vh;background:#fff;"></iframe>
+    </main>
+  </div>
+  <script>
+    // Sidebar collapsible logic
+    function toggleCollapse(el) {
+      const parentLi = el.parentElement;
+      parentLi.classList.toggle('collapsed');
+      const subUl = parentLi.querySelector('ul');
+      if (subUl) {
+        subUl.style.display = parentLi.classList.contains('collapsed') ? 'none' : 'block';
+      }
     }
-}</pre>
-    </section>
-    <section id="dev">
-      <h2>Developer Guide</h2>
-      <h3>Project Structure</h3>
-      <ul>
-        <li>Each protocol is implemented as a Rust crate in <code>neo6-protocols/</code>.</li>
-        <li>The proxy server is in <code>neo6-proxy/</code> and can be run with <code>cargo run</code>.</li>
-        <li>Configuration files are in <code>neo6-proxy/config/</code>.</li>
-        <li>Tests are in <code>neo6-proxy/tests/</code> and <code>neo6-protocols/tests/</code>.</li>
-      </ul>
-      <h3>Architecture Diagram (Mermaid)</h3>
-      <pre><code>graph TD
-    A[Modern Client] -->|REST/gRPC| B[NEO6 Proxy]
-    A2[Legacy Client] -->|LU6.2| B
-    A3[Legacy Client] -->|MQ| B
-    B --> C[Protocol Adapter]
-    C --> D[COBOL Backend]
-    C --> E[Microservices]
-</code></pre>
-      <h3>How to Extend</h3>
-      <ol>
-        <li>Add a new protocol crate in <code>neo6-protocols/</code> and implement <code>ProtocolHandler</code>.</li>
-        <li>Register the new protocol in the proxy's handler logic.</li>
-        <li>Update configuration and tests as needed.</li>
-      </ol>
-    </section>
-  </main>
-  <footer>
-    <hr>
-    <p>NEO6 &copy; 2025 ByteMorph.ai. Internal use or under enterprise license agreement.</p>
-  </footer>
+    window.addEventListener('DOMContentLoaded', function() {
+      // Initialize all submenus as expanded
+      document.querySelectorAll('#sidebar ul ul').forEach(ul => {
+        ul.style.display = 'block';
+      });
+      // Add collapse toggles
+      document.querySelectorAll('#sidebar li > a.section, #sidebar li > a[data-page]').forEach(a => {
+        const li = a.parentElement;
+        if (li.querySelector('ul')) {
+          a.classList.add('collapsible');
+          a.onclick = function(e) {
+            if (e.target === a && e.offsetX < 20) { // click near left
+              toggleCollapse(a);
+              e.preventDefault();
+              return false;
+            }
+          };
+        }
+      });
+    });
+  </script>
 </body>
 </html>

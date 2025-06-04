@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Protocolos | NEO6</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="header-meta">
+  <span>3 de junio de 2025</span>
+  <span>Protocolos</span>
+  <span>v0.1.0 (neo6-protocols-lib)</span>
+</div>
+<h1>Protocolos soportados</h1>
+<p>NEO6 soporta múltiples protocolos para la interoperabilidad con sistemas COBOL y middleware empresarial. Cada protocolo implementa el trait <code>ProtocolHandler</code> definido en <code>neo6-protocols-lib</code> y puede ser extendido o adaptado según las necesidades del entorno.</p>
+
+<h2>Protocolos principales</h2>
+<ul>
+  <li><b style="color:#1e5a99;">LU6.2 / APPC</b></li>
+  <li><b style="color:#1e5a99;">IBM MQ</b></li>
+  <li><b style="color:#1e5a99;">REST</b></li>
+  <li><b style="color:#1e5a99;">TCP/IP Proprietary</b></li>
+  <li><b style="color:#1e5a99;">JCA / CICS TG</b></li>
+</ul>
+
+<h2>¿Cómo contribuir con un nuevo protocolo?</h2>
+<ol>
+  <li><b>Crea un nuevo folder</b> bajo <code>neo6-protocols/</code> con el nombre de tu protocolo (por ejemplo, <code>myproto/</code>).</li>
+  <li><b>Agrega un <code>Cargo.toml</code></b> en ese folder, definiendo el nombre, versión y dependencias necesarias. Ejemplo:
+    <pre><code>[package]
+name = "myproto"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+neo6-protocols-lib = { path = "../neo6-protocols-lib" }
+serde_json = "1.0"
+async-trait = "0.1"
+</code></pre>
+  </li>
+  <li><b>Implementa el trait <code>ProtocolHandler</code></b> en <code>src/lib.rs</code> de tu nuevo protocolo:
+    <pre><code>use neo6_protocols_lib::protocol::ProtocolHandler;
+use serde_json::Value;
+use async_trait::async_trait;
+
+pub struct MyProtoHandler;
+
+#[async_trait]
+impl ProtocolHandler for MyProtoHandler {
+    async fn invoke_transaction(&self, transaction_id: &str, parameters: Value) -> Result<Value, String> {
+        // Lógica de tu protocolo
+        Ok(serde_json::json!({"result": "ok"}))
+    }
+}
+</code></pre>
+  </li>
+  <li><b>Agrega tu nuevo crate al workspace</b> en <code>neo6-protocols/Cargo.toml</code>:
+    <pre><code>[workspace]
+members = [
+    ...
+    "myproto"
+]
+</code></pre>
+  </li>
+  <li><b>Registra el handler en el proxy</b>:
+    <ul>
+      <li>Abre <code>neo6-proxy/src/proxy/handler.rs</code> o el archivo donde se registran los protocolos.</li>
+      <li>Importa tu handler, por ejemplo: <code>use neo6_protocols_kafka::KafkaHandler;</code></li>
+      <li>Agrega una instancia de tu handler al registro de protocolos, por ejemplo:
+        <pre><code>protocols.insert(
+    "kafka".to_string(),
+    Arc::new(KafkaHandler::new(/* config */))
+);</code></pre>
+      </li>
+      <li>Configura los parámetros necesarios (brokers, topic, autenticación, etc.) en <code>config/default.toml</code> o variables de entorno.</li>
+    </ul>
+  </li>
+  <li><b>Agrega documentación y ejemplos</b>:
+    <ul>
+      <li>Crea un archivo <code>docs/protocol-kafka.html</code> siguiendo el formato de los protocolos existentes.</li>
+      <li>Incluye ejemplos de uso, configuración y posibles errores.</li>
+      <li>Documenta los endpoints REST relevantes y el formato de los mensajes esperados.</li>
+      <li>Ejemplo de sección de documentación:
+        <pre><code>POST /invoke
+{
+  "transaccion": "KAFKA01",
+  "parametros": {
+    "topic": "mi-topico",
+    "mensaje": { ... }
+  }
+}
+</code></pre>
+      </li>
+    </ul>
+  </li>
+  <li><b>Realiza pruebas</b>:
+    <ul>
+      <li>Agrega tests unitarios en <code>neo6-protocols/kafka/src/lib.rs</code> usando <code>#[cfg(test)]</code> y <code>#[tokio::test]</code>.</li>
+      <li>Incluye pruebas de integración en <code>neo6-protocols/tests/protocols.rs</code> si aplica.</li>
+      <li>Ejemplo de test:
+        <pre><code>#[tokio::test]
+async fn test_kafka_handler() {
+    let handler = KafkaHandler::new(/* config */);
+    let params = serde_json::json!({"topic": "test", "mensaje": {"foo": "bar"}});
+    let res = handler.invoke_transaction("KAFKA01", params).await;
+    assert!(res.is_ok());
+}
+</code></pre>
+      </li>
+      <li>Valida el funcionamiento real con un broker Kafka local o de pruebas.</li>
+    </ul>
+  </li>
+</ol>
+<p>Consulta los protocolos existentes como referencia y sigue la estructura recomendada para asegurar la integración y mantenibilidad.</p>
+
+<h2>Ejemplo avanzado: protocolo con autenticación y validación</h2>
+<p>Este ejemplo muestra cómo implementar un protocolo que requiere autenticación y validación de parámetros antes de invocar la transacción:</p>
+<pre><code>use neo6_protocols_lib::protocol::ProtocolHandler;
+use serde_json::Value;
+use async_trait::async_trait;
+
+pub struct SecureProtoHandler {
+    pub api_key: String,
+}
+
+#[async_trait]
+impl ProtocolHandler for SecureProtoHandler {
+    async fn invoke_transaction(&self, transaction_id: &str, parameters: Value) -> Result<Value, String> {
+        // Validar API key
+        if parameters["api_key"] != self.api_key {
+            return Err("API key inválida".to_string());
+        }
+        // Validar parámetros requeridos
+        if !parameters.get("cuenta").is_some() {
+            return Err("Falta el parámetro 'cuenta'".to_string());
+        }
+        // Lógica de invocación real
+        Ok(serde_json::json!({"result": "ok", "tx": transaction_id}))
+    }
+}
+</code></pre>
+<p>Este patrón permite agregar lógica de seguridad, validación y transformación previa a la invocación real de la transacción.</p>
+</body>
+</html>

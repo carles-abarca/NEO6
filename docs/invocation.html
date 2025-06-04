@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Cómo invocar transacciones | NEO6</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="header-meta">
+  <span>3 de junio de 2025</span>
+  <span>Cómo invocar transacciones</span>
+  <span>v0.1.0 (neo6-proxy)</span>
+</div>
+<h1>Cómo invocar transacciones</h1>
+<p>Las transacciones configuradas pueden invocarse a través de los endpoints REST del proxy:</p>
+<ul>
+  <li><b>POST /invoke</b>: Invocación síncrona de una transacción.</li>
+  <li><b>POST /invoke-async</b>: Invocación asíncrona.</li>
+  <li><b>GET /status/{id}</b>: Consulta del estado/resultados de una invocación asíncrona.</li>
+</ul>
+<p>Ejemplo de invocación vía <code>curl</code>:</p>
+<pre><code>curl -X POST http://localhost:8080/invoke \
+  -H "Content-Type: application/json" \
+  -d '{"transaccion": "CICS01", "parametros": {"cuenta": "12345"}}'
+</code></pre>
+<p>Consulta la documentación de cada protocolo para detalles de integración avanzada.</p>
+</body>
+</html>

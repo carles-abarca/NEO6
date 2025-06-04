@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>NEO6 Proxy</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="header-meta">
+    <span>3 de junio de 2025</span>
+    <span>Proxy</span>
+    <span>v0.1.0 (neo6-proxy)</span>
+  </div>
+  <h1>NEO6 Proxy</h1>
+  <p>Proxy de transacciones CICS de alto rendimiento, escrito en Rust y diseñado para interoperabilidad entre aplicaciones modernas y sistemas COBOL legacy.</p>
+  <h2>Funcionalidad principal</h2>
+  <ul>
+    <li>Invocación de transacciones COBOL desde aplicaciones modernas (REST/gRPC).</li>
+    <li>Adaptación de protocolos legacy (LU6.2 sobre TCP).</li>
+    <li>Integración directa con colas IBM MQ mediante bindings en C.</li>
+    <li>Traducción dinámica de estructuras JSON ↔ COBOL COMMAREA.</li>
+    <li>Exposición de métricas y trazabilidad para monitoreo avanzado.</li>
+  </ul>
+  <h2>Endpoints principales</h2>
+  <table>
+    <tr><th>Método</th><th>Endpoint</th><th>Descripción</th></tr>
+    <tr><td>POST</td><td>/invoke</td><td>Invoca una transacción COBOL sincrónicamente.</td></tr>
+    <tr><td>POST</td><td>/invoke-async</td><td>Ejecuta invocación asincrónica.</td></tr>
+    <tr><td>GET</td><td>/status/{id}</td><td>Consulta estado/resultados de la invocación.</td></tr>
+    <tr><td>GET</td><td>/health</td><td>Health check básico.</td></tr>
+    <tr><td>GET</td><td>/metrics</td><td>Exposición de métricas Prometheus.</td></tr>
+  </table>
+</body>
+</html>

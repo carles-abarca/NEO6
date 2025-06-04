@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Despliegue de NEO6-proxy | NEO6</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="header-meta">
+  <span>3 de junio de 2025</span>
+  <span>Despliegue de NEO6-proxy</span>
+  <span>v0.1.0 (neo6-proxy)</span>
+</div>
+<h1>Despliegue de NEO6-proxy</h1>
+<p>Esta sección describe cómo desplegar el servicio <b>neo6-proxy</b> en diferentes entornos (local, servidor, contenedor Docker, etc.).</p>
+<ul>
+  <li>Requisitos previos: Rust, Docker, configuración de red y puertos.</li>
+  <li>Despliegue local: <code>cargo run --release</code></li>
+  <li>Despliegue en Docker: <code>docker build -t neo6-proxy .</code> y <code>docker run -p 8080:8080 neo6-proxy</code></li>
+  <li>Variables de entorno y configuración en <code>config/default.toml</code></li>
+</ul>
+</body>
+</html>

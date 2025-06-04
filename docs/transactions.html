@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Configuración de transacciones | NEO6</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="header-meta">
+  <span>3 de junio de 2025</span>
+  <span>Configuración de transacciones</span>
+  <span>v0.1.0 (neo6-proxy)</span>
+</div>
+<h1>Configuración de transacciones disponibles</h1>
+<p>Las transacciones disponibles para invocación se definen en el archivo <code>config/transactions.yaml</code> del proyecto <b>neo6-proxy</b>.</p>
+<ul>
+  <li>Cada entrada define el identificador, descripción, parámetros y protocolo asociado.</li>
+  <li>Ejemplo de entrada YAML:</li>
+</ul>
+<pre><code>transactions:
+  TX01:
+    protocol: "cics"
+    server: "cics-server-1"
+    parameters:
+      - name: "account_number"
+        type: "string"
+        required: true
+      - name: "amount"
+        type: "float"
+        required: true
+    expected_response:
+      status: "success"
+      fields:
+        - name: "balance"
+          type: "float"
+
+  # LU62 protocol example: balance inquiry
+  TX_BALANCE_LU62:
+    protocol: "lu62"
+    server: "cics-server-1"
+    parameters:
+      - name: "account_number"
+        type: "string"
+        required: true
+    expected_response:
+      status: "success"
+      fields:
+        - name: "balance"
+          type: "float"
+
+  # REST protocol example: balance inquiry
+  TX_BALANCE_REST:
+    protocol: "rest"
+    server: "https://api.example.com/balance"
+    parameters:
+      - name: "account_number"
+        type: "string"
+        required: true
+    expected_response:
+      status: "ok"
+      fields:
+        - name: "balance"
+          type: "float"
+</code></pre>
+<h2>Sintaxis y campos del archivo <code>transactions.yaml</code></h2>
+<p>El archivo <code>transactions.yaml</code> define las transacciones disponibles para el proxy NEO6. Su estructura es la siguiente:</p>
+<ul>
+  <li><b>transactions</b>: Objeto principal que agrupa todas las transacciones por identificador único (ej: <code>TX01</code>).</li>
+  <li><b>protocol</b>: Protocolo asociado a la transacción. Valores posibles: <code>cics</code>, <code>mq</code>, <code>rest</code>, <code>lu62</code>, <code>tcp</code>, <code>jca</code>.</li>
+  <li><b>server</b>: Dirección o identificador del servidor destino.</li>
+  <li><b>parameters</b>: Lista de parámetros requeridos para la transacción. Cada parámetro incluye:
+    <ul>
+      <li><b>name</b>: Nombre del parámetro (string).</li>
+      <li><b>type</b>: Tipo de dato (<code>string</code>, <code>int</code>, <code>float</code>, <code>object</code>, etc.).</li>
+      <li><b>required</b>: Si el parámetro es obligatorio (<code>true</code> o <code>false</code>).</li>
+    </ul>
+  </li>
+  <li><b>expected_response</b>: Estructura esperada de la respuesta.
+    <ul>
+      <li><b>status</b>: Valor esperado de estado en la respuesta (ej: <code>success</code>, <code>ok</code>).</li>
+      <li><b>fields</b>: Lista de campos que se esperan en la respuesta, cada uno con:
+        <ul>
+          <li><b>name</b>: Nombre del campo.</li>
+          <li><b>type</b>: Tipo de dato esperado.</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+<p>Ejemplo sintético:</p>
+<pre><code>transactions:
+  TX01:
+    protocol: "cics"
+    server: "cics-server-1"
+    parameters:
+      - name: "account_number"
+        type: "string"
+        required: true
+      - name: "amount"
+        type: "float"
+        required: true
+    expected_response:
+      status: "success"
+      fields:
+        - name: "balance"
+          type: "float"
+  TX02:
+    protocol: "mq"
+    server: "mq-server-1"
+    parameters:
+      - name: "customer_id"
+        type: "string"
+        required: true
+    expected_response:
+      status: "ok"
+      fields:
+        - name: "result_code"
+          type: "int"
+  TX03:
+    protocol: "rest"
+    server: "https://httpbin.org/post"
+    parameters:
+      - name: "customer_id"
+        type: "string"
+        required: true
+      - name: "operation"
+        type: "string"
+        required: true
+      - name: "payload"
+        type: "object"
+        required: false
+    expected_response:
+      status: "ok"
+      fields:
+        - name: "result"
+          type: "object"
+</code></pre>
+<p>Modifica este archivo para agregar, quitar o actualizar transacciones expuestas por el proxy.</p>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>REST | NEO6</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="header-meta">
+  <span>3 de junio de 2025</span>
+  <span>REST</span>
+  <span>v0.1.0 (neo6-protocols-lib)</span>
+</div>
+<h1>REST</h1>
+<p>Protocolo HTTP(S) moderno para exponer y consumir APIs JSON. Permite la integración de aplicaciones web y móviles con sistemas legacy.</p>
+<h2>Ejemplo de definición en <code>transactions.yaml</code></h2>
+<pre><code>transactions:
+  REST01:
+    protocol: "rest"
+    server: "https://api.example.com/users"
+    parameters:
+      - name: "customer_id"
+        type: "string"
+        required: true
+      - name: "operation"
+        type: "string"
+        required: true
+      - name: "payload"
+        type: "object"
+        required: false
+    expected_response:
+      status: "ok"
+      fields:
+        - name: "result"
+          type: "object"
+</code></pre>
+<h2>Ejemplo de implementación</h2>
+<pre><code>struct RestHandler;
+
+#[async_trait]
+impl ProtocolHandler for RestHandler {
+    async fn invoke_transaction(&self, transaction_id: &str, parameters: Value) -> Result<Value, String> {
+        // ...
+    }
+}
+</code></pre>
+</body>
+</html>
