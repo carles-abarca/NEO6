@@ -1,16 +1,15 @@
 // Handler module for all proxy endpoints (REST API)
 use axum::{extract::Path, Json};
 use serde::{Deserialize, Serialize};
-use crate::cics::mapping::{TransactionMap, TransactionConfig};
-use crate::cics::mapping;
 use std::sync::OnceLock;
 use lu62::Lu62Handler;
 use mq::MqHandler;
 use rest::RestHandler;
 use tcp::TcpHandler;
 use jca::JcaHandler;
-use neo6_protocols_lib::protocol::ProtocolHandler;
+use neo6_protocols_lib::protocol::{ProtocolHandler, TransactionConfig};
 use tracing::{error, info, debug};
+use crate::cics::mapping::TransactionMap;
 
 // Request and response types for /invoke and /invoke-async endpoints
 #[derive(Debug, Deserialize)]
@@ -32,18 +31,19 @@ static TRANSACTION_MAP: OnceLock<TransactionMap> = OnceLock::new();
 // Returns a reference to the loaded transaction map (loads once on first call)
 fn get_transaction_map() -> &'static TransactionMap {
     TRANSACTION_MAP.get_or_init(|| {
-        mapping::load_transaction_map("config/transactions.yaml").expect("Failed to load transaction map")
+        crate::cics::mapping::load_transaction_map("config/transactions.yaml").expect("Failed to load transaction map")
     })
 }
 
 // Returns a boxed protocol handler for the given transaction config, or None if unsupported
-fn get_protocol_handler(tx: &TransactionConfig) -> Option<Box<dyn ProtocolHandler>> {
+pub fn get_protocol_handler(tx: &TransactionConfig) -> Option<Box<dyn ProtocolHandler>> {
     match tx.protocol.to_lowercase().as_str() {
         "lu62" => Some(Box::new(Lu62Handler)),
         "mq" => Some(Box::new(MqHandler)),
         "rest" => Some(Box::new(RestHandler::new(tx.server.clone(), None))),
         "tcp" => Some(Box::new(TcpHandler)),
         "jca" => Some(Box::new(JcaHandler)),
+        "tn3270" => Some(Box::new(tn3270::Tn3270Handler)),
         _ => None,
     }
 }
@@ -53,7 +53,7 @@ pub async fn invoke_handler(Json(payload): Json<InvokeRequest>) -> Json<InvokeRe
     let map = get_transaction_map();
     debug!(?payload, "Recibida petición /invoke");
     // Look up transaction config by id
-    if let Some(tx) = map.transactions.get(&payload.transaction_id) {
+    if let Some(tx) = map.get(&payload.transaction_id) {
         info!(tx = %payload.transaction_id, protocol = %tx.protocol, "Ejecutando transacción");
         // Get protocol handler for this transaction
         if let Some(handler) = get_protocol_handler(tx) {

@@ -38,5 +38,7 @@ impl ProtocolHandler for MqHandler {
     }
 }
 </code></pre>
+<h2>Listener</h2>
+<p>El listener IBM MQ se conecta a las colas configuradas (por defecto REQUEST.Q y RESPONSE.Q). La aplicación cliente debe enviar un mensaje a la cola de entrada con el identificador de transacción y los parámetros. El listener procesa el mensaje y publica la respuesta en la cola de salida correspondiente.</p>
 </body>
 </html>

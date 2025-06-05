@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>TN3270 | NEO6</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="header-meta">
+  <span>3 de junio de 2025</span>
+  <span>TN3270</span>
+  <span>v0.1.0 (neo6-protocols-lib)</span>
+</div>
+<h1>TN3270</h1>
+<p>Protocolo de emulación de terminal IBM 3270 sobre TCP/IP, utilizado para integraciones con mainframes y automatización de sesiones de pantalla.</p>
+<h2>Ejemplo de definición en <code>transactions.yaml</code></h2>
+<pre><code>transactions:
+  TN3270_01:
+    protocol: "tn3270"
+    server: "mainframe-3270"
+    parameters:
+      - name: "screen"
+        type: "string"
+        required: true
+      - name: "input"
+        type: "object"
+        required: true
+    expected_response:
+      status: "ok"
+      fields:
+        - name: "output"
+          type: "object"
+</code></pre>
+<h2>Ejemplo de implementación</h2>
+<pre><code>use neo6_protocols_lib::protocol::ProtocolHandler;
+use serde_json::Value;
+use async_trait::async_trait;
+
+struct Tn3270Handler;
+
+#[async_trait]
+impl ProtocolHandler for Tn3270Handler {
+    async fn invoke_transaction(&self, transaction_id: &str, parameters: Value) -> Result<Value, String> {
+        // Lógica de integración TN3270
+        Ok(serde_json::json!({
+            "protocol": "tn3270",
+            "transaction_id": transaction_id,
+            "parameters": parameters,
+            "result": "mocked-tn3270-response"
+        }))
+    }
+}
+</code></pre>
+<h2>Listener</h2>
+<p>El listener TN3270 espera conexiones TCP en el puerto configurado (por defecto 2323). La aplicación cliente debe abrir una sesión TN3270 (emulador de terminal) y enviar las secuencias de pantalla y datos requeridas. El listener procesa la sesión y responde con la salida de la pantalla o el resultado de la transacción.</p>
+</body>
+</html>

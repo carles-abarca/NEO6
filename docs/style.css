@@ -186,20 +186,15 @@ code {
   margin-left: 1.6em;
   background: #eef6fa;
 }
-#sidebar li > a.collapsible::before {
-  content: '\25BC'; /* flecha abajo */
-  display: inline-block;
-  width: 1em;
-  margin-right: 0.2em;
-  font-size: 0.8em;
-  transition: transform 0.2s;
-}
-#sidebar li.collapsed > a.collapsible::before {
-  content: '\25B6'; /* flecha derecha */
-  transform: rotate(0deg);
-}
+/* Elimina estilos de colapsado de menú */
+#sidebar li > a.collapsible::before,
+#sidebar li.collapsed > a.collapsible::before,
 #sidebar li.collapsed > ul {
-  display: none !important;
+  display: unset !important;
+  content: unset;
+  margin: unset;
+  font-size: unset;
+  transition: unset;
 }
 @media (max-width: 900px) {
   #container { flex-direction: column; }

@@ -4,5 +4,6 @@ members = [
     "mq",
     "rest",
     "tcp",
-    "jca"
+    "jca",
+    "tn3270"
 ]

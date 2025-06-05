@@ -44,5 +44,7 @@ impl ProtocolHandler for RestHandler {
     }
 }
 </code></pre>
+<h2>Listener</h2>
+<p>El listener REST expone endpoints HTTP (por defecto en el puerto 8080). La aplicación cliente debe realizar peticiones HTTP POST al endpoint <code>/invoke</code> enviando el identificador de transacción y los parámetros en formato JSON. El listener responde con el resultado de la transacción.</p>
 </body>
 </html>

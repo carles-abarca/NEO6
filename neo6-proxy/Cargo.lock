@@ -321,6 +321,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 
 [[package]]
+name = "ebcdic"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "206cdf0fb3a39f4b0adaf5002a59e7a53382fd68ad2afe907c041f5ae4525600"
+
+[[package]]
 name = "either"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -991,6 +997,7 @@ dependencies = [
  "async-trait",
  "serde",
  "serde_json",
+ "serde_yaml",
 ]
 
 [[package]]
@@ -1013,6 +1020,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "tcp",
+ "tn3270",
  "tokio",
  "tower",
  "tracing",
@@ -1740,6 +1748,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "telnet"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe470bf03e694eccaac03d81297cbc22e681f60d3af29d4b69369f014895bf06"
+
+[[package]]
 name = "tempfile"
 version = "3.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1810,6 +1824,20 @@ checksum = "5d4f6d1145dcb577acf783d4e601bc1d76a13337bb54e6233add580b07344c8b"
 dependencies = [
  "displaydoc",
  "zerovec",
+]
+
+[[package]]
+name = "tn3270"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "ebcdic",
+ "encoding_rs",
+ "neo6-protocols-lib",
+ "serde_json",
+ "telnet",
+ "tokio",
 ]
 
 [[package]]

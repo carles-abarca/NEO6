@@ -41,5 +41,7 @@ impl ProtocolHandler for Lu62Handler {
     }
 }
 </code></pre>
+<h2>Listener</h2>
+<p>El listener LU6.2 espera conexiones TCP en el puerto configurado (por defecto 4000). La aplicación cliente debe abrir una conexión TCP al proxy y enviar el identificador de transacción y los parámetros serializados según el formato acordado (por ejemplo, JSON o binario). El listener procesa la petición y responde con el resultado de la transacción.</p>
 </body>
 </html>

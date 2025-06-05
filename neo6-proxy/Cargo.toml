@@ -24,3 +24,4 @@ mq = { path = "../neo6-protocols/mq" }
 rest = { path = "../neo6-protocols/rest" }
 tcp = { path = "../neo6-protocols/tcp" }
 jca = { path = "../neo6-protocols/jca" }
+tn3270 = { path = "../neo6-protocols/tn3270" }

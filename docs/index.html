@@ -38,18 +38,15 @@
         <li><a href="#" class="section" data-page="deploy.html" onclick="loadPage('deploy.html', this);return false;">Despliegue de NEO6-proxy</a></li>
         <li><a href="#" class="section" data-page="transactions.html" onclick="loadPage('transactions.html', this);return false;">Configuración de transacciones disponibles</a></li>
         <li><a href="#" class="section" data-page="invocation.html" onclick="loadPage('invocation.html', this);return false;">Cómo invocar transacciones</a></li>
-        <li><a href="#" class="section">Módulos</a>
+        <li><a href="#" class="section" data-page="proxy.html" onclick="loadPage('proxy.html', this);return false;">Proxy</a></li>
+        <li><a href="#" class="section" data-page="protocols.html" onclick="loadPage('protocols.html', this);return false;">Protocolos</a>
           <ul>
-            <li><a href="#" data-page="proxy.html" onclick="loadPage('proxy.html', this);return false;">Proxy</a></li>
-            <li><a href="#" data-page="protocols.html" onclick="loadPage('protocols.html', this);return false;">Protocolos</a>
-              <ul>
-                <li><a href="#" onclick="loadPage('protocol-lu62.html', this);return false;">LU6.2 / APPC</a></li>
-                <li><a href="#" onclick="loadPage('protocol-mq.html', this);return false;">IBM MQ</a></li>
-                <li><a href="#" onclick="loadPage('protocol-rest.html', this);return false;">REST</a></li>
-                <li><a href="#" onclick="loadPage('protocol-tcp.html', this);return false;">TCP/IP Proprietary</a></li>
-                <li><a href="#" onclick="loadPage('protocol-jca.html', this);return false;">JCA / CICS TG</a></li>
-              </ul>
-            </li>
+            <li><a href="#" onclick="loadPage('protocol-lu62.html', this);return false;">LU6.2 / APPC</a></li>
+            <li><a href="#" onclick="loadPage('protocol-mq.html', this);return false;">IBM MQ</a></li>
+            <li><a href="#" onclick="loadPage('protocol-rest.html', this);return false;">REST</a></li>
+            <li><a href="#" onclick="loadPage('protocol-tcp.html', this);return false;">TCP/IP Proprietary</a></li>
+            <li><a href="#" onclick="loadPage('protocol-jca.html', this);return false;">JCA / CICS TG</a></li>
+            <li><a href="#" onclick="loadPage('protocol-tn3270.html', this);return false;">TN3270</a></li>
           </ul>
         </li>
       </ul>
@@ -58,36 +55,5 @@
       <iframe id="content-frame" src="" frameborder="0" style="width:100%;height:100vh;background:#fff;"></iframe>
     </main>
   </div>
-  <script>
-    // Sidebar collapsible logic
-    function toggleCollapse(el) {
-      const parentLi = el.parentElement;
-      parentLi.classList.toggle('collapsed');
-      const subUl = parentLi.querySelector('ul');
-      if (subUl) {
-        subUl.style.display = parentLi.classList.contains('collapsed') ? 'none' : 'block';
-      }
-    }
-    window.addEventListener('DOMContentLoaded', function() {
-      // Initialize all submenus as expanded
-      document.querySelectorAll('#sidebar ul ul').forEach(ul => {
-        ul.style.display = 'block';
-      });
-      // Add collapse toggles
-      document.querySelectorAll('#sidebar li > a.section, #sidebar li > a[data-page]').forEach(a => {
-        const li = a.parentElement;
-        if (li.querySelector('ul')) {
-          a.classList.add('collapsible');
-          a.onclick = function(e) {
-            if (e.target === a && e.offsetX < 20) { // click near left
-              toggleCollapse(a);
-              e.preventDefault();
-              return false;
-            }
-          };
-        }
-      });
-    });
-  </script>
 </body>
 </html>
