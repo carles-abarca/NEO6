@@ -10,8 +10,11 @@
 **/*.d
 
 # Executables
-**/neo6-proxy
 **/neo6-proxy.exe
+# Only ignore the neo6-proxy binary, not the entire directory
+neo6-proxy/target/neo6-proxy
+neo6-proxy/target/debug/neo6-proxy
+neo6-proxy/target/release/neo6-proxy
 
 # By default, ignore Cargo.lock for libraries, but keep for binaries
 # Uncomment if you want to ignore for all
