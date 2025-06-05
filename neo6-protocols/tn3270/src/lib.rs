@@ -552,28 +552,32 @@ impl Session {
             self.screen_buffer = screen_data.clone(); // Solo la parte de datos 3270
 
             if tn3270e_ready_for_screen {
-                // Enviar datos 3270 usando el formato TN3270E con header de 5 bytes
-                // Formato TN3270E DATA: <data-type> <request-flag> <response-flag> <seq-number> <data> [IAC EOR]
+                // Enviar datos 3270 usando el formato TN3270E dentro de una subnegociación
+                // Formato según RFC2355: IAC SB TN3270E <data-type> <request-flag>
+                //   <response-flag> <seq-number> <data> IAC SE IAC EOR
                 let mut tn3270e_data_msg = Vec::new();
-                
+
+                // Encabezado de subnegociación
+                tn3270e_data_msg.extend_from_slice(&[IAC, SB, OPT_TN3270E]);
+
                 // TN3270E Header (5 bytes)
-                tn3270e_data_msg.push(TN3270E_DATATYPE_3270_DATA); // data-type: 3270-DATA (0x00)
-                tn3270e_data_msg.push(0x00); // request-flag: none 
-                tn3270e_data_msg.push(0x00); // response-flag: none
-                
-                // Sequence number (2 bytes, big-endian)
+                tn3270e_data_msg.push(TN3270E_DATATYPE_3270_DATA); // data-type
+                tn3270e_data_msg.push(0x00); // request-flag
+                tn3270e_data_msg.push(0x00); // response-flag
+
+                // Número de secuencia (big-endian)
                 let seq_num = self.tn3270e.sequence_number;
-                tn3270e_data_msg.push((seq_num >> 8) as u8); // high byte
-                tn3270e_data_msg.push((seq_num & 0xFF) as u8); // low byte
+                tn3270e_data_msg.push((seq_num >> 8) as u8);
+                tn3270e_data_msg.push((seq_num & 0xFF) as u8);
                 self.tn3270e.sequence_number = self.tn3270e.sequence_number.wrapping_add(1);
-                
+
                 // Datos 3270
                 tn3270e_data_msg.extend_from_slice(&self.screen_buffer);
-                
-                // Terminar con IAC EOR
-                tn3270e_data_msg.extend_from_slice(&[IAC, EOR_TELNET_CMD]);
-                
-                println!("[tn3270][SEND] TN3270E DATA mensaje (seq: {}, {} bytes): {:02X?}", 
+
+                // Cierre de subnegociación y marca EOR
+                tn3270e_data_msg.extend_from_slice(&[IAC, SE, IAC, EOR_TELNET_CMD]);
+
+                println!("[tn3270][SEND] TN3270E DATA mensaje (seq: {}, {} bytes): {:02X?}",
                          seq_num, tn3270e_data_msg.len(), &tn3270e_data_msg[..std::cmp::min(50, tn3270e_data_msg.len())]);
                 self.stream.write_all(&tn3270e_data_msg).await?;
             } else {
