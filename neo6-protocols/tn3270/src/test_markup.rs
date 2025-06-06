@@ -1,8 +1,9 @@
 // Test module for the markup language system
 use crate::{ScreenManager, TemplateParser, Codec};
+use tracing::{info, debug};
 
 pub fn test_markup_integration() {
-    println!("Testing TN3270 markup language integration...");
+    info!("Testing TN3270 markup language integration");
     
     // Create a screen manager
     let mut screen_manager = ScreenManager::new();
@@ -10,8 +11,8 @@ pub fn test_markup_integration() {
     // Test generating welcome screen with markup
     match screen_manager.generate_welcome_screen() {
         Ok(screen_data) => {
-            println!("✅ Welcome screen generated successfully!");
-            println!("   Screen data size: {} bytes", screen_data.len());
+            info!("✅ Welcome screen generated successfully!");
+            debug!("Screen data size: {} bytes", screen_data.len());
             
             // Show first few bytes for debugging
             if screen_data.len() > 10 {

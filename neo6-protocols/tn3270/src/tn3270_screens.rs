@@ -4,6 +4,7 @@ use std::error::Error;
 use std::fs;
 use std::path::Path;
 use chrono::{Local, DateTime};
+use tracing::{debug, error, trace};
 
 /// Atributos de campo 3270 con soporte para colores
 #[derive(Debug, Clone)]
@@ -18,6 +19,7 @@ pub struct FieldAttribute {
 impl FieldAttribute {
     /// Crea un nuevo atributo de campo básico
     pub fn new() -> Self {
+        debug!("Entering FieldAttribute::new");
         FieldAttribute {
             protected: true,
             numeric: false,
@@ -29,6 +31,7 @@ impl FieldAttribute {
     
     /// Crea un atributo protegido con color
     pub fn protected_with_color(color: Color3270) -> Self {
+        debug!("Entering FieldAttribute::protected_with_color");
         FieldAttribute {
             protected: true,
             numeric: false,
@@ -40,6 +43,7 @@ impl FieldAttribute {
     
     /// Crea un atributo desprotegido (entrada de usuario)
     pub fn unprotected() -> Self {
+        debug!("Entering FieldAttribute::unprotected");
         FieldAttribute {
             protected: false,
             numeric: false,
@@ -51,6 +55,7 @@ impl FieldAttribute {
     
     /// Convierte el atributo a byte 3270
     pub fn to_byte(&self) -> u8 {
+        debug!("Entering FieldAttribute::to_byte");
         let mut attr = 0x00;
         
         if self.protected { attr |= 0x20; }
@@ -77,6 +82,7 @@ pub struct ScreenManager {
 
 impl ScreenManager {
     pub fn new() -> Self {
+        debug!("Entering ScreenManager::new");
         ScreenManager {
             screen_buffer: vec![0x00; 1920], // 80x24 por defecto
             screen_sent: false,
@@ -88,6 +94,7 @@ impl ScreenManager {
     /// Para 80x24: dirección = (fila * 80) + columna  
     /// Codificación estándar 3270: high = (addr >> 6) & 0x3F | 0x40, low = addr & 0x3F | 0x40
     pub fn encode_buffer_addr(row: u16, col: u16) -> (u8, u8) {
+        debug!("Entering ScreenManager::encode_buffer_addr");
         let addr = (row * 80) + col;
         let high = ((addr >> 6) & 0x3F) | 0x40;
         let low = (addr & 0x3F) | 0x40;
@@ -96,6 +103,7 @@ impl ScreenManager {
     
     /// Agrega texto con color al stream de datos usando Set Attribute
     fn add_colored_text(&self, screen_data: &mut Vec<u8>, text: &str, color: Color3270, bright: bool, blink: bool, underline: bool) {
+        debug!("Entering ScreenManager::add_colored_text");
         // Aplicar atributos de color/formato si es necesario
         if !matches!(color, Color3270::Default) || bright || blink || underline {
             screen_data.push(0x28); // SA (Set Attribute)
@@ -137,6 +145,7 @@ impl ScreenManager {
     
     /// Posiciona el cursor y agrega texto con color
     fn add_positioned_colored_text(&self, screen_data: &mut Vec<u8>, row: u16, col: u16, text: &str, color: Color3270, bright: bool, blink: bool, underline: bool) {
+        debug!("Entering ScreenManager::add_positioned_colored_text");
         // SBA para posicionar
         let (high, low) = Self::encode_buffer_addr(row, col);
         screen_data.extend_from_slice(&[0x11, high, low]); // SBA
@@ -147,16 +156,19 @@ impl ScreenManager {
     
     /// Método legacy mantenido para compatibilidad - usa add_colored_text internamente
     fn add_colored_field(&self, screen_data: &mut Vec<u8>, text: &str, attr: &FieldAttribute) {
+        debug!("Entering ScreenManager::add_colored_field");
         self.add_colored_text(screen_data, text, attr.color, attr.intensity == 1, false, false);
     }
     
     /// Método legacy mantenido para compatibilidad - usa add_positioned_colored_text internamente
     fn add_positioned_colored_field(&self, screen_data: &mut Vec<u8>, row: u16, col: u16, text: &str, attr: &FieldAttribute) {
+        debug!("Entering ScreenManager::add_positioned_colored_field");
         self.add_positioned_colored_text(screen_data, row, col, text, attr.color, attr.intensity == 1, false, false);
     }
 
     /// Genera la pantalla de bienvenida de NEO6 usando el nuevo parser de templates
     pub fn generate_welcome_screen(&mut self) -> Result<Vec<u8>, Box<dyn Error>> {
+        debug!("Entering ScreenManager::generate_welcome_screen");
         let mut screen_data = Vec::new();
         
         // Comando Erase/Write y WCC
@@ -244,20 +256,21 @@ impl ScreenManager {
         self.screen_buffer = screen_data.clone();
         
         // Imprimir información de depuración simplificada
-        println!("[DEBUG] Pantalla generada sin colores para compatibilidad:");
-        println!("[DEBUG] Total elementos procesados: {}", elements.len());
+        debug!("Pantalla generada sin colores para compatibilidad");
+        debug!("Total elementos procesados: {}", elements.len());
         let stats = field_manager.get_field_stats();
-        println!("[DEBUG] Campos de entrada: {}", stats.total_fields);
-        println!("[DEBUG] Bytes enviados: {}", screen_data.len());
+        debug!("Campos de entrada: {}", stats.total_fields);
+        debug!("Bytes enviados: {}", screen_data.len());
         
         // Mostrar una muestra de los primeros bytes para depuración
-        println!("[DEBUG] Primeros 50 bytes (hex): {:02X?}", &screen_data[..std::cmp::min(50, screen_data.len())]);
+        trace!("Primeros 50 bytes (hex): {:02X?}", &screen_data[..std::cmp::min(50, screen_data.len())]);
         
         Ok(screen_data)
     }
 
     /// Calcula el byte de atributo basado en los flags de formato
     fn calculate_attribute_byte(&self, bright: bool, blink: bool, underline: bool) -> u8 {
+        debug!("Entering ScreenManager::calculate_attribute_byte");
         let mut attr = 0x20; // Protegido por defecto
         
         if bright {
@@ -275,6 +288,7 @@ impl ScreenManager {
 
     /// Agrega atributos de color al stream de datos
     fn add_color_attribute(&self, screen_data: &mut Vec<u8>, color: Color3270) {
+        debug!("Entering ScreenManager::add_color_attribute");
         screen_data.push(0x29); // SFE (Start Field Extended)
         screen_data.push(0x02); // Número de pares atributo-valor
         screen_data.push(0xC0); // Extended highlighting attribute
@@ -285,6 +299,7 @@ impl ScreenManager {
 
     /// Genera una pantalla de demostración de colores 3270
     pub fn generate_color_demo_screen(&mut self) -> Result<Vec<u8>, Box<dyn Error>> {
+        debug!("Entering ScreenManager::generate_color_demo_screen");
         let mut screen_data = Vec::new();
         
         // Comando Erase/Write y WCC
@@ -344,30 +359,20 @@ impl ScreenManager {
         Ok(screen_data)
     }
     fn load_welcome_template(&self) -> Result<String, Box<dyn Error>> {
+        debug!("Entering ScreenManager::load_welcome_template");
         // Intentar cargar primero la plantilla con markup
         let markup_template_path = Path::new("screens/welcome_markup.txt");
         
         let content = if markup_template_path.exists() {
             fs::read_to_string(markup_template_path)?
         } else {
-            // Ruta absoluta desde el directorio del proyecto (markup template)
-            let abs_markup_path = Path::new("/home/carlesabarca/MyProjects/NEO6/neo6-protocols/tn3270/screens/welcome_markup.txt");
-            if abs_markup_path.exists() {
-                fs::read_to_string(abs_markup_path)?
+             // Fallback a plantilla original sin markup
+            let template_path = Path::new("screens/welcome.txt");
+            if template_path.exists() {
+                fs::read_to_string(template_path)?
             } else {
-                // Fallback a plantilla original sin markup
-                let template_path = Path::new("screens/welcome.txt");
-                if template_path.exists() {
-                    fs::read_to_string(template_path)?
-                } else {
-                    let abs_path = Path::new("/home/carlesabarca/MyProjects/NEO6/neo6-protocols/tn3270/screens/welcome.txt");
-                    if abs_path.exists() {
-                        fs::read_to_string(abs_path)?
-                    } else {
-                        // Último fallback a una pantalla básica
-                        return Ok(self.get_fallback_welcome_screen());
-                    }
-                }
+                // Último fallback a una pantalla básica
+                return Ok(self.get_fallback_welcome_screen());
             }
         };
 
@@ -376,6 +381,7 @@ impl ScreenManager {
 
     /// Procesa las variables del template (reemplaza placeholders)
     fn process_template_variables(&self, mut content: String) -> Result<String, Box<dyn Error>> {
+        debug!("Entering ScreenManager::process_template_variables");
         // Obtener timestamp actual
         let now: DateTime<Local> = Local::now();
         let timestamp = now.format("%Y-%m-%d %H:%M:%S").to_string();
@@ -429,6 +435,7 @@ impl ScreenManager {
 
     /// Normaliza todas las líneas para que tengan exactamente 80 caracteres
     fn normalize_lines_to_80_chars(content: String) -> String {
+        debug!("Entering ScreenManager::normalize_lines_to_80_chars");
         let mut lines: Vec<String> = content
             .split('\n')  // Usar split para tener control total
             .enumerate()
@@ -438,7 +445,7 @@ impl ScreenManager {
                 
                 let normalized = if clean_line.len() > 80 {
                     // Truncar líneas demasiado largas
-                    println!("[DEBUG] Línea {} truncada de {} a 80 caracteres", i + 1, clean_line.len());
+                    debug!("Línea {} truncada de {} a 80 caracteres", i + 1, clean_line.len());
                     clean_line[..80].to_string()
                 } else if clean_line.len() < 80 {
                     // Rellenar líneas cortas con espacios
@@ -450,7 +457,7 @@ impl ScreenManager {
                 
                 // Verificar que efectivamente tenga 80 caracteres
                 if normalized.len() != 80 {
-                    println!("[ERROR] Línea {} tiene {} caracteres en lugar de 80", i + 1, normalized.len());
+                    error!("Línea {} tiene {} caracteres en lugar de 80", i + 1, normalized.len());
                 }
                 
                 normalized
@@ -470,12 +477,13 @@ impl ScreenManager {
         // Unir líneas CON \n para que generate_welcome_screen pueda procesarlas
         // El \n será eliminado en el procesamiento posterior
         let result = lines.join("\n");
-        println!("[DEBUG] Pantalla generada con {} líneas, {} caracteres totales", lines.len(), result.len());
+        debug!("Pantalla generada con {} líneas, {} caracteres totales", lines.len(), result.len());
         result
     }
 
     /// Limpia el contenido para asegurar compatibilidad con EBCDIC
     fn clean_for_ebcdic(mut content: String) -> String {
+        debug!("Entering ScreenManager::clean_for_ebcdic");
         // Reemplazar caracteres problemáticos con equivalentes ASCII seguros
         content = content.replace("á", "a");
         content = content.replace("é", "e");
@@ -500,6 +508,7 @@ impl ScreenManager {
 
     /// Pantalla de fallback si no se encuentra el archivo
     fn get_fallback_welcome_screen(&self) -> String {
+        debug!("Entering ScreenManager::get_fallback_welcome_screen");
         let content = format!(
             "+============================================================================+\n\
              |                        SISTEMA NEO6 - FALLBACK MODE                       |\n\
@@ -522,6 +531,7 @@ impl ScreenManager {
 
     /// Genera una pantalla de menú con opciones
     pub fn generate_menu_screen(&mut self, title: &str, options: &[(&str, &str)]) -> Result<Vec<u8>, Box<dyn Error>> {
+        debug!("Entering ScreenManager::generate_menu_screen");
         let mut screen_data = Vec::new();
         
         // Comando Erase/Write y WCC
@@ -582,6 +592,7 @@ impl ScreenManager {
 
     /// Genera una pantalla de error con mensaje
     pub fn generate_error_screen(&mut self, error_msg: &str) -> Result<Vec<u8>, Box<dyn Error>> {
+        debug!("Entering ScreenManager::generate_error_screen");
         let mut screen_data = Vec::new();
         
         // Comando Erase/Write y WCC
@@ -630,31 +641,37 @@ impl ScreenManager {
 
     /// Marca la pantalla como enviada
     pub fn mark_screen_sent(&mut self) {
+        debug!("Entering ScreenManager::mark_screen_sent");
         self.screen_sent = true;
     }
 
     /// Verifica si la pantalla ya fue enviada
     pub fn is_screen_sent(&self) -> bool {
+        debug!("Entering ScreenManager::is_screen_sent");
         self.screen_sent
     }
 
     /// Resetea el estado de pantalla enviada
     pub fn reset_screen_sent(&mut self) {
+        debug!("Entering ScreenManager::reset_screen_sent");
         self.screen_sent = false;
     }
 
     /// Obtiene una copia del buffer de pantalla actual
     pub fn get_screen_buffer(&self) -> Vec<u8> {
+        debug!("Entering ScreenManager::get_screen_buffer");
         self.screen_buffer.clone()
     }
 
     /// Actualiza el codec para conversiones EBCDIC/ASCII
     pub fn set_codec(&mut self, codec: Codec) {
+        debug!("Entering ScreenManager::set_codec");
         self.codec = codec;
     }
 
     /// Genera una pantalla de estado del sistema
     pub fn generate_status_screen(&mut self) -> Result<Vec<u8>, Box<dyn Error>> {
+        debug!("Entering ScreenManager::generate_status_screen");
         let mut screen_data = Vec::new();
         
         // Comando Erase/Write y WCC
@@ -713,12 +730,14 @@ impl ScreenManager {
 
     /// Limpia el buffer de pantalla
     pub fn clear_screen(&mut self) {
+        debug!("Entering ScreenManager::clear_screen");
         self.screen_buffer.clear();
         self.screen_sent = false;
     }
 
     /// Genera una pantalla de prueba muy básica para verificar conectividad
     pub fn generate_basic_test_screen(&mut self) -> Result<Vec<u8>, Box<dyn Error>> {
+        debug!("Entering ScreenManager::generate_basic_test_screen");
         let mut screen_data = Vec::new();
         
         // Comando Erase/Write y WCC
@@ -744,9 +763,9 @@ impl ScreenManager {
         // Guardar en el buffer de pantalla
         self.screen_buffer = screen_data.clone();
         
-        println!("[DEBUG] Pantalla ultra-simple generada:");
-        println!("[DEBUG] Bytes enviados: {}", screen_data.len());
-        println!("[DEBUG] Datos completos (hex): {:02X?}", screen_data);
+        debug!("Pantalla ultra-simple generada");
+        debug!("Bytes enviados: {}", screen_data.len());
+        trace!("Datos completos (hex): {:02X?}", screen_data);
         
         Ok(screen_data)
     }
@@ -754,6 +773,7 @@ impl ScreenManager {
 
 impl Default for ScreenManager {
     fn default() -> Self {
+        debug!("Entering ScreenManager::default");
         Self::new()
     }
 }

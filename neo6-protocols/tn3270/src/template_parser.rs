@@ -4,6 +4,7 @@ use std::error::Error;
 use std::fmt;
 use chrono::{Local, DateTime};
 use regex::Regex;
+use tracing::{trace, debug};
 
 /// Errores específicos del parser de templates
 #[derive(Debug)]
@@ -17,6 +18,7 @@ pub enum TemplateError {
 
 impl fmt::Display for TemplateError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        debug!("Entering TemplateError::fmt");
         match self {
             TemplateError::InvalidPosition(msg) => write!(f, "Posición inválida: {}", msg),
             TemplateError::InvalidColor(msg) => write!(f, "Color inválido: {}", msg),
@@ -46,6 +48,7 @@ pub enum Color3270 {
 
 impl Color3270 {
     pub fn from_str(color_name: &str) -> Result<Self, TemplateError> {
+        debug!("Entering Color3270::from_str");
         match color_name.to_lowercase().as_str() {
             "default" => Ok(Color3270::Default),
             "blue" => Ok(Color3270::Blue),
@@ -74,6 +77,7 @@ pub struct FieldAttributes {
 
 impl FieldAttributes {
     pub fn new(name: String) -> Self {
+        debug!("Entering FieldAttributes::new");
         Self {
             name,
             length: None,
@@ -86,6 +90,7 @@ impl FieldAttributes {
     }
 
     pub fn parse_attributes(attr_str: &str) -> Result<HashMap<String, String>, TemplateError> {
+        debug!("Entering FieldAttributes::parse_attributes");
         let mut attributes = HashMap::new();
         
         for attr in attr_str.split(',') {
@@ -105,6 +110,7 @@ impl FieldAttributes {
     }
 
     pub fn apply_attributes(&mut self, attributes: HashMap<String, String>) -> Result<(), TemplateError> {
+        debug!("Entering FieldAttributes::apply_attributes");
         for (key, value) in attributes {
             match key.as_str() {
                 "length" => {
@@ -149,6 +155,7 @@ pub struct TemplateParser {
 
 impl TemplateParser {
     pub fn new() -> Self {
+        debug!("Entering TemplateParser::new");
         let mut parser = Self {
             variables: HashMap::new(),
         };
@@ -158,6 +165,7 @@ impl TemplateParser {
 
     /// Inicializa variables del sistema
     fn init_system_variables(&mut self) {
+        debug!("Entering TemplateParser::init_system_variables");
         let now: DateTime<Local> = Local::now();
         
         self.variables.insert("timestamp".to_string(), now.format("%Y-%m-%d %H:%M:%S").to_string());
@@ -170,11 +178,13 @@ impl TemplateParser {
 
     /// Añade o actualiza una variable personalizada
     pub fn set_variable(&mut self, name: String, value: String) {
+        debug!("Entering TemplateParser::set_variable");
         self.variables.insert(name, value);
     }
 
     /// Procesa una plantilla completa
     pub fn parse_template(&self, template_content: &str) -> Result<Vec<TemplateElement>, Box<dyn Error>> {
+        debug!("Entering TemplateParser::parse_template");
         // Paso 1: Reemplazar variables del sistema
         let content_with_vars = self.replace_variables(template_content)?;
         
@@ -189,6 +199,7 @@ impl TemplateParser {
 
     /// Reemplaza las variables del sistema en el contenido
     fn replace_variables(&self, content: &str) -> Result<String, Box<dyn Error>> {
+        debug!("Entering TemplateParser::replace_variables");
         let mut result = content.to_string();
         
         for (var_name, var_value) in &self.variables {
@@ -201,6 +212,7 @@ impl TemplateParser {
 
     /// Procesa las etiquetas de marcado
     fn parse_markup_tags(&self, content: &str) -> Result<Vec<TemplateElement>, Box<dyn Error>> {
+        debug!("Entering TemplateParser::parse_markup_tags");
         let mut elements = Vec::new();
         let mut current_row: Option<u16> = None;
         let mut current_col: Option<u16> = None;
@@ -299,7 +311,7 @@ impl TemplateParser {
                 (None, None) => {
                     let text_rest = &content[pos..];
                     if !text_rest.is_empty() {
-                        println!("[TEMPLATE PARSER] Texto plano: {:?}", text_rest);
+                        trace!("Texto plano: {:?}", text_rest);
                         elements.push(TemplateElement::Text {
                             content: text_rest.to_string(),
                             color: color_stack.last().copied().unwrap_or(Color3270::Default),
@@ -317,7 +329,7 @@ impl TemplateParser {
             if start > 0 {
                 let text_before = &rest_str[..start];
                 if !text_before.is_empty() {
-                    println!("[TEMPLATE PARSER] Texto antes de tag: {:?}", text_before);
+                    trace!("Texto antes de tag: {:?}", text_before);
                     elements.push(TemplateElement::Text {
                         content: text_before.to_string(),
                         color: color_stack.last().copied().unwrap_or(Color3270::Default),
@@ -334,7 +346,7 @@ impl TemplateParser {
                     if let NextTagMatch::Directive(cap) = cap {
                         let dir = cap.get(1).unwrap().as_str();
                         let params = cap.get(2).map(|m| m.as_str()).unwrap_or("");
-                        println!("[TEMPLATE PARSER] Directiva <{}:{}> en pos {}", dir, params, pos+start);
+                        trace!("Directiva <{}:{}> en pos {}", dir, params, pos+start);
                         match dir {
                             "pos" => {
                                 let (row, col) = self.parse_position(params)?;
@@ -357,7 +369,7 @@ impl TemplateParser {
                 }
                 "cont_manual" => {
                     if let NextTagMatch::Container(tag, params, content_start, content_end) = cap {
-                        println!("[TEMPLATE PARSER] Abre <{}:{}> en pos {}", tag, params, pos+start);
+                        trace!("Abre <{}:{}> en pos {}", tag, params, pos+start);
                         let content_text = &rest_str[content_start..content_end];
                         match tag {
                             "color" => {
@@ -428,7 +440,7 @@ impl TemplateParser {
                                 return Err(Box::new(TemplateError::UnmatchedTag(tag.to_string())));
                             }
                         }
-                        println!("[TEMPLATE PARSER] Cierra </{}> en pos {}", tag, pos+end-1);
+                        trace!("Cierra </{}> en pos {}", tag, pos+end-1);
                     } else {
                         unreachable!();
                     }
@@ -442,6 +454,7 @@ impl TemplateParser {
 
     /// Parsea una especificación de posición "fila,columna"
     fn parse_position(&self, pos_str: &str) -> Result<(u16, u16), TemplateError> {
+        debug!("Entering TemplateParser::parse_position");
         let parts: Vec<&str> = pos_str.split(',').collect();
         if parts.len() != 2 {
             return Err(TemplateError::InvalidPosition(
@@ -462,6 +475,7 @@ impl TemplateParser {
 
     /// Parsea la definición de un campo
     fn parse_field(&self, params: &str, default_value: &str) -> Result<FieldAttributes, TemplateError> {
+        debug!("Entering TemplateParser::parse_field");
         let parts: Vec<&str> = params.splitn(2, ',').collect();
         let field_name = parts[0].to_string();
         
@@ -478,6 +492,7 @@ impl TemplateParser {
 
     /// Valida que las posiciones estén dentro de los límites de la pantalla
     fn validate_elements(&self, elements: &[TemplateElement]) -> Result<(), TemplateError> {
+        debug!("Entering TemplateParser::validate_elements");
         for element in elements {
             match element {
                 TemplateElement::Text { row, col, .. } | TemplateElement::Field { row, col, .. } => {
@@ -500,6 +515,7 @@ impl TemplateParser {
 
 impl Default for TemplateParser {
     fn default() -> Self {
+        debug!("Entering TemplateParser::default");
         Self::new()
     }
 }

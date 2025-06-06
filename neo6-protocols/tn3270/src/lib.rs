@@ -7,6 +7,7 @@ use async_trait::async_trait;
 use serde_json::Value;
 use serde_json::json;
 use neo6_protocols_lib::protocol::{ProtocolHandler, TransactionConfig};
+use tracing::{debug, info, warn, trace};
 
 // Módulos del protocolo TN3270
 mod tn3270_screens;
@@ -161,7 +162,7 @@ struct Session {
 
 impl Session {
     async fn new(stream: TcpStream) -> Self {
-        println!("[tn3270][DEBUG] Nueva sesión creada");
+        debug!("Session::new() - Iniciando nueva sesión TN3270");
         Session {
             stream,
             telnet_state: TelnetState::default(),
@@ -177,6 +178,7 @@ impl Session {
     // Comprueba si todas las negociaciones Telnet base están listas
     // Esto es un prerrequisito para iniciar la negociación TN3270E.
     fn check_base_telnet_ready(&mut self) {
+        debug!("Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet");
         // Para TN3270E necesitamos tener negociado como mínimo: BINARY, EOR y TN3270E
         // TERMINAL-TYPE es deseable pero algunos clientes pueden no enviarlo hasta después
         let tn3270e_requisites_met = self.telnet_state.binary_negotiated &&
@@ -194,12 +196,12 @@ impl Session {
             self.telnet_state.base_telnet_ready = true;
             
             if tn3270e_requisites_met {
-                println!("[tn3270][DEBUG] Negociaciones Telnet básicas para TN3270E completadas.");
-                println!("[tn3270][DEBUG] Estado actual: BINARY={}, EOR={}, TN3270E={}, TERMINAL-TYPE={}",
+                debug!("Negociaciones Telnet básicas para TN3270E completadas");
+                debug!("Estado actual: BINARY={}, EOR={}, TN3270E={}, TERMINAL-TYPE={}",
                          self.telnet_state.binary_negotiated, self.telnet_state.eor_negotiated,
                          self.telnet_state.tn3270e_negotiated, self.telnet_state.termtype_negotiated);
             } else {
-                println!("[tn3270][DEBUG] Negociaciones Telnet base completadas. Usando modo Telnet clásico 3270.");
+                debug!("Negociaciones Telnet base completadas. Usando modo Telnet clásico 3270");
             }
         }
     }
@@ -207,9 +209,10 @@ impl Session {
     // Inicia la secuencia de negociación TN3270E por parte del servidor.
     // Se llama cuando base_telnet_ready es true y TN3270E está habilitado.
     async fn initiate_tn3270e_server_negotiation(&mut self) -> Result<(), Box<dyn Error>> {
+        debug!("Session::initiate_tn3270e_server_negotiation() - Iniciando negociación TN3270E del servidor");
         // Verificar que se cumplan las condiciones para la negociación TN3270E
         if !self.telnet_state.base_telnet_ready || !self.telnet_state.tn3270e_enabled {
-            println!("[tn3270][DEBUG] No se cumplen las condiciones para negociación TN3270E. base_ready={}, tn3270e_enabled={}",
+            debug!("No se cumplen las condiciones para negociación TN3270E. base_ready={}, tn3270e_enabled={}",
                      self.telnet_state.base_telnet_ready, self.telnet_state.tn3270e_enabled);
             return Ok(());
         }
@@ -217,7 +220,7 @@ impl Session {
         // Secuencia de negociación TN3270E iniciada por el servidor:
         // 1. Enviar S2C_CONNECT (si no se ha enviado y no se ha recibido respuesta de DEVICE-TYPE)
         if !self.tn3270e.connect_sent && !self.tn3270e.client_device_type_is_received {
-            println!("[tn3270][INFO] Iniciando negociación TN3270E: Paso 1 - Enviando DEVICE-TYPE IS.");
+            info!("Iniciando negociación TN3270E: Paso 1 - Enviando DEVICE-TYPE IS");
             
             // Formato correcto según RFC 2355 y c3270:
             // IAC SB TN3270E DEVICE-TYPE IS <terminal-type> CONNECT <lu-name> IAC SE
@@ -233,18 +236,18 @@ impl Session {
             connect_msg.extend_from_slice(&[IAC, SE]);
             
             // Mostrar log detallado del mensaje para diagnosticar problemas
-            println!("[tn3270][SEND] TN3270E DEVICE-TYPE IS IBM-3278-2-E CONNECT {} Raw: {:02X?}", self.logical_unit, connect_msg);
+            trace!("TN3270E DEVICE-TYPE IS IBM-3278-2-E CONNECT {} Raw: {:02X?}", self.logical_unit, connect_msg);
             self.stream.write_all(&connect_msg).await?;
             self.stream.flush().await?;
             self.tn3270e.connect_sent = true;
             
             // También registramos este evento para depuración
-            println!("[tn3270][DEBUG] DEVICE-TYPE IS with CONNECT enviado correctamente, esperando respuesta del cliente");
+            debug!("DEVICE-TYPE IS with CONNECT enviado correctamente, esperando respuesta del cliente");
         }
 
         // 2. Enviar S2C_DEVICE_TYPE_REQUEST (si CONNECT se envió y DEVICE_TYPE_REQUEST no, y no se ha recibido respuesta de DEVICE-TYPE)
         if self.tn3270e.connect_sent && !self.tn3270e.device_type_request_sent && !self.tn3270e.client_device_type_is_received {
-            println!("[tn3270][INFO] Negociación TN3270E: Paso 2 - Enviando S2C_DEVICE_TYPE_REQUEST.");
+            info!("Negociación TN3270E: Paso 2 - Enviando S2C_DEVICE_TYPE_REQUEST");
             
             // Formato según RFC 2355 para DEVICE-TYPE-REQUEST:
             // IAC SB TN3270E DEVICE-TYPE REQUEST <device-type list> IAC SE
@@ -256,12 +259,12 @@ impl Session {
             req_dev_type_msg.extend_from_slice("IBM-3278-2-E".as_bytes());
                         
             req_dev_type_msg.extend_from_slice(&[IAC, SE]);
-            println!("[tn3270][SEND] TN3270E S2C_DEVICE_TYPE_REQUEST ({:02X?})", req_dev_type_msg);
+            trace!("TN3270E S2C_DEVICE_TYPE_REQUEST ({:02X?})", req_dev_type_msg);
             self.stream.write_all(&req_dev_type_msg).await?;
             self.stream.flush().await?;
             self.tn3270e.device_type_request_sent = true;
             
-            println!("[tn3270][DEBUG] DEVICE-TYPE-REQUEST enviado correctamente");
+            debug!("DEVICE-TYPE-REQUEST enviado correctamente");
         }
         
         // Los siguientes pasos (S2C_FUNCTIONS_REQUEST, S2C_BIND_IMAGE) se envían en respuesta
@@ -272,15 +275,16 @@ impl Session {
     // Procesa un mensaje TN3270E entrante del cliente.
     // El payload es el contenido de la subnegociación TN3270E, sin IAC SB OPT_TN3270E ... IAC SE.
     async fn process_incoming_tn3270e_message(&mut self, payload: &[u8]) -> Result<(), Box<dyn Error>> {
+        debug!("Session::process_incoming_tn3270e_message() - Procesando mensaje TN3270E del cliente (payload size: {})", payload.len());
         if payload.is_empty() {
-            println!("[tn3270][WARN] Payload TN3270E vacío.");
+            warn!("Payload TN3270E vacío");
             return Ok(());
         }
 
         let tn3270e_cmd = payload[0]; // Este es el data-type del cliente.
         let data = &payload[1..];     // Resto del payload.
 
-        println!("[tn3270][RECV] TN3270E Mensaje del Cliente: cmd=0x{:02X}, data={:02X?}", tn3270e_cmd, data);
+        debug!("TN3270E Mensaje del Cliente: cmd=0x{:02X}, data={:02X?}", tn3270e_cmd, data);
         
         // Mostrar la interpretación del comando para mejor diagnóstico
         let cmd_name = match tn3270e_cmd {
@@ -288,19 +292,19 @@ impl Session {
             TN3270E_OP_FUNCTIONS => "FUNCTIONS",
             _ => "UNKNOWN",
         };
-        println!("[tn3270][DEBUG] TN3270E cmd interpretado: {}", cmd_name);
+        debug!("TN3270E cmd interpretado: {}", cmd_name);
 
         match tn3270e_cmd {
             TN3270E_OP_DEVICE_TYPE => { // Cliente envía su tipo de dispositivo (0x02)
                 if data.is_empty() {
-                    println!("[tn3270][WARN] TN3270E_OP_DEVICE_TYPE sin datos de sub-operación.");
+                    warn!("TN3270E_OP_DEVICE_TYPE sin datos de sub-operación");
                     return Ok(());
                 }
                 let sub_operation = data[0];
                 let payload = &data[1..];
                 
                 // Log más detallado para diagnóstico del payload
-                println!("[tn3270][DEBUG] DEVICE-TYPE sub-operation: 0x{:02X} ({}) - Payload: {:02X?}", 
+                debug!("DEVICE-TYPE sub-operation: 0x{:02X} ({}) - Payload: {:02X?}", 
                          sub_operation, 
                          match sub_operation {
                              TN3270E_OP_IS => "IS",
@@ -313,12 +317,12 @@ impl Session {
                 match sub_operation {
                     TN3270E_OP_IS => {
                         // Cliente envía DEVICE-TYPE IS con su tipo de dispositivo seleccionado
-                        println!("[tn3270][INFO] Negociación TN3270E: Recibido DEVICE-TYPE IS del cliente.");
+                        info!("Negociación TN3270E: Recibido DEVICE-TYPE IS del cliente");
                         
                         // Imprimir los datos raw y en ASCII para diagnóstico
                         let device_info_ascii = String::from_utf8_lossy(payload);
-                        println!("[tn3270][DEBUG] DEVICE-TYPE raw data: {:02X?}", payload);
-                        println!("[tn3270][DEBUG] DEVICE-TYPE ASCII data: '{}'", device_info_ascii);
+                        trace!("DEVICE-TYPE raw data: {:02X?}", payload);
+                        debug!("DEVICE-TYPE ASCII data: '{}'", device_info_ascii);
                         
                         // Usar el TN3270E_OP_CONNECT (0x01) como separador si está presente
                         let mut parts_iter = payload.split(|&byte| byte == TN3270E_OP_CONNECT);
@@ -327,7 +331,7 @@ impl Session {
 
                         if !device_type_bytes.is_empty() {
                             self.terminal_type = String::from_utf8_lossy(device_type_bytes).to_string();
-                            println!("[tn3270][INFO] Cliente seleccionó DEVICE-TYPE: {}", self.terminal_type);
+                            info!("Cliente seleccionó DEVICE-TYPE: {}", self.terminal_type);
                         }
                         
                         if let Some(res_name_bytes) = resource_name_bytes {
@@ -1097,6 +1101,7 @@ pub struct Tn3270Handler;
 #[async_trait]
 impl ProtocolHandler for Tn3270Handler {
     async fn invoke_transaction(&self, transaction_id: &str, parameters: Value) -> Result<Value, String> {
+        debug!("Tn3270Handler::invoke_transaction() - Invocando transacción: {} con parámetros: {:?}", transaction_id, parameters);
         Ok(json!({
             "protocol": "tn3270",
             "transaction_id": transaction_id,
@@ -1116,6 +1121,7 @@ where
     ExecFn: Fn(String, serde_json::Value) -> Fut + Send + Sync + 'static,
     Fut: std::future::Future<Output = Result<serde_json::Value, String>> + Send + 'static,
 {
+    debug!("start_tn3270_listener() - Iniciando listener TN3270 en puerto {}", port);
     let addr = format!("0.0.0.0:{}", port);
     let listener = TcpListener::bind(&addr).await?;
     println!("[tn3270] Listening on {} (async)", addr);
