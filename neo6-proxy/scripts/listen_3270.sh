@@ -10,4 +10,6 @@ cd "$PROJECT_ROOT" && cargo build || exit 1
 
 # Ejecutar el listener
 cd "$PROJECT_ROOT"
+kill -f neo6-proxy
+export RUST_LOG=debug
 cargo run --manifest-path "$PROJECT_ROOT/Cargo.toml" --bin neo6-proxy -- --protocol=tn3270 --port=2323 --log-level=debug

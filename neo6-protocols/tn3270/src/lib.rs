@@ -1,14 +1,16 @@
 use tokio::net::{TcpListener, TcpStream};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use bytes::{BytesMut, BufMut};
+use bytes::BytesMut;
 use ebcdic::ebcdic::Ebcdic;
 use std::error::Error;
-use std::collections::HashMap;
 use async_trait::async_trait;
 use serde_json::Value;
 use serde_json::json;
-use tokio::runtime::Runtime;
 use neo6_protocols_lib::protocol::{ProtocolHandler, TransactionConfig};
+
+// Módulo de pantallas 3270
+mod tn3270_screens;
+use tn3270_screens::ScreenManager;
 
 // --- Constantes Telnet y TN3270E ---
 // Comandos Telnet
@@ -50,8 +52,15 @@ const FUNC_RESPONSES: u8 = 0x02;
 const FUNC_SCS_CTL_CODES: u8 = 0x03;
 const FUNC_SYSREQ_FUNC: u8 = 0x04; // Renombrado para evitar colisión con C2S_SYSREQ
 
-// Tipos de Datos para el mensaje TN3270E DATA (primer byte de la cabecera del mensaje DATA)
+// Aliases for consistency with code usage
+const TN3270E_FUNC_BIND_IMAGE: u8 = FUNC_BIND_IMAGE;
+
+// TN3270E Data Types (RFC 2355 Section 4.4)
 const TN3270E_DATATYPE_3270_DATA: u8 = 0x00;
+const TN3270E_DT_BIND_IMAGE: u8 = 0x03;    // BIND-IMAGE data type
+
+// Additional constants
+const EOR: u8 = EOR_TELNET_CMD;  // Alias for consistency
 // --- Fin Constantes ---
 
 // Estados de negociación Telnet
@@ -89,20 +98,20 @@ struct TN3270EState {
 
 // Conversión de caracteres
 #[derive(Debug)]
-struct Codec {
+pub struct Codec {
     use_ebcdic: bool,
     code_page: String,
 }
 
 impl Codec {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Codec {
             use_ebcdic: true,
             code_page: "CP037".to_string(),
         }
     }
 
-    fn to_host(&self, data: &[u8]) -> Vec<u8> {
+    pub fn to_host(&self, data: &[u8]) -> Vec<u8> {
         if self.use_ebcdic {
             let mut output = vec![0u8; data.len()];
             Ebcdic::ebcdic_to_ascii(data, &mut output, data.len(), false, true);
@@ -112,7 +121,7 @@ impl Codec {
         }
     }
 
-    fn from_host(&self, data: &[u8]) -> Vec<u8> {
+    pub fn from_host(&self, data: &[u8]) -> Vec<u8> {
         if self.use_ebcdic {
             // Asegurar que el buffer de salida tenga suficiente capacidad.
             // La conversión EBCDIC puede necesitar más espacio si hay caracteres multibyte,
@@ -136,10 +145,9 @@ struct Session {
     telnet_state: TelnetState,
     tn3270e: TN3270EState,
     codec: Codec,
-    screen_buffer: Vec<u8>,
+    screen_manager: ScreenManager,
     terminal_type: String, // Se llenará durante la negociación
     logical_unit: String, // Nombre de la LU, puede ser asignado por el servidor o negociado
-    screen_sent: bool,
     tn3270e_bound: bool, // True cuando la negociación TN3270E está completa y se puede enviar datos 3270
 }
 
@@ -151,10 +159,9 @@ impl Session {
             telnet_state: TelnetState::default(),
             tn3270e: TN3270EState::default(),
             codec: Codec::new(),
-            screen_buffer: vec![0x00; 1920], // 80x24. TODO: Hacer configurable o basar en tipo de terminal
+            screen_manager: ScreenManager::new(),
             terminal_type: String::new(), 
             logical_unit: "NEO6LU".to_string(), // LU por defecto, puede ser sobrescrita por el cliente
-            screen_sent: false,
             tn3270e_bound: false, // Se pone a true cuando la negociación TN3270E está completa
         }
     }
@@ -410,17 +417,34 @@ impl Session {
                         self.stream.write_all(&func_is_msg).await?;
                         self.stream.flush().await?;
                         
+                        // Verificar si el cliente negoció BIND-IMAGE antes de mover accepted_functions
+                        let client_wants_bind_image = accepted_functions.contains(&TN3270E_FUNC_BIND_IMAGE);
+                        
                         // Guardar las funciones aceptadas
                         self.tn3270e.accepted_functions_by_client = accepted_functions;
                         self.tn3270e.client_functions_is_received = true;
 
+                        // Enviar BIND-IMAGE si el cliente negoció esta función
+                        if client_wants_bind_image {
+                            println!("[tn3270][INFO] Cliente negoció BIND-IMAGE, enviando comando BIND.");
+                            if let Err(e) = self.send_bind_image().await {
+                                println!("[tn3270][ERROR] Error enviando BIND-IMAGE: {}", e);
+                                return Err(e);
+                            }
+                        }
+                        
                         // Marcar la sesión como BOUND después de intercambiar funciones
                         println!("[tn3270][INFO] Negociación TN3270E completada. Sesión BOUND.");
                         self.tn3270e_bound = true;
                         self.tn3270e.bind_image_sent = true;
                         
                         // Enviar pantalla inicial inmediatamente después de que la sesión esté bound
-                        self.maybe_send_screen().await?;
+                        if let Err(e) = self.maybe_send_screen().await {
+                            println!("[tn3270][ERROR] Error enviando pantalla inicial: {}", e);
+                            return Err(e);
+                        }
+                        
+                        println!("[tn3270][DEBUG] Sesión TN3270E bound completada, esperando entrada del usuario.");
                     }
                     TN3270E_OP_IS => {
                         // Cliente envía FUNCTIONS IS (respuesta a nuestro FUNCTIONS REQUEST)
@@ -448,7 +472,12 @@ impl Session {
                         self.tn3270e.bind_image_sent = true;
                         
                         // Enviar pantalla inicial
-                        self.maybe_send_screen().await?;
+                        if let Err(e) = self.maybe_send_screen().await {
+                            println!("[tn3270][ERROR] Error enviando pantalla inicial: {}", e);
+                            return Err(e);
+                        }
+                        
+                        println!("[tn3270][DEBUG] Sesión TN3270E bound completada, esperando entrada del usuario.");
                     }
                     TN3270E_OP_REJECT => {
                         println!("[tn3270][WARN] Cliente RECHAZÓ FUNCTIONS. Funciones rechazadas: {:02X?}", payload);
@@ -485,112 +514,58 @@ impl Session {
         let tn3270e_ready_for_screen = 
             self.telnet_state.tn3270e_enabled && self.tn3270e_bound;
 
-        if !self.screen_sent && (tn3270e_ready_for_screen || classic_telnet_ready_for_screen) {
+        if !self.screen_manager.is_screen_sent() && (tn3270e_ready_for_screen || classic_telnet_ready_for_screen) {
             println!("[tn3270][DEBUG] Condiciones cumplidas para enviar pantalla inicial. TN3270E: {}, Bound: {}, Classic: {}",
                 self.telnet_state.tn3270e_enabled, self.tn3270e_bound, classic_telnet_ready_for_screen);
-            
-            // TODO: Aquí se debería generar el buffer de pantalla real.
-            // Por ahora, un buffer de ejemplo simple.
-            let mut wcc: u8 = 0x00; // Write Control Character (ej: reset, sound alarm)
-            // Para una pantalla inicial, podríamos querer resetear el teclado.
-            // WCC bits (RFC 1576, Apéndice A):
-            // 0x40 (bit 1) = Start Printer
-            // 0x80 (bit 0) = Sound Alarm
-            // Para 3270DS (Data Stream):
-            // 0b01xx_xxxx = Reset (bit 1)
-            // 0bx1xx_xxxx = Reset MDT (bit 2)
-            // Para una pantalla inicial, es común enviar un WCC que incluya Reset Keyboard (bit 1 de WCC para 3270)
-            // y Reset MDT (bit 2 de WCC).
-            // WCC para Erase/Write (0xF5) o Erase All Unprotected (0x6F)
-            //  Bit 0: (Reserved)
-            //  Bit 1: Reset
-            //  Bit 2: TWUA (Trigger WUSI Acknowledge) / Reset MDT
-            //  Bit 3: Start Printer
-            //  Bit 4: Sound Alarm
-            //  Bit 5: Restore Screen
-            //  Bit 6: (Reserved)
-            //  Bit 7: (Reserved)
-            // Un WCC común para pantalla inicial: Reset + ResetMDT => 0b01100000 = 0x60 (si se interpreta así)
-            // O más simple, 0x40 (Reset Keyboard) + 0x80 (Reset MDT) si se usa el formato de TN3270 RFC 1576.
-            // El WCC para un comando Write (como Erase/Write 0xF5) es específico.
-            // Para Erase/Write (0xF5), el WCC puede ser 0x7F (no reset, no alarm, etc.)
-            // O 0x40 (reset keyboard) + 0x80 (reset MDT) = 0xC0 (en formato TN3270)
-            // O 0x60 (Reset + ResetMDT) en formato 3270DS WCC.
-            // Usaremos un WCC que resetee el teclado y los MDT.
-            // Para Erase/Write (0xF5), un WCC común es 0x7F (no reset, no alarm) o 0xC2 (reset keyboard, reset mdt).
-            // Vamos a usar 0xC2 como ejemplo para resetear.
-            wcc = 0xC2; // Reset Keyboard, Reset MDT bits.
 
-            // Ejemplo de pantalla de bienvenida simple
-            let mut screen_data = Vec::new();
-            screen_data.push(0xF5); // Comando: Erase/Write
-            screen_data.push(wcc);  // WCC: Con Reset Keyboard y Reset MDT
-
-            // SBA (Set Buffer Address) a la primera fila, primera columna
-            screen_data.extend_from_slice(&[0x11, 0x40, 0x40]); // SBA R1, C1 (usando codificación de 12 bits para 80x24)
-            // SF (Start Field)
-            screen_data.push(0x1D);
-            screen_data.push(0xF8); // Atributo: Protegido, Alpha, Normal Intensidad, No MDT
-                                    // (0b11111000: Prot, Alpha, Non-Numeric Shift, Normal, Not Pen-Detectable, MDT off)
-            
-            let welcome_msg_ascii = "Bienvenido a NEO6 TN3270";
-            let welcome_msg_ebcdic = self.codec.from_host(welcome_msg_ascii.as_bytes());
-            screen_data.extend_from_slice(&welcome_msg_ebcdic);
-
-            // SBA a la tercera fila, primera columna
-            screen_data.extend_from_slice(&[0x11, 0xC2, 0x7A]); // SBA R3, C1 (0xC27A para 80x24)
-            // SF (Start Field) - Campo de entrada
-            screen_data.push(0x1D);
-            screen_data.push(0x40); // Atributo: Desprotegido, Alpha, Normal Intensidad, MDT on
-                                    // (0b01000000: Unprot, Alpha, Normal, MDT on)
-            // IC (Insert Cursor)
-            screen_data.push(0x13); 
-            // Rellenar con nulos hasta una longitud (ej. 10 caracteres) para el campo de entrada
-            for _ in 0..10 { screen_data.push(0x00); } // NUL EBCDIC es 0x00
-
-            // Guardar esto como el buffer de pantalla actual (simplificado)
-            self.screen_buffer = screen_data.clone(); // Solo la parte de datos 3270
+            // Generar pantalla de bienvenida usando ScreenManager
+            let screen_data = self.screen_manager.generate_welcome_screen()?;
 
             if tn3270e_ready_for_screen {
-                // Enviar datos 3270 usando el formato TN3270E dentro de una subnegociación
-                // Formato según RFC2355: IAC SB TN3270E <data-type> <request-flag>
-                //   <response-flag> <seq-number> <data> IAC SE IAC EOR
+                // Formato TN3270E DATA según RFC 2355:
+                // Para datos de aplicación 3270, el formato es:
+                // <TN3270E-header> <3270-data> IAC EOR
+                // donde TN3270E-header = data-type(1) + request-flag(1) + response-flag(1) + seq-number(2)
+                
                 let mut tn3270e_data_msg = Vec::new();
-
-                // Encabezado de subnegociación
-                tn3270e_data_msg.extend_from_slice(&[IAC, SB, OPT_TN3270E]);
-
-                // TN3270E Header (5 bytes)
-                tn3270e_data_msg.push(TN3270E_DATATYPE_3270_DATA); // data-type
+                
+                // TN3270E Header (5 bytes total)
+                tn3270e_data_msg.push(TN3270E_DATATYPE_3270_DATA); // data-type = 0x00
                 tn3270e_data_msg.push(0x00); // request-flag
                 tn3270e_data_msg.push(0x00); // response-flag
 
-                // Número de secuencia (big-endian)
+                // Número de secuencia (big-endian, 2 bytes)
                 let seq_num = self.tn3270e.sequence_number;
                 tn3270e_data_msg.push((seq_num >> 8) as u8);
                 tn3270e_data_msg.push((seq_num & 0xFF) as u8);
                 self.tn3270e.sequence_number = self.tn3270e.sequence_number.wrapping_add(1);
 
-                // Datos 3270
-                tn3270e_data_msg.extend_from_slice(&self.screen_buffer);
+                // Datos 3270 (contenido de la pantalla)
+                tn3270e_data_msg.extend_from_slice(&screen_data);
 
-                // Cierre de subnegociación y marca EOR
-                tn3270e_data_msg.extend_from_slice(&[IAC, SE, IAC, EOR_TELNET_CMD]);
+                // Terminar con IAC EOR (no va dentro de una subnegociación)
+                tn3270e_data_msg.extend_from_slice(&[IAC, EOR_TELNET_CMD]);
 
-                println!("[tn3270][SEND] TN3270E DATA mensaje (seq: {}, {} bytes): {:02X?}",
-                         seq_num, tn3270e_data_msg.len(), &tn3270e_data_msg[..std::cmp::min(50, tn3270e_data_msg.len())]);
+                println!("[tn3270][SEND] TN3270E DATA (seq: {}, total {} bytes)", seq_num, tn3270e_data_msg.len());
+                println!("[tn3270][SEND] TN3270E Header: {:02X?}", &tn3270e_data_msg[0..5]);
+                println!("[tn3270][SEND] 3270 Data (full): {:02X?}", &tn3270e_data_msg[5..tn3270e_data_msg.len()-2]);
+                println!("[tn3270][SEND] 3270 Command: {:02X} (Erase/Write), WCC: {:02X}", 
+                         tn3270e_data_msg[5], tn3270e_data_msg[6]);
+                if tn3270e_data_msg.len() > 20 {
+                    println!("[tn3270][SEND] 3270 Data structure: {:02X?}...", &tn3270e_data_msg[7..std::cmp::min(25, tn3270e_data_msg.len())]);
+                }
                 self.stream.write_all(&tn3270e_data_msg).await?;
             } else {
                 // Enviar como flujo Telnet clásico con IAC EOR
-                let mut classic_data_msg = self.screen_buffer.clone();
+                let mut classic_data_msg = screen_data;
                 classic_data_msg.extend_from_slice(&[IAC, EOR_TELNET_CMD]); // EOR Telnet command
                 println!("[tn3270][SEND] Pantalla inicial como Telnet clásico con EOR ({:02X?})", classic_data_msg);
                 self.stream.write_all(&classic_data_msg).await?;
             }
             
             self.stream.flush().await?;
-            self.screen_sent = true;
-            println!("[tn3270][DEBUG] Pantalla inicial enviada.");
+            self.screen_manager.mark_screen_sent();
+            println!("[tn3270][DEBUG] Pantalla inicial enviada. Manteniendo conexión abierta para entrada del usuario.");
         }
         Ok(())
     }
@@ -657,12 +632,20 @@ impl Session {
                 // Si no es ninguno de los dos, son datos NVT.
                 let data_chunk = &buf[i..];
                 if self.telnet_state.tn3270e_enabled && self.tn3270e_bound {
-                    println!("[tn3270][WARN] Datos inesperados ({:02X?}) fuera de subnegociación en modo TN3270E bound. Deberían ser mensajes TN3270E DATA.", data_chunk);
+                    println!("[tn3270][DEBUG] Datos inesperados ({:02X?}) fuera de subnegociación en modo TN3270E bound. Podrían ser datos de usuario.", data_chunk);
+                    // En lugar de tratarlos como error, procesarlos como posible entrada del usuario
+                    if !data_chunk.is_empty() {
+                        self.send_3270_data(data_chunk).await?;
+                    }
                 } else if !self.telnet_state.tn3270e_enabled && self.telnet_state.binary_negotiated && self.telnet_state.eor_negotiated {
                      println!("[tn3270][RECV] Datos 3270 (modo clásico Telnet) ({:02X?}). Esperando IAC EOR.", data_chunk);
                      // Aquí se acumularían estos datos hasta ver IAC EOR.
+                     if !data_chunk.is_empty() {
+                         self.send_3270_data(data_chunk).await?;
+                     }
                 } else {
                     println!("[tn3270][RECV] Datos NVT/Raw ({:02X?})", data_chunk);
+                    // Para datos NVT durante la negociación, simplemente los ignoramos o procesamos como comandos básicos
                 }
                 i = buf.len(); // Consumir el resto del buffer como datos (simplificación por ahora)
             }
@@ -787,8 +770,7 @@ impl Session {
                  self.tn3270e.connect_sent, self.tn3270e.client_device_type_is_received);
         
         // Forzar la revisión de la negociación TN3270E después de recibir cada comando DO
-        if self.telnet_state.tn3270e_enabled && self.telnet_state.binary_negotiated && 
-           self.telnet_state.eor_negotiated && !self.tn3270e.connect_sent {
+        if self.telnet_state.tn3270e_enabled && self.telnet_state.binary_negotiated &&            self.telnet_state.eor_negotiated && !self.tn3270e.connect_sent {
             println!("[tn3270][INFO] Iniciando negociación TN3270E después de recibir DO 0x{:02X}", opt);
             self.initiate_tn3270e_server_negotiation().await?;
         }
@@ -946,8 +928,42 @@ impl Session {
         Ok(())
     }
 
-    // Esta función ya no es necesaria aquí, se integra en send_screen y otras partes.
-    // async fn send_bind_image(&mut self) -> Result<(), Box<dyn Error>> { ... }
+    // Envía un comando BIND-IMAGE TN3270E cuando el cliente negoció esta función
+    async fn send_bind_image(&mut self) -> Result<(), Box<dyn Error>> {
+        // Crear un BIND básico según la especificación TN3270E
+        // Referencia: RFC 2355 y código c3270 telnet.c
+        let bind_data = vec![
+            0x31,  // BIND RU type
+            0x00, 0x02, 0x88, 0x00, 0x10, 0x02, 0x85, 0x00,  // BIND fields básicos
+            0x00, 0x00, 0x07, 0x85, 0x00, 0x01, 0x02, 0x00,  // Más campos BIND
+            0x00, 0x02, 0x81, 0x87, 0x02, 0x00, 0x02, 0x00,  // Configuración de pantalla
+            0x18, 0x50,  // Rows(24=0x18), Cols(80=0x50) en formato estándar
+        ];
+
+        // Crear header TN3270E para BIND-IMAGE
+        let mut tn3270e_header = vec![
+            TN3270E_DT_BIND_IMAGE,  // data_type = BIND-IMAGE
+            0x00,                   // request_flag = 0
+            0x00,                   // response_flag = 0
+            0x00, 0x00             // seq_number = 0
+        ];
+
+        // Combinar header + datos BIND
+        tn3270e_header.extend_from_slice(&bind_data);
+        
+        // Agregar IAC EOR
+        tn3270e_header.push(IAC);
+        tn3270e_header.push(EOR);
+
+        println!("[tn3270][INFO] Enviando TN3270E BIND-IMAGE comando ({} bytes)", tn3270e_header.len());
+        println!("[tn3270][DEBUG] BIND-IMAGE data: {:02X?}", tn3270e_header);
+
+        self.stream.write_all(&tn3270e_header).await?;
+        self.stream.flush().await?;
+
+        println!("[tn3270][INFO] TN3270E BIND-IMAGE comando enviado exitosamente");
+        Ok(())
+    }
 
     // Esta función ya no es necesaria aquí, el flujo es más dinámico.
     // async fn send_tn3270e_device_type_request(&mut self) -> Result<(), Box<dyn Error>> { ... }
@@ -972,7 +988,7 @@ impl Session {
             
             // Marcar screen_sent = false para forzar el reenvío de la pantalla de ejemplo.
             // ¡CUIDADO! Esto es solo para demostración y causaría un bucle si no se maneja bien.
-            // self.screen_sent = false; 
+            // self.screen_manager.reset_screen_sent(); 
             // self.maybe_send_screen().await?;
 
             // En lugar de reenviar, solo un log por ahora.
@@ -1026,8 +1042,16 @@ async fn handle_client(stream: TcpStream) -> Result<(), Box<dyn Error>> {
         // Podríamos añadir un timeout general de inactividad si fuera necesario.
         match session.stream.read_buf(&mut buf).await {
             Ok(0) => {
-                println!("[tn3270][INFO] Cliente desconectado (stream cerrado).");
-                break Ok(());
+                // Solo cerrar la conexión si realmente no hay más datos
+                // y no es solo que el cliente esté esperando respuesta
+                if buf.is_empty() {
+                    println!("[tn3270][INFO] Cliente desconectado (stream cerrado).");
+                    break Ok(());
+                } else {
+                    // Si hay datos en el buffer, procesarlos
+                    println!("[tn3270][DEBUG] Socket cerrado pero hay datos en buffer para procesar");
+                    continue;
+                }
             }
             Ok(n) => {
                 println!("[tn3270][RECV] Raw data ({} bytes): {:02X?}", n, &buf[..n]);
@@ -1041,6 +1065,16 @@ async fn handle_client(stream: TcpStream) -> Result<(), Box<dyn Error>> {
                     // Decidir si cerrar la conexión o intentar continuar.
                     // Por ahora, cerramos en caso de error grave de negociación.
                     break Err(e);
+                }
+                
+                // Después de procesar los datos, si la sesión está bound pero no se ha enviado la pantalla,
+                // asegurarse de que se envíe
+                if !session.screen_manager.screen_sent && (session.tn3270e_bound || 
+                    (!session.telnet_state.tn3270e_enabled && session.telnet_state.base_telnet_ready)) {
+                    if let Err(e) = session.maybe_send_screen().await {
+                        eprintln!("[tn3270][ERROR] Error enviando pantalla: {}", e);
+                        break Err(e);
+                    }
                 }
             }
             Err(e) => {
@@ -1089,17 +1123,4 @@ where
     Ok(())
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
-    let listener = TcpListener::bind("0.0.0.0:2323").await?;
-    println!("TN3270E server listening on port 2323...");
 
-    loop {
-        let (stream, _) = listener.accept().await?;
-        tokio::spawn(async move {
-            if let Err(e) = handle_client(stream).await {
-                eprintln!("Client error: {}", e);
-            }
-        });
-    }
-}
