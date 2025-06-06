@@ -166,6 +166,103 @@ impl ScreenManager {
         self.add_positioned_colored_text(screen_data, row, col, text, attr.color, attr.intensity == 1, false, false);
     }
 
+    /// Carga una plantilla desde `config/screens` buscando primero la versión con
+    /// sufijo `_markup.txt` y luego la plana `.txt`
+    fn load_template(&self, name: &str) -> Result<String, Box<dyn Error>> {
+        debug!("Entering ScreenManager::load_template");
+        let screens_dir = Path::new("config/screens");
+
+        let markup_path = screens_dir.join(format!("{}_markup.txt", name));
+        if markup_path.exists() {
+            return Ok(fs::read_to_string(markup_path)?);
+        }
+
+        let plain_path = screens_dir.join(format!("{}.txt", name));
+        if plain_path.exists() {
+            return Ok(fs::read_to_string(plain_path)?);
+        }
+
+        Err(format!("Template '{}' not found in config/screens", name).into())
+    }
+
+    /// Genera una pantalla TN3270 a partir de cualquier plantilla de `config/screens`
+    pub fn generate_tn3270_screen(&mut self, template_name: &str) -> Result<Vec<u8>, Box<dyn Error>> {
+        debug!("Entering ScreenManager::generate_tn3270_screen");
+
+        let mut screen_data = Vec::new();
+        screen_data.push(0xF5); // Erase/Write
+        screen_data.push(0xC0); // WCC
+
+        let template_content = self.load_template(template_name)?;
+        let parser = TemplateParser::new();
+        let elements = parser.parse_template(&template_content)?;
+
+        let mut field_manager = FieldManager::new();
+
+        // Campo protegido inicial
+        screen_data.push(0x1D); // SF
+        screen_data.push(0x20); // Protected
+
+        for element in &elements {
+            match element {
+                TemplateElement::Text { content, row, col, .. } => {
+                    if let (Some(r), Some(c)) = (row, col) {
+                        let (high, low) = Self::encode_buffer_addr(*r - 1, *c - 1);
+                        screen_data.extend_from_slice(&[0x11, high, low]);
+                    }
+
+                    let text_ebcdic = self.codec.from_host(content.as_bytes());
+                    screen_data.extend_from_slice(&text_ebcdic);
+                }
+                TemplateElement::Field { attributes, row, col } => {
+                    if let (Some(r), Some(c)) = (row, col) {
+                        let (high, low) = Self::encode_buffer_addr(*r - 1, *c - 1);
+                        screen_data.extend_from_slice(&[0x11, high, low]);
+
+                        screen_data.push(0x1D); // SF
+                        let field_attr = if attributes.protected { 0x20 } else { 0x00 };
+                        screen_data.push(field_attr);
+
+                        if !attributes.default_value.is_empty() {
+                            let def = self.codec.from_host(attributes.default_value.as_bytes());
+                            screen_data.extend_from_slice(&def);
+                        }
+
+                        let screen_field = ScreenField::new(
+                            attributes.name.clone(),
+                            *r,
+                            *c,
+                            attributes.clone(),
+                        );
+                        field_manager.add_field(screen_field)?;
+                    }
+                }
+            }
+        }
+
+        if let Some(first_input_field) = field_manager
+            .get_fields_by_position()
+            .iter()
+            .find(|f| !f.attributes.protected)
+        {
+            let (high, low) = Self::encode_buffer_addr(first_input_field.row - 1, first_input_field.col - 1);
+            screen_data.extend_from_slice(&[0x11, high, low]);
+            screen_data.push(0x13); // IC
+        }
+
+        self.screen_buffer = screen_data.clone();
+
+        debug!("Generic screen generated from {}", template_name);
+        debug!("Total elements: {}", elements.len());
+        let stats = field_manager.get_field_stats();
+        debug!("Fields: {}", stats.total_fields);
+        debug!("Bytes: {}", screen_data.len());
+
+        trace!("First bytes: {:02X?}", &screen_data[..std::cmp::min(50, screen_data.len())]);
+
+        Ok(screen_data)
+    }
+
     /// Genera la pantalla de bienvenida de NEO6 usando el nuevo parser de templates
     pub fn generate_welcome_screen(&mut self) -> Result<Vec<u8>, Box<dyn Error>> {
         debug!("Entering ScreenManager::generate_welcome_screen");
