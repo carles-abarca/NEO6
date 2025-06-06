@@ -1,5 +1,5 @@
 +----------------------------------------------------------------------------+
-|                   ACCESO TN3270 A ENTORNO NEO6                             |
+|                   ACCESO TN3270 A ENTORNO NEO6 (simple)                    |
 +----------------------------------------------------------------------------+
 |                                                                            |
 |  Bienvenido al Sistema NEO6 - Plataforma de Integracion Mainframe          |
