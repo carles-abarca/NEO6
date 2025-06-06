@@ -213,13 +213,30 @@ impl TemplateParser {
     /// Procesa las etiquetas de marcado
     fn parse_markup_tags(&self, content: &str) -> Result<Vec<TemplateElement>, Box<dyn Error>> {
         debug!("Entering TemplateParser::parse_markup_tags");
+        self.parse_markup_tags_ctx(
+            content,
+            None,
+            None,
+            Color3270::Default,
+            false,
+            false,
+            false,
+        )
+    }
+
+    /// Procesa las etiquetas de marcado con contexto de posición y atributos
+    fn parse_markup_tags_ctx(
+        &self,
+        content: &str,
+        mut current_row: Option<u16>,
+        mut current_col: Option<u16>,
+        current_color: Color3270,
+        bright: bool,
+        blink: bool,
+        underline: bool,
+    ) -> Result<Vec<TemplateElement>, Box<dyn Error>> {
+        debug!("Entering TemplateParser::parse_markup_tags_ctx");
         let mut elements = Vec::new();
-        let mut current_row: Option<u16> = None;
-        let mut current_col: Option<u16> = None;
-        let mut color_stack: Vec<Color3270> = Vec::new();
-        let mut bright = false;
-        let mut blink = false;
-        let mut underline = false;
 
         // Regex para directivas (sin grupos duplicados ni backreferences)
         let re_directive = Regex::new(r#"<(pos|col)(?::([^>]+))?>"#)?;
@@ -239,6 +256,7 @@ impl TemplateParser {
                 let m = cap.get(0).unwrap();
                 Some((m.start(), m.end(), cap))
             });
+
             // Buscar el primer tag contenedor manualmente (soporta anidamiento)
             let mut cont_start = None;
             let mut cont_tag = "";
@@ -247,7 +265,10 @@ impl TemplateParser {
             let mut cont_content_start = 0;
             if let Some(open) = rest_str.find('<') {
                 let after = &rest_str[open..];
-                if let Some(cap) = Regex::new(r#"^<(color|bright|blink|underline|field)(?::([^>]+))?>"#).unwrap().captures(after) {
+                if let Some(cap) = Regex::new(r#"^<(color|bright|blink|underline|field)(?::([^>]+))?>"#)
+                    .unwrap()
+                    .captures(after)
+                {
                     cont_tag = cap.get(1).unwrap().as_str();
                     cont_params = cap.get(2).map(|m| m.as_str()).unwrap_or("");
                     cont_start = Some(open);
@@ -255,6 +276,7 @@ impl TemplateParser {
                     cont_content_start = open + cont_open_len;
                 }
             }
+
             let mut cont_match = None;
             if let Some(start) = cont_start {
                 let tag = cont_tag;
@@ -297,6 +319,7 @@ impl TemplateParser {
                     }
                 }
             }
+
             // Determinar cuál ocurre antes
             let (next_type, start, end, cap) = match (dir_match, cont_match) {
                 (Some((ds, de, dcap)), Some((cs, ce, tag, params, content_start, content_end))) => {
@@ -307,14 +330,16 @@ impl TemplateParser {
                     }
                 }
                 (Some((ds, de, dcap)), None) => ("dir", ds, de, NextTagMatch::Directive(dcap)),
-                (None, Some((cs, ce, tag, params, content_start, content_end))) => ("cont_manual", cs, ce, NextTagMatch::Container(tag, params, content_start, content_end)),
+                (None, Some((cs, ce, tag, params, content_start, content_end))) => {
+                    ("cont_manual", cs, ce, NextTagMatch::Container(tag, params, content_start, content_end))
+                }
                 (None, None) => {
                     let text_rest = &content[pos..];
                     if !text_rest.is_empty() {
                         trace!("Texto plano: {:?}", text_rest);
                         elements.push(TemplateElement::Text {
                             content: text_rest.to_string(),
-                            color: color_stack.last().copied().unwrap_or(Color3270::Default),
+                            color: current_color,
                             row: current_row,
                             col: current_col,
                             bright,
@@ -325,6 +350,7 @@ impl TemplateParser {
                     break;
                 }
             };
+
             // Si hay texto antes del tag, añadirlo como texto plano
             if start > 0 {
                 let text_before = &rest_str[..start];
@@ -332,7 +358,7 @@ impl TemplateParser {
                     trace!("Texto antes de tag: {:?}", text_before);
                     elements.push(TemplateElement::Text {
                         content: text_before.to_string(),
-                        color: color_stack.last().copied().unwrap_or(Color3270::Default),
+                        color: current_color,
                         row: current_row,
                         col: current_col,
                         bright,
@@ -341,12 +367,13 @@ impl TemplateParser {
                     });
                 }
             }
+
             match next_type {
                 "dir" => {
                     if let NextTagMatch::Directive(cap) = cap {
                         let dir = cap.get(1).unwrap().as_str();
                         let params = cap.get(2).map(|m| m.as_str()).unwrap_or("");
-                        trace!("Directiva <{}:{}> en pos {}", dir, params, pos+start);
+                        trace!("Directiva <{}:{}> en pos {}", dir, params, pos + start);
                         match dir {
                             "pos" => {
                                 let (row, col) = self.parse_position(params)?;
@@ -363,70 +390,69 @@ impl TemplateParser {
                                 return Err(Box::new(TemplateError::UnmatchedTag(dir.to_string())));
                             }
                         }
-                    } else {
-                        unreachable!();
                     }
                 }
                 "cont_manual" => {
                     if let NextTagMatch::Container(tag, params, content_start, content_end) = cap {
-                        trace!("Abre <{}:{}> en pos {}", tag, params, pos+start);
+                        trace!("Abre <{}:{}> en pos {}", tag, params, pos + start);
                         let content_text = &rest_str[content_start..content_end];
                         match tag {
                             "color" => {
                                 let color = Color3270::from_str(params)?;
-                                color_stack.push(color);
                                 if !content_text.is_empty() {
-                                    let mut inner = self.parse_markup_tags(content_text)?;
-                                    for el in inner.iter_mut() {
-                                        if let TemplateElement::Text { color: c, .. } = el {
-                                            *c = color;
-                                        }
-                                    }
+                                    let inner = self.parse_markup_tags_ctx(
+                                        content_text,
+                                        current_row,
+                                        current_col,
+                                        color,
+                                        bright,
+                                        blink,
+                                        underline,
+                                    )?;
                                     elements.extend(inner);
                                 }
-                                color_stack.pop();
                             }
                             "bright" => {
-                                let prev = bright;
-                                bright = true;
                                 if !content_text.is_empty() {
-                                    let mut inner = self.parse_markup_tags(content_text)?;
-                                    for el in inner.iter_mut() {
-                                        if let TemplateElement::Text { bright: b, .. } = el {
-                                            *b = true;
-                                        }
-                                    }
+                                    let inner = self.parse_markup_tags_ctx(
+                                        content_text,
+                                        current_row,
+                                        current_col,
+                                        current_color,
+                                        true,
+                                        blink,
+                                        underline,
+                                    )?;
                                     elements.extend(inner);
                                 }
-                                bright = prev;
                             }
                             "blink" => {
-                                let prev = blink;
-                                blink = true;
                                 if !content_text.is_empty() {
-                                    let mut inner = self.parse_markup_tags(content_text)?;
-                                    for el in inner.iter_mut() {
-                                        if let TemplateElement::Text { blink: b, .. } = el {
-                                            *b = true;
-                                        }
-                                    }
+                                    let inner = self.parse_markup_tags_ctx(
+                                        content_text,
+                                        current_row,
+                                        current_col,
+                                        current_color,
+                                        bright,
+                                        true,
+                                        underline,
+                                    )?;
                                     elements.extend(inner);
                                 }
-                                blink = prev;
                             }
                             "underline" => {
-                                let prev = underline;
-                                underline = true;
                                 if !content_text.is_empty() {
-                                    let mut inner = self.parse_markup_tags(content_text)?;
-                                    for el in inner.iter_mut() {
-                                        if let TemplateElement::Text { underline: u, .. } = el {
-                                            *u = true;
-                                        }
-                                    }
+                                    let inner = self.parse_markup_tags_ctx(
+                                        content_text,
+                                        current_row,
+                                        current_col,
+                                        current_color,
+                                        bright,
+                                        blink,
+                                        true,
+                                    )?;
                                     elements.extend(inner);
                                 }
-                                underline = prev;
                             }
                             "field" => {
                                 let field_attrs = self.parse_field(params, content_text)?;
@@ -440,15 +466,15 @@ impl TemplateParser {
                                 return Err(Box::new(TemplateError::UnmatchedTag(tag.to_string())));
                             }
                         }
-                        trace!("Cierra </{}> en pos {}", tag, pos+end-1);
-                    } else {
-                        unreachable!();
+                        trace!("Cierra </{}> en pos {}", tag, pos + end - 1);
                     }
                 }
                 _ => unreachable!(),
             }
+
             pos += end;
         }
+
         Ok(elements)
     }
 
