@@ -1,14 +1,14 @@
-<pos:1,1><color:blue>+============================================================================+</color>
-<pos:2,1><color:blue>|</color><pos:2,25><color:yellow><bright>ACCESO TN3270 A ENTORNO NEO6</bright></color><pos:2,80><color:blue>|</color>
-<pos:3,1><color:blue>+============================================================================+</color>
+<pos:1,1><color:green>|+============================================================================+</color>
+<pos:2,1><color:green>|</color><pos:2,25><color:yellow><bright>ACCESO TN3270 A ENTORNO NEO6</bright></color><pos:2,80><color:green>|</color>
+<pos:3,1><color:green>|+============================================================================+</color>
 <pos:4,1><color:blue>|</color><pos:4,80><color:blue>|</color>
-<pos:5,1><color:blue>|</color>  <color:white>Bienvenido al Sistema NEO6 - Plataforma de Integracion Mainframe</color>  <pos:5,80><color:blue>|</color>
+<pos:5,1><color:blue>|</color><pos:5,4><color:white>Bienvenido al Sistema NEO6 - Plataforma de Integracion Mainframe</color><pos:5,80><color:blue>|</color>
 <pos:6,1><color:blue>|</color><pos:6,80><color:blue>|</color>
-<pos:7,1><color:blue>|</color>  <color:green>Estado del sistema: ACTIVO</color><pos:7,80><color:blue>|</color>
-<pos:8,1><color:blue>|</color>  <color:turquoise>Sesion iniciada: </color><field:timestamp,protected>{timestamp}</field><pos:8,80><color:blue>|</color>
-<pos:9,1><color:blue>|</color>  <color:turquoise>Terminal: </color><field:terminal,protected>{terminal_type}</field><pos:9,80><color:blue>|</color>
+<pos:7,1><color:blue>|</color><pos:7,4><color:turquoise>Estado del sistema:</color><pos:7,24><color:green>ACTIVO</color><pos:7,79><color:blue>|</color>
+<pos:8,1><color:blue>|</color><pos:8,4><color:turquoise>Sesion iniciada:</color><pos:8,22><field:timestamp,protected>{timestamp}</field><pos:8,80><color:blue>|</color>
+<pos:9,1><color:blue>|</color><pos:9,4><color:turquoise>Terminal:</color><pos:9,15><field:terminal,protected>{terminal_type}</field><pos:9,80><color:blue>|</color>
 <pos:10,1><color:blue>|</color><pos:10,80><color:blue>|</color>
-<pos:11,1><color:blue>+============================================================================+</color>
+<pos:11,1><color:blue>|+============================================================================+</color>
 
 <pos:13,1><color:white><bright>Comandos disponibles:</bright></color>
 <pos:14,3><color:turquoise>> MENU     - Mostrar menu principal de opciones</color>
@@ -17,4 +17,4 @@
 <pos:17,3><color:turquoise>> HELP     - Mostrar ayuda del sistema</color>
 <pos:18,3><color:turquoise>> EXIT     - Salir del sistema</color>
 
-<pos:21,1><color:pink>COMANDO ===></color> <field:command,length=20,uppercase></field>
+<pos:21,1><color:pink>COMANDO ===</color><color:green>:</color> <field:command,length=20,uppercase></field>

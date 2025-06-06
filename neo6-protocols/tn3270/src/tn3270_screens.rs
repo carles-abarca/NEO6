@@ -166,108 +166,178 @@ impl ScreenManager {
         self.add_positioned_colored_text(screen_data, row, col, text, attr.color, attr.intensity == 1, false, false);
     }
 
+    /// Agrega un campo protegido con color y atributos extendidos
+    fn add_protected_field_with_color(
+        &self,
+        screen_data: &mut Vec<u8>,
+        row: u16,
+        col: u16,
+        text: &str,
+        color: Color3270,
+        bright: bool,
+        blink: bool,
+        underline: bool,
+    ) {
+        let (high, low) = Self::encode_buffer_addr(row, col);
+        screen_data.extend_from_slice(&[0x11, high, low]); // SBA
+
+        screen_data.push(0x1D); // SF
+        screen_data.push(0x20); // Protected
+
+        // SFE para aplicar color y estilo
+        screen_data.push(0x29); // SFE
+        let mut count = 1;
+        if bright || blink || underline {
+            count += 1;
+        }
+        screen_data.push(count); // Número de atributos
+
+        // Color
+        screen_data.push(0x42);
+        screen_data.push(color as u8);
+
+        if bright || blink || underline {
+            screen_data.push(0xC0); // Extended highlighting
+            let mut attr = 0x00;
+            if bright { attr |= 0x08; }
+            if blink { attr |= 0x10; }
+            if underline { attr |= 0x20; }
+            screen_data.push(attr);
+        }
+
+        let text_ebcdic = self.codec.from_host(text.as_bytes());
+        screen_data.extend_from_slice(&text_ebcdic);
+    }
+
     /// Genera la pantalla de bienvenida de NEO6 usando el nuevo parser de templates
     pub fn generate_welcome_screen(&mut self) -> Result<Vec<u8>, Box<dyn Error>> {
         debug!("Entering ScreenManager::generate_welcome_screen");
         let mut screen_data = Vec::new();
-        
-        // Comando Erase/Write y WCC
-        screen_data.push(0xF5); // Comando: Erase/Write
-        screen_data.push(0xC0); // WCC: Reset Keyboard + Reset MDT + Unlock Keyboard
 
-        // Leer la plantilla y procesarla con el nuevo parser
+        // Comando Erase/Write y WCC
+        screen_data.push(0xF5); // Erase/Write
+        screen_data.push(0xC0); // WCC: Reset + Unlock
+
+        // Leer y parsear plantilla
         let template_content = self.load_welcome_template()?;
         let parser = TemplateParser::new();
         let elements = parser.parse_template(&template_content)?;
 
-        // Crear gestor de campos para manejar campos de entrada
+        // Gestor de campos
         let mut field_manager = FieldManager::new();
-        
-        // Campo protegido inicial que cubre toda la pantalla
-        screen_data.push(0x1D); // SF (Start Field)
+
+        // Campo protegido inicial
+        screen_data.push(0x1D); // SF
         screen_data.push(0x20); // Protegido
-        
-        // Procesar cada elemento de la plantilla
+
+        // Procesar elementos
         for element in &elements {
             match element {
-                TemplateElement::Text { content, color, row, col, bright, blink, underline } => {
-                    // Posicionar si es necesario
+                TemplateElement::Text {
+                    content,
+                    color,
+                    row,
+                    col,
+                    bright,
+                    blink,
+                    underline,
+                } => {
                     if let (Some(r), Some(c)) = (row, col) {
-                        let (high, low) = Self::encode_buffer_addr(*r - 1, *c - 1); // Convertir a 0-based
+                        let (high, low) = Self::encode_buffer_addr(r - 1, c - 1); // 0-based
                         screen_data.extend_from_slice(&[0x11, high, low]); // SBA
                     }
-                    
-                    // Simplemente enviar el texto sin atributos de color por ahora
-                    // para asegurar que el cliente puede mostrar el contenido básico
+
+                    // SA para atributos de color y formato
+                    if !matches!(color, Color3270::Default) || *bright || *blink || *underline {
+                        screen_data.push(0x28); // SA
+                        screen_data.push(0x00); // All character attributes
+
+                        let mut attr = match color {
+                            Color3270::Blue => 0x04,
+                            Color3270::Red => 0x02,
+                            Color3270::Pink => 0x06,
+                            Color3270::Green => 0x01,
+                            Color3270::Turquoise => 0x05,
+                            Color3270::Yellow => 0x03,
+                            Color3270::White => 0x07,
+                            Color3270::Default => 0x00,
+                        };
+
+                        if *bright {
+                            attr |= 0x08;
+                        }
+                        if *blink {
+                            attr |= 0x10;
+                        }
+                        if *underline {
+                            attr |= 0x20;
+                        }
+
+                        screen_data.push(attr);
+                    }
+
+                    // Texto
                     let text_ebcdic = self.codec.from_host(content.as_bytes());
                     screen_data.extend_from_slice(&text_ebcdic);
+
+                    // Reset atributos si se aplicaron
+                    if !matches!(color, Color3270::Default) || *bright || *blink || *underline {
+                        screen_data.push(0x28); // SA
+                        screen_data.push(0x00);
+                        screen_data.push(0x00); // Reset
+                    }
                 }
+
                 TemplateElement::Field { attributes, row, col } => {
-                    // Crear el campo y agregarlo al gestor
                     if let (Some(r), Some(c)) = (row, col) {
-                        // Posicionar el campo
-                        let (high, low) = Self::encode_buffer_addr(*r - 1, *c - 1); // Convertir a 0-based
+                        let (high, low) = Self::encode_buffer_addr(r - 1, c - 1);
                         screen_data.extend_from_slice(&[0x11, high, low]); // SBA
-                        
-                        // Crear Start Field apropiado para el campo de entrada
-                        screen_data.push(0x1D); // SF (Start Field)
-                        
-                        let field_attr = if attributes.protected {
-                            0x20 // Protegido
-                        } else {
-                            0x00 // Desprotegido (entrada de usuario)
-                        };
-                        screen_data.push(field_attr);
-                        
-                        // Agregar valor por defecto si existe
+
+                        screen_data.push(0x1D); // SF
+                        let mut attr_byte = 0x00;
+
+                        if attributes.protected {
+                            attr_byte |= 0x20;
+                        }
+                        if attributes.hidden {
+                            attr_byte |= 0x0C;
+                        }
+                        if attributes.numeric {
+                            attr_byte |= 0x10;
+                        }
+                        screen_data.push(attr_byte);
+
+                        // Valor por defecto
                         if !attributes.default_value.is_empty() {
                             let default_ebcdic = self.codec.from_host(attributes.default_value.as_bytes());
                             screen_data.extend_from_slice(&default_ebcdic);
                         }
-                        
-                        // Crear ScreenField para el gestor
+
                         let screen_field = ScreenField::new(
                             attributes.name.clone(),
                             *r,
                             *c,
                             attributes.clone(),
                         );
-                        
-                        // Guardar el campo en el gestor
                         field_manager.add_field(screen_field)?;
                     }
                 }
             }
         }
-        
-        // Posicionar cursor en el primer campo de entrada (si existe)
-        if let Some(first_input_field) = field_manager.get_fields_by_position()
-            .iter()
-            .find(|f| !f.attributes.protected) {
-            let (high, low) = Self::encode_buffer_addr(
-                first_input_field.row - 1, 
-                first_input_field.col - 1
-            );
+
+        // Posicionar cursor
+        if let Some(f) = field_manager.get_fields_by_position().iter().find(|f| !f.attributes.protected) {
+            let (high, low) = Self::encode_buffer_addr(f.row - 1, f.col - 1);
             screen_data.extend_from_slice(&[0x11, high, low]); // SBA
-            screen_data.push(0x13); // IC (Insert Cursor)
+            screen_data.push(0x13); // IC
         }
 
-        // Guardar en el buffer de pantalla
         self.screen_buffer = screen_data.clone();
-        
-        // Imprimir información de depuración simplificada
-        debug!("Pantalla generada sin colores para compatibilidad");
-        debug!("Total elementos procesados: {}", elements.len());
-        let stats = field_manager.get_field_stats();
-        debug!("Campos de entrada: {}", stats.total_fields);
-        debug!("Bytes enviados: {}", screen_data.len());
-        
-        // Mostrar una muestra de los primeros bytes para depuración
-        trace!("Primeros 50 bytes (hex): {:02X?}", &screen_data[..std::cmp::min(50, screen_data.len())]);
-        
-        Ok(screen_data)
-    }
+        self.screen_sent = false;
 
+        debug!("Pantalla de bienvenida generada correctamente");
+        Ok(screen_data)
+    }    
     /// Calcula el byte de atributo basado en los flags de formato
     fn calculate_attribute_byte(&self, bright: bool, blink: bool, underline: bool) -> u8 {
         debug!("Entering ScreenManager::calculate_attribute_byte");
