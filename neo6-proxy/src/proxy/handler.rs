@@ -7,6 +7,7 @@ use mq::MqHandler;
 use rest::RestHandler;
 use tcp::TcpHandler;
 use jca::JcaHandler;
+use tn3270::Tn3270Handler;
 use neo6_protocols_lib::protocol::{ProtocolHandler, TransactionConfig};
 use tracing::{error, info, debug};
 use crate::cics::mapping::TransactionMap;
@@ -43,7 +44,7 @@ pub fn get_protocol_handler(tx: &TransactionConfig) -> Option<Box<dyn ProtocolHa
         "rest" => Some(Box::new(RestHandler::new(tx.server.clone(), None))),
         "tcp" => Some(Box::new(TcpHandler)),
         "jca" => Some(Box::new(JcaHandler)),
-        "tn3270" => Some(Box::new(tn3270::Tn3270Handler)),
+        "tn3270" => Some(Box::new(Tn3270Handler)),
         _ => None,
     }
 }

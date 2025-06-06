@@ -1,0 +1,20 @@
++----------------------------------------------------------------------------+
+|                   ACCESO TN3270 A ENTORNO NEO6                             |
++----------------------------------------------------------------------------+
+|                                                                            |
+|  Bienvenido al Sistema NEO6 - Plataforma de Integracion Mainframe          |
+|                                                                            |
+|  Estado del sistema: ACTIVO                                                |
+|  Sesion iniciada: {timestamp}                                              |
+|  Terminal: {terminal_type}                                                 |
+|                                                                            |
++----------------------------------------------------------------------------+
+                                                                                
+  Comandos disponibles:                                                         
+  > MENU     - Mostrar menu principal de opciones                           
+  > STATUS   - Ver estado detallado del sistema                            
+  > TRANS    - Ejecutar transaccion CICS                                    
+  > HELP     - Mostrar ayuda del sistema                                    
+  > EXIT     - Salir del sistema                                            
+                                                                                
+  COMANDO ===>                                                                  

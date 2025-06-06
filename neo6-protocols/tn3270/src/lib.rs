@@ -8,9 +8,17 @@ use serde_json::Value;
 use serde_json::json;
 use neo6_protocols_lib::protocol::{ProtocolHandler, TransactionConfig};
 
-// Módulo de pantallas 3270
+// Módulos del protocolo TN3270
 mod tn3270_screens;
+mod template_parser;
+mod field_manager;
+mod ascii_to_ebcdic_ibm037;
+
+// Imports de los módulos
 use tn3270_screens::ScreenManager;
+use template_parser::{TemplateParser, TemplateElement, Color3270};
+use field_manager::{FieldManager, ScreenField};
+use ascii_to_ebcdic_ibm037::ascii_to_ebcdic_ibm037;
 
 // --- Constantes Telnet y TN3270E ---
 // Comandos Telnet
