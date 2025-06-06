@@ -361,13 +361,13 @@ impl ScreenManager {
     fn load_welcome_template(&self) -> Result<String, Box<dyn Error>> {
         debug!("Entering ScreenManager::load_welcome_template");
         // Intentar cargar primero la plantilla con markup
-        let markup_template_path = Path::new("screens/welcome_markup.txt");
+        let markup_template_path = Path::new("config/screens/welcome_markup.txt");
         
         let content = if markup_template_path.exists() {
             fs::read_to_string(markup_template_path)?
         } else {
              // Fallback a plantilla original sin markup
-            let template_path = Path::new("screens/welcome.txt");
+            let template_path = Path::new("config/screens/welcome.txt");
             if template_path.exists() {
                 fs::read_to_string(template_path)?
             } else {
