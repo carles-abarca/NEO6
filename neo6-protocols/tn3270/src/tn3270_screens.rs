@@ -106,29 +106,32 @@ impl ScreenManager {
         debug!("Entering ScreenManager::add_colored_text");
         // Aplicar atributos de color/formato si es necesario
         if !matches!(color, Color3270::Default) || bright || blink || underline {
-            screen_data.push(0x28); // SA (Set Attribute)
-            screen_data.push(0x00); // All character attributes
-            
-            let mut attr_byte = 0x00;
-            
-            // Mapear color a atributo 3270
-            match color {
-                Color3270::Blue => attr_byte |= 0x04,
-                Color3270::Red => attr_byte |= 0x02,
-                Color3270::Pink => attr_byte |= 0x06,
-                Color3270::Green => attr_byte |= 0x01,
-                Color3270::Turquoise => attr_byte |= 0x05,
-                Color3270::Yellow => attr_byte |= 0x03,
-                Color3270::White => attr_byte |= 0x07,
-                Color3270::Default => {}
+            screen_data.push(0x29); // SFE (Start Field Extended)
+            let mut count = 0u8;
+            let mut attrs = Vec::new();
+
+            if !matches!(color, Color3270::Default) {
+                count += 1;
+                attrs.push(0x42); // Foreground color
+                attrs.push(color as u8);
             }
-            
-            // Agregar intensidad/efectos
-            if bright { attr_byte |= 0x08; }
-            if blink { attr_byte |= 0x10; }
-            if underline { attr_byte |= 0x20; }
-            
-            screen_data.push(attr_byte);
+
+            if bright || blink || underline {
+                count += 1;
+                attrs.push(0x41); // Extended highlighting
+                let mut highlight = 0xF0; // Normal
+                if bright {
+                    highlight = 0xF8; // Intensify
+                } else if blink {
+                    highlight = 0xF1; // Blink
+                } else if underline {
+                    highlight = 0xF4; // Underscore
+                }
+                attrs.push(highlight);
+            }
+
+            screen_data.push(count);
+            screen_data.extend_from_slice(&attrs);
         }
         
         // Convertir texto a EBCDIC y agregar
@@ -323,9 +326,6 @@ impl ScreenManager {
         // Gestor de campos
         let mut field_manager = FieldManager::new();
 
-        // Campo protegido inicial
-        screen_data.push(0x1D); // SF
-        screen_data.push(0x20); // Protegido
 
         // Procesar elementos
         for element in &elements {
