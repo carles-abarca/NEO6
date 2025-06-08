@@ -16,7 +16,7 @@ mod field_manager;
 mod ascii_to_ebcdic_ibm037;
 
 // Imports de los módulos
-use tn3270_screens::ScreenManager;
+pub use tn3270_screens::ScreenManager;
 use template_parser::{TemplateParser, TemplateElement, Color3270};
 use field_manager::{FieldManager, ScreenField};
 use ascii_to_ebcdic_ibm037::ascii_to_ebcdic_ibm037;
@@ -1136,5 +1136,10 @@ where
     #[allow(unreachable_code)]
     Ok(())
 }
+
+// -- Re-export commonly used structs for external tools --
+// These exports allow binary utilities within this package to reuse the
+// screen generation capabilities without exposing the entire module
+// structure.  They are intentionally narrow to keep the public API small.
 
 
