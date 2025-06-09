@@ -137,12 +137,9 @@ impl ScreenManager {
         let text_ebcdic = self.codec.from_host(text.as_bytes());
         screen_data.extend_from_slice(&text_ebcdic);
         
-        // Resetear atributos después del texto si se aplicaron atributos especiales
-        if !matches!(color, Color3270::Default) || bright || blink || underline {
-            screen_data.push(0x28); // SA (Set Attribute)
-            screen_data.push(0x00); // All character attributes
-            screen_data.push(0x00); // Reset to default
-        }
+        // NO resetear atributos inmediatamente después del texto
+        // Los atributos se mantendrán hasta el próximo SFE/SF
+        // Esto evita que se corten caracteres en terminales TN3270 reales
     }
     
     /// Posiciona el cursor y agrega texto con color
@@ -219,16 +216,18 @@ impl ScreenManager {
         // Process elements first without adding initial protected field
         for element in &elements {
             match element {
-                TemplateElement::Text { content, row, col, .. } => {
+                TemplateElement::Text { content, row, col, color, bright, blink, underline } => {
                     if let (Some(r), Some(c)) = (row, col) {
-                        let (high, low) = Self::encode_buffer_addr(*r - 1, *c - 1);
-                        screen_data.extend_from_slice(&[0x11, high, low]);
-                        println!("🔍 DEBUG: SBA to row {} col {} -> addr bytes: 0x{:02X} 0x{:02X}", r, c, high, low);
+                        // Use add_positioned_colored_text instead of manual SBA + text
+                        self.add_positioned_colored_text(&mut screen_data, *r - 1, *c - 1, content, *color, *bright, *blink, *underline);
+                        println!("🔍 DEBUG: Added colored text: {:?} at row {} col {} with color={:?} bright={} blink={} underline={}", 
+                                content, r, c, color, bright, blink, underline);
+                    } else {
+                        // If no position specified, just add colored text at current position
+                        self.add_colored_text(&mut screen_data, content, *color, *bright, *blink, *underline);
+                        println!("🔍 DEBUG: Added colored text at current position: {:?} with color={:?} bright={} blink={} underline={}", 
+                                content, color, bright, blink, underline);
                     }
-
-                    let text_ebcdic = self.codec.from_host(content.as_bytes());
-                    println!("🔍 DEBUG: Text content: {:?} -> EBCDIC bytes: {:?}", content, text_ebcdic);
-                    screen_data.extend_from_slice(&text_ebcdic);
                 }
                 TemplateElement::Field { attributes, row, col } => {
                     if let (Some(r), Some(c)) = (row, col) {

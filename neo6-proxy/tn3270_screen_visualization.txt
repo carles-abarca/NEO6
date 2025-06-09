@@ -5,7 +5,7 @@
 |  Bienvenido al Sistema NEO6 - Plataforma de Integracion Mainframe            |
 |                                                                              |
 |  Estado del sistema: ACTIVO                                                 | 
-|  Sesion iniciada:   2025-06-09 00:30:44                                      |
+|  Sesion iniciada:   2025-06-09 00:42:19                                      |
 |  Terminal:   IBM-3278-2-E                                                    |
 |                                                                              |
 |+============================================================================+ 
