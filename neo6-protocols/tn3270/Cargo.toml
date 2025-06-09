@@ -15,6 +15,7 @@ ebcdic = "0.1.2"
 chrono = { version = "0.4", features = ["serde"] }
 regex = "1.10"
 tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [[bin]]
 name = "test_parser"

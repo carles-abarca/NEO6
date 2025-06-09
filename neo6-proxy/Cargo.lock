@@ -1904,6 +1904,7 @@ dependencies = [
  "telnet",
  "tokio",
  "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

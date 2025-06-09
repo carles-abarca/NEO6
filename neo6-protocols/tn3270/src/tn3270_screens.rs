@@ -3,7 +3,6 @@ use crate::template_parser::Color3270;
 use std::error::Error;
 use std::fs;
 use std::path::Path;
-use chrono::{Local, DateTime};
 use tracing::{debug, error, trace};
 
 /// Atributos de campo 3270 con soporte para colores
@@ -173,15 +172,20 @@ impl ScreenManager {
     /// sufijo `_markup.txt` y luego la plana `.txt`
     fn load_template(&self, name: &str) -> Result<String, Box<dyn Error>> {
         debug!("Entering ScreenManager::load_template");
+        
         let screens_dir = Path::new("config/screens");
-
+        
         let markup_path = screens_dir.join(format!("{}_markup.txt", name));
+        debug!("Looking for template at: {:?}", markup_path);
         if markup_path.exists() {
+            debug!("Found markup template, reading file");
             return Ok(fs::read_to_string(markup_path)?);
         }
 
         let plain_path = screens_dir.join(format!("{}.txt", name));
+        debug!("Looking for plain template at: {:?}", plain_path);
         if plain_path.exists() {
+            debug!("Found plain template, reading file");
             return Ok(fs::read_to_string(plain_path)?);
         }
 
@@ -200,21 +204,30 @@ impl ScreenManager {
         let parser = TemplateParser::new();
         let elements = parser.parse_template(&template_content)?;
 
+        // Debug: Print all parsed TemplateElement::Text elements
+        println!("\n🔍 DEBUG: Parsed TemplateElement::Text elements:");
+        for (i, element) in elements.iter().enumerate() {
+            if let TemplateElement::Text { content, row, col, color, bright, blink, underline } = element {
+                println!("  [{}] Text: {:?} at pos ({:?}, {:?}) color={:?} bright={} blink={} underline={}", 
+                         i, content, row, col, color, bright, blink, underline);
+            }
+        }
+        println!("🔍 DEBUG: Total elements parsed: {}", elements.len());
+
         let mut field_manager = FieldManager::new();
 
-        // Campo protegido inicial
-        screen_data.push(0x1D); // SF
-        screen_data.push(0x20); // Protected
-
+        // Process elements first without adding initial protected field
         for element in &elements {
             match element {
                 TemplateElement::Text { content, row, col, .. } => {
                     if let (Some(r), Some(c)) = (row, col) {
                         let (high, low) = Self::encode_buffer_addr(*r - 1, *c - 1);
                         screen_data.extend_from_slice(&[0x11, high, low]);
+                        println!("🔍 DEBUG: SBA to row {} col {} -> addr bytes: 0x{:02X} 0x{:02X}", r, c, high, low);
                     }
 
                     let text_ebcdic = self.codec.from_host(content.as_bytes());
+                    println!("🔍 DEBUG: Text content: {:?} -> EBCDIC bytes: {:?}", content, text_ebcdic);
                     screen_data.extend_from_slice(&text_ebcdic);
                 }
                 TemplateElement::Field { attributes, row, col } => {
@@ -243,6 +256,14 @@ impl ScreenManager {
             }
         }
 
+        // Add initial protected field at end of screen to ensure proper field setup
+        // Position it at the last position of the screen (row 24, col 80)
+        let (high, low) = Self::encode_buffer_addr(23, 79); // 0-based: 23,79 = 24,80
+        screen_data.extend_from_slice(&[0x11, high, low]); // SBA
+        screen_data.push(0x1D); // SF
+        screen_data.push(0x20); // Protected
+
+        // Position cursor at first input field if any
         if let Some(first_input_field) = field_manager
             .get_fields_by_position()
             .iter()
@@ -312,128 +333,8 @@ impl ScreenManager {
     /// Genera la pantalla de bienvenida de NEO6 usando el nuevo parser de templates
     pub fn generate_welcome_screen(&mut self) -> Result<Vec<u8>, Box<dyn Error>> {
         debug!("Entering ScreenManager::generate_welcome_screen");
-        let mut screen_data = Vec::new();
-
-        // Comando Erase/Write y WCC
-        screen_data.push(0xF5); // Erase/Write
-        screen_data.push(0xC0); // WCC: Reset + Unlock
-
-        // Leer y parsear plantilla
-        let template_content = self.load_welcome_template()?;
-        let parser = TemplateParser::new();
-        let elements = parser.parse_template(&template_content)?;
-
-        // Gestor de campos
-        let mut field_manager = FieldManager::new();
-
-
-        // Procesar elementos
-        for element in &elements {
-            match element {
-                TemplateElement::Text {
-                    content,
-                    color,
-                    row,
-                    col,
-                    bright,
-                    blink,
-                    underline,
-                } => {
-                    if let (Some(r), Some(c)) = (row, col) {
-                        let (high, low) = Self::encode_buffer_addr(r - 1, c - 1); // 0-based
-                        screen_data.extend_from_slice(&[0x11, high, low]); // SBA
-                    }
-
-                    // SA para atributos de color y formato
-                    if !matches!(color, Color3270::Default) || *bright || *blink || *underline {
-                        screen_data.push(0x28); // SA
-                        screen_data.push(0x00); // All character attributes
-
-                        let mut attr = match color {
-                            Color3270::Blue => 0x04,
-                            Color3270::Red => 0x02,
-                            Color3270::Pink => 0x06,
-                            Color3270::Green => 0x01,
-                            Color3270::Turquoise => 0x05,
-                            Color3270::Yellow => 0x03,
-                            Color3270::White => 0x07,
-                            Color3270::Default => 0x00,
-                        };
-
-                        if *bright {
-                            attr |= 0x08;
-                        }
-                        if *blink {
-                            attr |= 0x10;
-                        }
-                        if *underline {
-                            attr |= 0x20;
-                        }
-
-                        screen_data.push(attr);
-                    }
-
-                    // Texto
-                    let text_ebcdic = self.codec.from_host(content.as_bytes());
-                    screen_data.extend_from_slice(&text_ebcdic);
-
-                    // Reset atributos si se aplicaron
-                    if !matches!(color, Color3270::Default) || *bright || *blink || *underline {
-                        screen_data.push(0x28); // SA
-                        screen_data.push(0x00);
-                        screen_data.push(0x00); // Reset
-                    }
-                }
-
-                TemplateElement::Field { attributes, row, col } => {
-                    if let (Some(r), Some(c)) = (row, col) {
-                        let (high, low) = Self::encode_buffer_addr(r - 1, c - 1);
-                        screen_data.extend_from_slice(&[0x11, high, low]); // SBA
-
-                        screen_data.push(0x1D); // SF
-                        let mut attr_byte = 0x00;
-
-                        if attributes.protected {
-                            attr_byte |= 0x20;
-                        }
-                        if attributes.hidden {
-                            attr_byte |= 0x0C;
-                        }
-                        if attributes.numeric {
-                            attr_byte |= 0x10;
-                        }
-                        screen_data.push(attr_byte);
-
-                        // Valor por defecto
-                        if !attributes.default_value.is_empty() {
-                            let default_ebcdic = self.codec.from_host(attributes.default_value.as_bytes());
-                            screen_data.extend_from_slice(&default_ebcdic);
-                        }
-
-                        let screen_field = ScreenField::new(
-                            attributes.name.clone(),
-                            *r,
-                            *c,
-                            attributes.clone(),
-                        );
-                        field_manager.add_field(screen_field)?;
-                    }
-                }
-            }
-        }
-
-        // Posicionar cursor
-        if let Some(f) = field_manager.get_fields_by_position().iter().find(|f| !f.attributes.protected) {
-            let (high, low) = Self::encode_buffer_addr(f.row - 1, f.col - 1);
-            screen_data.extend_from_slice(&[0x11, high, low]); // SBA
-            screen_data.push(0x13); // IC
-        }
-
-        self.screen_buffer = screen_data.clone();
-        self.screen_sent = false;
-
-        debug!("Pantalla de bienvenida generada correctamente");
-        Ok(screen_data)
+        // Use the new generic template generation method with "welcome" template
+        self.generate_tn3270_screen("welcome")
     }    
     /// Calcula el byte de atributo basado en los flags de formato
     fn calculate_attribute_byte(&self, bright: bool, blink: bool, underline: bool) -> u8 {
@@ -525,177 +426,6 @@ impl ScreenManager {
         self.screen_buffer = screen_data.clone();
         Ok(screen_data)
     }
-    fn load_welcome_template(&self) -> Result<String, Box<dyn Error>> {
-        debug!("Entering ScreenManager::load_welcome_template");
-        // Intentar cargar primero la plantilla con markup
-        let markup_template_path = Path::new("config/screens/welcome_markup.txt");
-        
-        let content = if markup_template_path.exists() {
-            fs::read_to_string(markup_template_path)?
-        } else {
-             // Fallback a plantilla original sin markup
-            let template_path = Path::new("config/screens/welcome.txt");
-            if template_path.exists() {
-                fs::read_to_string(template_path)?
-            } else {
-                // Último fallback a una pantalla básica
-                return Ok(self.get_fallback_welcome_screen());
-            }
-        };
-
-        Ok(content)
-    }
-
-    /// Procesa las variables del template (reemplaza placeholders)
-    fn process_template_variables(&self, mut content: String) -> Result<String, Box<dyn Error>> {
-        debug!("Entering ScreenManager::process_template_variables");
-        // Obtener timestamp actual
-        let now: DateTime<Local> = Local::now();
-        let timestamp = now.format("%Y-%m-%d %H:%M:%S").to_string();
-        
-        // Procesar línea por línea para mantener el formato de 80 caracteres
-        let lines: Vec<String> = content
-            .split('\n')  // Usar split en lugar de lines() para mantener control
-            .map(|line| {
-                let mut processed_line = line.to_string();
-                
-                // Reemplazar variables manteniendo el padding correcto
-                if processed_line.contains("{timestamp}") {
-                    // Calcular espacios necesarios para mantener 80 caracteres
-                    let line_without_macro = processed_line.replace("{timestamp}", "");
-                    let available_space = 80 - line_without_macro.len();
-                    let padded_timestamp = if timestamp.len() <= available_space {
-                        format!("{:<width$}", timestamp, width = available_space)
-                    } else {
-                        timestamp[..available_space].to_string()
-                    };
-                    processed_line = processed_line.replace("{timestamp}", &padded_timestamp);
-                }
-                
-                if processed_line.contains("{terminal_type}") {
-                    let terminal_type = "IBM-3278-2-E";
-                    let line_without_macro = processed_line.replace("{terminal_type}", "");
-                    let available_space = 80 - line_without_macro.len();
-                    let padded_terminal = if terminal_type.len() <= available_space {
-                        format!("{:<width$}", terminal_type, width = available_space)
-                    } else {
-                        terminal_type[..available_space].to_string()
-                    };
-                    processed_line = processed_line.replace("{terminal_type}", &padded_terminal);
-                }
-                
-                processed_line
-            })
-            .collect();
-        
-        // Unir líneas usando \n pero será procesado posteriormente sin enviarlo al terminal
-        content = lines.join("\n");
-        
-        // Limpiar caracteres que pueden causar problemas en EBCDIC
-        content = Self::clean_for_ebcdic(content);
-        
-        // Normalizar líneas a exactamente 80 caracteres (sin \n en el resultado)
-        content = Self::normalize_lines_to_80_chars(content);
-        
-        Ok(content)
-    }
-
-    /// Normaliza todas las líneas para que tengan exactamente 80 caracteres
-    fn normalize_lines_to_80_chars(content: String) -> String {
-        debug!("Entering ScreenManager::normalize_lines_to_80_chars");
-        let mut lines: Vec<String> = content
-            .split('\n')  // Usar split para tener control total
-            .enumerate()
-            .map(|(i, line)| {
-                // Limpiar caracteres de control al final de cada línea
-                let clean_line = line.trim_end_matches(['\r', '\n']);
-                
-                let normalized = if clean_line.len() > 80 {
-                    // Truncar líneas demasiado largas
-                    debug!("Línea {} truncada de {} a 80 caracteres", i + 1, clean_line.len());
-                    clean_line[..80].to_string()
-                } else if clean_line.len() < 80 {
-                    // Rellenar líneas cortas con espacios
-                    format!("{:80}", clean_line)
-                } else {
-                    // Línea ya tiene 80 caracteres
-                    clean_line.to_string()
-                };
-                
-                // Verificar que efectivamente tenga 80 caracteres
-                if normalized.len() != 80 {
-                    error!("Línea {} tiene {} caracteres en lugar de 80", i + 1, normalized.len());
-                }
-                
-                normalized
-            })
-            .collect();
-
-        // Asegurar que tengamos exactamente 24 líneas (tamaño estándar 3270)
-        while lines.len() < 24 {
-            lines.push(" ".repeat(80));
-        }
-        
-        // Si hay más de 24 líneas, truncar
-        if lines.len() > 24 {
-            lines.truncate(24);
-        }
-
-        // Unir líneas CON \n para que generate_welcome_screen pueda procesarlas
-        // El \n será eliminado en el procesamiento posterior
-        let result = lines.join("\n");
-        debug!("Pantalla generada con {} líneas, {} caracteres totales", lines.len(), result.len());
-        result
-    }
-
-    /// Limpia el contenido para asegurar compatibilidad con EBCDIC
-    fn clean_for_ebcdic(mut content: String) -> String {
-        debug!("Entering ScreenManager::clean_for_ebcdic");
-        // Reemplazar caracteres problemáticos con equivalentes ASCII seguros
-        content = content.replace("á", "a");
-        content = content.replace("é", "e");
-        content = content.replace("í", "i");
-        content = content.replace("ó", "o");
-        content = content.replace("ú", "u");
-        content = content.replace("ñ", "n");
-        content = content.replace("ü", "u");
-        content = content.replace("Á", "A");
-        content = content.replace("É", "E");
-        content = content.replace("Í", "I");
-        content = content.replace("Ó", "O");
-        content = content.replace("Ú", "U");
-        content = content.replace("Ñ", "N");
-        content = content.replace("Ü", "U");
-        
-        // Mantener solo caracteres ASCII imprimibles y espacios en blanco
-        content.chars()
-            .filter(|&c| c.is_ascii() && (c.is_ascii_graphic() || c.is_ascii_whitespace()))
-            .collect()
-    }
-
-    /// Pantalla de fallback si no se encuentra el archivo
-    fn get_fallback_welcome_screen(&self) -> String {
-        debug!("Entering ScreenManager::get_fallback_welcome_screen");
-        let content = format!(
-            "+============================================================================+\n\
-             |                        SISTEMA NEO6 - FALLBACK MODE                       |\n\
-             |                                                                            |\n\
-             |  Bienvenido al Sistema NEO6                                               |\n\
-             |  Archivo de plantilla no encontrado, usando modo basico.                 |\n\
-             |                                                                            |\n\
-             |  Estado: ACTIVO                                                           |\n\
-             |  Hora: {}                                            |\n\
-             +============================================================================+\n\
-             \n\
-             \n\
-             COMANDO ===> ",
-            Local::now().format("%Y-%m-%d %H:%M:%S")
-        );
-        
-        // Normalizar líneas a 80 caracteres
-        Self::normalize_lines_to_80_chars(content)
-    }
-
     /// Genera una pantalla de menú con opciones
     pub fn generate_menu_screen(&mut self, title: &str, options: &[(&str, &str)]) -> Result<Vec<u8>, Box<dyn Error>> {
         debug!("Entering ScreenManager::generate_menu_screen");

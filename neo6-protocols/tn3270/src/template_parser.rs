@@ -154,6 +154,40 @@ pub struct TemplateParser {
 }
 
 impl TemplateParser {
+    // ...existing code...
+    
+    /// Calculate the actual text length by stripping markup tags
+    fn calculate_text_length(content: &str) -> usize {
+        // Simple regex to remove all markup tags
+        let re = Regex::new(r"<[^>]*>").unwrap();
+        re.replace_all(content, "").len()
+    }
+    
+    /// Advance cursor position with bounds checking and line wrapping
+    fn advance_position(current_row: Option<u16>, current_col: Option<u16>, advance_by: u16) -> (Option<u16>, Option<u16>) {
+        if let (Some(row), Some(col)) = (current_row, current_col) {
+            let new_col = col + advance_by;
+            if new_col > 80 {
+                // Handle line wrapping - advance to next line
+                let lines_to_advance = (new_col - 1) / 80;
+                let final_col = ((new_col - 1) % 80) + 1;
+                let final_row = row + lines_to_advance;
+                
+                // Check if we're going beyond screen bounds (24 rows)
+                if final_row > 24 {
+                    // Don't advance beyond screen bounds
+                    (Some(row), Some(col))
+                } else {
+                    (Some(final_row), Some(final_col))
+                }
+            } else {
+                (Some(row), Some(new_col))
+            }
+        } else {
+            (current_row, current_col)
+        }
+    }
+    
     pub fn new() -> Self {
         debug!("Entering TemplateParser::new");
         let mut parser = Self {
@@ -365,6 +399,11 @@ impl TemplateParser {
                         blink,
                         underline,
                     });
+                    
+                    // Advance column position for next element
+                    let (new_row, new_col) = Self::advance_position(current_row, current_col, text_before.len() as u16);
+                    current_row = new_row;
+                    current_col = new_col;
                 }
             }
 
@@ -410,6 +449,12 @@ impl TemplateParser {
                                         underline,
                                     )?;
                                     elements.extend(inner);
+                                    
+                                    // Advance column position based on actual text length (strip markup)
+                                    let text_length = Self::calculate_text_length(content_text);
+                                    let (new_row, new_col) = Self::advance_position(current_row, current_col, text_length as u16);
+                                    current_row = new_row;
+                                    current_col = new_col;
                                 }
                             }
                             "bright" => {
@@ -424,6 +469,12 @@ impl TemplateParser {
                                         underline,
                                     )?;
                                     elements.extend(inner);
+                                    
+                                    // Advance column position based on actual text length (strip markup)
+                                    let text_length = Self::calculate_text_length(content_text);
+                                    let (new_row, new_col) = Self::advance_position(current_row, current_col, text_length as u16);
+                                    current_row = new_row;
+                                    current_col = new_col;
                                 }
                             }
                             "blink" => {
@@ -438,6 +489,12 @@ impl TemplateParser {
                                         underline,
                                     )?;
                                     elements.extend(inner);
+                                    
+                                    // Advance column position based on actual text length (strip markup)
+                                    let text_length = Self::calculate_text_length(content_text);
+                                    let (new_row, new_col) = Self::advance_position(current_row, current_col, text_length as u16);
+                                    current_row = new_row;
+                                    current_col = new_col;
                                 }
                             }
                             "underline" => {
@@ -452,6 +509,12 @@ impl TemplateParser {
                                         true,
                                     )?;
                                     elements.extend(inner);
+                                    
+                                    // Advance column position based on actual text length (strip markup)
+                                    let text_length = Self::calculate_text_length(content_text);
+                                    let (new_row, new_col) = Self::advance_position(current_row, current_col, text_length as u16);
+                                    current_row = new_row;
+                                    current_col = new_col;
                                 }
                             }
                             "field" => {
