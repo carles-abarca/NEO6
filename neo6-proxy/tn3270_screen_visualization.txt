@@ -1,24 +1,24 @@
-|+============================================================================+ 
-|                       ACCESO TN3270 A ENTORNO NEO6                           |
-|+============================================================================+ 
-|                                                                              |
-|  Bienvenido al Sistema NEO6 - Plataforma de Integracion Mainframe            |
-|                                                                              |
-|  Estado del sistema: ACTIVO                                                 | 
-|  Sesion iniciada:   2025-06-09 00:42:19                                      |
-|  Terminal:   IBM-3278-2-E                                                    |
-|                                                                              |
-|+============================================================================+ 
++==========================================================================+    
+|                       ACCESO TN3270 A ENTORNO NEO6                         |  
++==========================================================================+    
+|                                                                            |  
+|     Bienvenido al Sistema NEO6 - Plataforma de Integracion                 |  
+|                                                                            |  
+|  Estado del sistema: ACTIVO                                                |  
+|  Sesion iniciada:     2025-06-10 09:21:00                                  |  
+|  Terminal:            IBM-3278-2-E                                         |  
+|                                                                            |  
++==========================================================================+    
                                                                                 
-Comandos disponibles:                                                           
-  > MENU     - Mostrar menu principal de opciones                               
-  > STATUS   - Ver estado detallado del sistema                                 
-  > TRANS    - Ejecutar transaccion CICS                                        
-  > HELP     - Mostrar ayuda del sistema                                        
-  > EXIT     - Salir del sistema                                                
+   Comandos disponibles:                                                        
+      > MENU     - Mostrar menu principal de opciones                           
+      > STATUS   - Ver estado detallado del sistema                             
+      > TRANS    - Ejecutar transaccion CICS                                    
+      > HELP     - Mostrar ayuda del sistema                                    
+      > EXIT     - Salir del sistema                                            
                                                                                 
                                                                                 
-COMANDO ===:                                                                    
+COMANDO === :                                                                   
                                                                                 
                                                                                 
                                                                                 

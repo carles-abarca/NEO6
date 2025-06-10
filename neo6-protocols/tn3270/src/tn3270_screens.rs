@@ -103,6 +103,9 @@ impl ScreenManager {
     /// Agrega texto con color al stream de datos usando Set Attribute
     fn add_colored_text(&self, screen_data: &mut Vec<u8>, text: &str, color: Color3270, bright: bool, blink: bool, underline: bool) {
         debug!("Entering ScreenManager::add_colored_text");
+        debug!("🔍 add_colored_text ENTRY: text={:?} (len={}) color={:?} bright={} blink={} underline={}", 
+               text, text.len(), color, bright, blink, underline);
+        
         // Aplicar atributos de color/formato si es necesario
         if !matches!(color, Color3270::Default) || bright || blink || underline {
             screen_data.push(0x29); // SFE (Start Field Extended)
@@ -134,23 +137,94 @@ impl ScreenManager {
         }
         
         // Convertir texto a EBCDIC y agregar
-        let text_ebcdic = self.codec.from_host(text.as_bytes());
+        debug!("🔍 BEFORE EBCDIC CONVERSION: text={:?} (len={})", text, text.len());
+        let text_bytes = text.as_bytes();
+        debug!("🔍 TEXT AS BYTES: {:?} (len={})", text_bytes, text_bytes.len());
+        
+        // Log específico para caracteres problemáticos
+        if text.contains('+') || text.contains('|') {
+            println!("🚨 CONVERTING SPECIAL CHARS: text={:?}", text);
+            for (i, &byte) in text_bytes.iter().enumerate() {
+                println!("  [{}] ASCII byte: 0x{:02X} ({})", i, byte, byte as char);
+            }
+        }
+        
+        let text_ebcdic = self.codec.to_host(text_bytes);
+        debug!("🔍 AFTER EBCDIC CONVERSION: {} bytes", text_ebcdic.len());
+        
+        // Log específico para la conversión EBCDIC de caracteres problemáticos
+        if text.contains('+') || text.contains('|') {
+            println!("🚨 EBCDIC CONVERSION RESULT:");
+            for (i, &byte) in text_ebcdic.iter().enumerate() {
+                println!("  [{}] EBCDIC byte: 0x{:02X}", i, byte);
+            }
+        }
+        
         screen_data.extend_from_slice(&text_ebcdic);
+        debug!("🔍 SCREEN DATA AFTER ADDING TEXT: {} total bytes", screen_data.len());
         
         // NO resetear atributos inmediatamente después del texto
         // Los atributos se mantendrán hasta el próximo SFE/SF
         // Esto evita que se corten caracteres en terminales TN3270 reales
     }
     
-    /// Posiciona el cursor y agrega texto con color
+    /// Posiciona el cursor y agrega texto con color usando solo SBA y atributos simples
     fn add_positioned_colored_text(&self, screen_data: &mut Vec<u8>, row: u16, col: u16, text: &str, color: Color3270, bright: bool, blink: bool, underline: bool) {
         debug!("Entering ScreenManager::add_positioned_colored_text");
+        debug!("🔍 add_positioned_colored_text ENTRY: row={} col={} text={:?} (len={})", row, col, text, text.len());
+        
         // SBA para posicionar
         let (high, low) = Self::encode_buffer_addr(row, col);
         screen_data.extend_from_slice(&[0x11, high, low]); // SBA
+        debug!("🔍 SBA added: [0x11, 0x{:02X}, 0x{:02X}]", high, low);
         
-        // Agregar texto con color
-        self.add_colored_text(screen_data, text, color, bright, blink, underline);
+        // Aplicar atributos usando Set Attribute (SA) si es necesario
+        if !matches!(color, Color3270::Default) {
+            screen_data.push(0x28); // SA order
+            screen_data.push(0x42); // XA_FOREGROUND
+            screen_data.push(color as u8);
+        }
+        
+        if bright || blink || underline {
+            screen_data.push(0x28); // SA order  
+            screen_data.push(0x41); // XA_HIGHLIGHTING
+            let mut highlight = 0xF0; // Normal
+            if bright {
+                highlight = 0xF8; // Intensify
+            } else if blink {
+                highlight = 0xF1; // Blink
+            } else if underline {
+                highlight = 0xF4; // Underscore
+            }
+            screen_data.push(highlight);
+        }
+        
+        // Convertir texto a EBCDIC y agregar directamente sin crear campos
+        debug!("🔍 BEFORE EBCDIC CONVERSION: text={:?} (len={})", text, text.len());
+        let text_bytes = text.as_bytes();
+        
+        // Log específico para caracteres problemáticos
+        if text.contains('+') || text.contains('|') || text.contains('=') {
+            println!("🚨 CONVERTING SPECIAL CHARS: text={:?}", text);
+            for (i, &byte) in text_bytes.iter().enumerate() {
+                println!("  [{}] ASCII byte: 0x{:02X} ({})", i, byte, byte as char);
+            }
+        }
+        
+        let text_ebcdic = self.codec.to_host(text_bytes);
+        debug!("🔍 AFTER EBCDIC CONVERSION: {} bytes", text_ebcdic.len());
+        
+        // Log específico para la conversión EBCDIC de caracteres problemáticos
+        if text.contains('+') || text.contains('|') || text.contains('=') {
+            println!("🚨 EBCDIC CONVERSION RESULT:");
+            for (i, &byte) in text_ebcdic.iter().enumerate() {
+                println!("  [{}] EBCDIC byte: 0x{:02X}", i, byte);
+            }
+        }
+        
+        screen_data.extend_from_slice(&text_ebcdic);
+        debug!("🔍 SCREEN DATA AFTER ADDING TEXT: {} total bytes", screen_data.len());
+        debug!("🔍 add_positioned_colored_text COMPLETE");
     }
     
     /// Método legacy mantenido para compatibilidad - usa add_colored_text internamente
@@ -197,6 +271,13 @@ impl ScreenManager {
         screen_data.push(0xF5); // Erase/Write
         screen_data.push(0xC0); // WCC
 
+        // Agregar un campo protegido inicial que cubra toda la pantalla (posición 0,0)
+        // Esto establece el contexto base para todos los atributos subsiguientes
+        let (high, low) = Self::encode_buffer_addr(0, 0);
+        screen_data.extend_from_slice(&[0x11, high, low]); // SBA to (0,0)
+        screen_data.push(0x1D); // SF (Start Field)
+        screen_data.push(0x20); // FA_PROTECT - campo protegido para texto de solo lectura
+
         let template_content = self.load_template(template_name)?;
         let parser = TemplateParser::new();
         let elements = parser.parse_template(&template_content)?;
@@ -217,14 +298,30 @@ impl ScreenManager {
         for element in &elements {
             match element {
                 TemplateElement::Text { content, row, col, color, bright, blink, underline } => {
+                    debug!("🔍 PROCESSING TEXT ELEMENT: content={:?} (len={}) row={:?} col={:?}", 
+                           content, content.len(), row, col);
+                    
+                    // Log específico para caracteres problemáticos
+                    if content.contains('+') || content.contains('|') {
+                        println!("🚨 SPECIAL CHARS DETECTED: content={:?} at pos ({:?},{:?})", content, row, col);
+                        for (i, ch) in content.chars().enumerate() {
+                            println!("  [{}] char: '{}' (U+{:04X})", i, ch, ch as u32);
+                        }
+                    }
+                    
                     if let (Some(r), Some(c)) = (row, col) {
-                        // Use add_positioned_colored_text instead of manual SBA + text
+                        // Templates use 1-indexed coordinates, tn3270 uses 0-indexed
+                        debug!("🔍 CALLING add_positioned_colored_text with: row={} col={} text={:?} (len={})", 
+                               r - 1, c - 1, content, content.len());
                         self.add_positioned_colored_text(&mut screen_data, *r - 1, *c - 1, content, *color, *bright, *blink, *underline);
-                        println!("🔍 DEBUG: Added colored text: {:?} at row {} col {} with color={:?} bright={} blink={} underline={}", 
-                                content, r, c, color, bright, blink, underline);
+                        debug!("🔍 COMPLETED add_positioned_colored_text");
+                        println!("🔍 DEBUG: Added colored text: {:?} at template row {} col {} (0-indexed: {},{}) with color={:?} bright={} blink={} underline={}", 
+                                content, r, c, r-1, c-1, color, bright, blink, underline);
                     } else {
                         // If no position specified, just add colored text at current position
+                        debug!("🔍 CALLING add_colored_text with: text={:?} (len={})", content, content.len());
                         self.add_colored_text(&mut screen_data, content, *color, *bright, *blink, *underline);
+                        debug!("🔍 COMPLETED add_colored_text");
                         println!("🔍 DEBUG: Added colored text at current position: {:?} with color={:?} bright={} blink={} underline={}", 
                                 content, color, bright, blink, underline);
                     }
@@ -239,7 +336,7 @@ impl ScreenManager {
                         screen_data.push(field_attr);
 
                         if !attributes.default_value.is_empty() {
-                            let def = self.codec.from_host(attributes.default_value.as_bytes());
+                            let def = self.codec.to_host(attributes.default_value.as_bytes());
                             screen_data.extend_from_slice(&def);
                         }
 
@@ -325,7 +422,7 @@ impl ScreenManager {
             screen_data.push(attr);
         }
 
-        let text_ebcdic = self.codec.from_host(text.as_bytes());
+        let text_ebcdic = self.codec.to_host(text.as_bytes());
         screen_data.extend_from_slice(&text_ebcdic);
     }
 
@@ -438,7 +535,7 @@ impl ScreenManager {
         screen_data.push(0x1D); // SF (Start Field)
         screen_data.push(0xF8); // Atributo: Protegido + Alta intensidad + Destacado
         
-        let title_ebcdic = self.codec.from_host(title.as_bytes());
+        let title_ebcdic = self.codec.to_host(title.as_bytes());
         screen_data.extend_from_slice(&title_ebcdic);
 
         // Línea separadora en la fila 2
@@ -448,7 +545,7 @@ impl ScreenManager {
         screen_data.push(0xF0); // Atributo: Protegido + Normal intensidad
         
         let separator = "=".repeat(60);
-        let separator_ebcdic = self.codec.from_host(separator.as_bytes());
+        let separator_ebcdic = self.codec.to_host(separator.as_bytes());
         screen_data.extend_from_slice(&separator_ebcdic);
 
         // Opciones del menú empezando en la fila 4
@@ -461,7 +558,7 @@ impl ScreenManager {
             screen_data.push(0xF0); // Atributo: Protegido + Normal intensidad
             
             let menu_item = format!("{}. {}", key, description);
-            let menu_item_ebcdic = self.codec.from_host(menu_item.as_bytes());
+            let menu_item_ebcdic = self.codec.to_host(menu_item.as_bytes());
             screen_data.extend_from_slice(&menu_item_ebcdic);
         }
 
@@ -474,7 +571,7 @@ impl ScreenManager {
         screen_data.push(0xF0); // Atributo: Protegido + Alta intensidad
         
         let prompt_msg_ascii = "Seleccione una opción: ";
-        let prompt_msg_ebcdic = self.codec.from_host(prompt_msg_ascii.as_bytes());
+        let prompt_msg_ebcdic = self.codec.to_host(prompt_msg_ascii.as_bytes());
         screen_data.extend_from_slice(&prompt_msg_ebcdic);
 
         // Campo de entrada
@@ -500,7 +597,7 @@ impl ScreenManager {
         screen_data.push(0xFC); // Atributo: Protegido + Alta intensidad + Parpadeo (error)
         
         let title_ascii = "*** ERROR ***";
-        let title_ebcdic = self.codec.from_host(title_ascii.as_bytes());
+        let title_ebcdic = self.codec.to_host(title_ascii.as_bytes());
         screen_data.extend_from_slice(&title_ebcdic);
 
         // Mensaje de error en la fila 3
@@ -510,7 +607,7 @@ impl ScreenManager {
         screen_data.push(0x1D); // SF (Start Field)
         screen_data.push(0xF0); // Atributo: Protegido + Normal intensidad
         
-        let error_ebcdic = self.codec.from_host(error_msg.as_bytes());
+        let error_ebcdic = self.codec.to_host(error_msg.as_bytes());
         screen_data.extend_from_slice(&error_ebcdic);
 
         // Instrucciones en la fila 5
@@ -521,7 +618,7 @@ impl ScreenManager {
         screen_data.push(0xF0); // Atributo: Protegido + Normal intensidad
         
         let instruction_ascii = "Presione ENTER para continuar o CLEAR para salir";
-        let instruction_ebcdic = self.codec.from_host(instruction_ascii.as_bytes());
+        let instruction_ebcdic = self.codec.to_host(instruction_ascii.as_bytes());
         screen_data.extend_from_slice(&instruction_ebcdic);
 
         // Campo invisible para capturar entrada
@@ -579,7 +676,7 @@ impl ScreenManager {
         screen_data.push(0xF8); // Atributo: Protegido + Alta intensidad + Destacado
         
         let title_ascii = "ESTADO DEL SISTEMA NEO6";
-        let title_ebcdic = self.codec.from_host(title_ascii.as_bytes());
+        let title_ebcdic = self.codec.to_host(title_ascii.as_bytes());
         screen_data.extend_from_slice(&title_ebcdic);
 
         // Información del sistema en fila 3
@@ -590,7 +687,7 @@ impl ScreenManager {
         screen_data.push(0xF0); // Atributo: Protegido + Normal intensidad
         
         let status_ascii = "Terminal: ACTIVO | Conexiones: 1 | Estado: LISTO";
-        let status_ebcdic = self.codec.from_host(status_ascii.as_bytes());
+        let status_ebcdic = self.codec.to_host(status_ascii.as_bytes());
         screen_data.extend_from_slice(&status_ebcdic);
 
         // Línea de comandos disponibles en fila 5
@@ -601,7 +698,7 @@ impl ScreenManager {
         screen_data.push(0xF0); // Atributo: Protegido + Normal intensidad
         
         let commands_ascii = "Comandos: MENU, STATUS, EXIT";
-        let commands_ebcdic = self.codec.from_host(commands_ascii.as_bytes());
+        let commands_ebcdic = self.codec.to_host(commands_ascii.as_bytes());
         screen_data.extend_from_slice(&commands_ebcdic);
 
         // Prompt en la parte inferior
@@ -612,7 +709,7 @@ impl ScreenManager {
         screen_data.push(0xF0); // Atributo: Protegido + Alta intensidad
         
         let prompt_ascii = "Comando: ";
-        let prompt_ebcdic = self.codec.from_host(prompt_ascii.as_bytes());
+        let prompt_ebcdic = self.codec.to_host(prompt_ascii.as_bytes());
         screen_data.extend_from_slice(&prompt_ebcdic);
 
         // Campo de entrada
@@ -646,7 +743,7 @@ impl ScreenManager {
         
         // Texto simple concatenado
         let text = "NEO6 FUNCIONA! Si ve esto, el protocolo TN3270 esta operativo.";
-        let text_ebcdic = self.codec.from_host(text.as_bytes());
+        let text_ebcdic = self.codec.to_host(text.as_bytes());
         screen_data.extend_from_slice(&text_ebcdic);
 
         // Crear campo de entrada al final

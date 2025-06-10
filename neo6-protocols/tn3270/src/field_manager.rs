@@ -138,7 +138,7 @@ impl ScreenField {
 
         // Contenido del campo
         let display_value = self.get_display_value();
-        let ebcdic_content = codec.from_host(display_value.as_bytes());
+        let ebcdic_content = codec.to_host(display_value.as_bytes());
         bytes.extend_from_slice(&ebcdic_content);
 
         bytes

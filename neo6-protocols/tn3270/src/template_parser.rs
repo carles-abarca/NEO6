@@ -371,6 +371,13 @@ impl TemplateParser {
                     let text_rest = &content[pos..];
                     if !text_rest.is_empty() {
                         trace!("Texto plano: {:?}", text_rest);
+                        
+                        // Log específico para caracteres problemáticos
+                        if text_rest.contains('+') || text_rest.contains('|') || text_rest.contains('=') {
+                            println!("🚨 PARSER: Creating text element with special chars: {:?} at pos ({:?},{:?})", 
+                                    text_rest, current_row, current_col);
+                        }
+                        
                         elements.push(TemplateElement::Text {
                             content: text_rest.to_string(),
                             color: current_color,
@@ -390,6 +397,13 @@ impl TemplateParser {
                 let text_before = &rest_str[..start];
                 if !text_before.is_empty() {
                     trace!("Texto antes de tag: {:?}", text_before);
+                    
+                    // Log específico para caracteres problemáticos
+                    if text_before.contains('+') || text_before.contains('|') || text_before.contains('=') {
+                        println!("🚨 PARSER: Creating text element (before tag) with special chars: {:?} at pos ({:?},{:?})", 
+                                text_before, current_row, current_col);
+                    }
+                    
                     elements.push(TemplateElement::Text {
                         content: text_before.to_string(),
                         color: current_color,
