@@ -1,9 +1,10 @@
-use crate::{Codec, TemplateParser, TemplateElement, FieldManager, ScreenField};
+use crate::{Codec, TemplateParser, FieldManager, ScreenField};
+use crate::template_parser::TemplateElement;
 use crate::template_parser::Color3270;
 use std::error::Error;
 use std::fs;
 use std::path::Path;
-use tracing::{debug, error, trace};
+use tracing::{debug, trace, warn};
 
 /// Atributos de campo 3270 con soporte para colores
 #[derive(Debug, Clone)]
@@ -76,7 +77,8 @@ impl FieldAttribute {
 pub struct ScreenManager {
     pub screen_buffer: Vec<u8>,
     pub screen_sent: bool,
-    codec: Codec,
+    pub codec: Codec,
+    pub field_navigator: crate::field_navigation::FieldNavigator,
 }
 
 impl ScreenManager {
@@ -86,6 +88,7 @@ impl ScreenManager {
             screen_buffer: vec![0x00; 1920], // 80x24 por defecto
             screen_sent: false,
             codec: Codec::new(),
+            field_navigator: crate::field_navigation::FieldNavigator::new(),
         }
     }
 
@@ -239,12 +242,13 @@ impl ScreenManager {
         self.add_positioned_colored_text(screen_data, row, col, text, attr.color, attr.intensity == 1, false, false);
     }
 
-    /// Carga una plantilla desde `config/screens` buscando primero la versión con
+    /// Carga una plantilla desde la ubicación correcta de pantallas buscando primero la versión con
     /// sufijo `_markup.txt` y luego la plana `.txt`
     fn load_template(&self, name: &str) -> Result<String, Box<dyn Error>> {
         debug!("Entering ScreenManager::load_template");
         
-        let screens_dir = Path::new("config/screens");
+        // Usar la ruta absoluta correcta donde están las pantallas
+        let screens_dir = Path::new("/home/carlesabarca/MyProjects/NEO6/neo6-proxy/config/screens");
         
         let markup_path = screens_dir.join(format!("{}_markup.txt", name));
         debug!("Looking for template at: {:?}", markup_path);
@@ -260,23 +264,41 @@ impl ScreenManager {
             return Ok(fs::read_to_string(plain_path)?);
         }
 
-        Err(format!("Template '{}' not found in config/screens", name).into())
+        Err(format!("Template '{}' not found in neo6-proxy/config/screens", name).into())
     }
 
     /// Genera una pantalla TN3270 a partir de cualquier plantilla de `config/screens`
     pub fn generate_tn3270_screen(&mut self, template_name: &str) -> Result<Vec<u8>, Box<dyn Error>> {
         debug!("Entering ScreenManager::generate_tn3270_screen");
+        
+        // IMPORTANTE: Limpiar el estado del buffer antes de generar nueva pantalla
+        self.clear_screen();
 
         let mut screen_data = Vec::new();
-        screen_data.push(0xF5); // Erase/Write
-        screen_data.push(0xC0); // WCC
+        screen_data.push(0xF5); // Erase/Write - borra completamente la pantalla y buffer
+        // WCC (Write Control Character) con flags de reseteo completo:
+        // Bit 7: 1 - Reset (resetea estado del terminal)
+        // Bit 6: 1 - Print (permite impresión si aplicable)  
+        // Bit 5: 1 - Start printer (si aplicable)
+        // Bit 4: 1 - Sound alarm (opcional)
+        // Bit 3: 1 - Keyboard restore (restaura teclado)
+        // Bit 2: 1 - Reset modified data tags (resetea MDT de todos los campos)
+        // Bits 1-0: 00 - Reserved
+        screen_data.push(0xFC); // WCC con más flags de reseteo: 11111100
 
         // Agregar un campo protegido inicial que cubra toda la pantalla (posición 0,0)
         // Esto establece el contexto base para todos los atributos subsiguientes
         let (high, low) = Self::encode_buffer_addr(0, 0);
         screen_data.extend_from_slice(&[0x11, high, low]); // SBA to (0,0)
         screen_data.push(0x1D); // SF (Start Field)
-        screen_data.push(0x20); // FA_PROTECT - campo protegido para texto de solo lectura
+        // TN3270 field attribute: 11100000 = 0xE0 (protected, normal display)
+        // Bits 7-6: 11 (reserved bits must be set)
+        // Bit 5: 1 (protected)
+        // Bit 4: 0 (alphanumeric)
+        // Bits 3-2: 00 (normal display)
+        // Bit 1: 0 (reserved)
+        // Bit 0: 0 (not modified)
+        screen_data.push(0xE0); // Proper protected field attribute
 
         let template_content = self.load_template(template_name)?;
         let parser = TemplateParser::new();
@@ -332,12 +354,42 @@ impl ScreenManager {
                         screen_data.extend_from_slice(&[0x11, high, low]);
 
                         screen_data.push(0x1D); // SF
-                        let field_attr = if attributes.protected { 0x20 } else { 0x00 };
+                        // TN3270 field attribute format:
+                        // Bit 7-6: Reserved (must be 11 for valid attribute)
+                        // Bit 5: Protection (1=protected, 0=unprotected)  
+                        // Bit 4: Numeric (1=numeric only, 0=alphanumeric)
+                        // Bit 3-2: Display (00=normal, 01=invisible, 10=high intensity, 11=reserved)
+                        // Bit 1: Reserved (must be 0)
+                        // Bit 0: MDT - Modified Data Tag (1=modified, 0=not modified)
+                        let mut field_attr = 0xC0; // Start with reserved bits set (11xxxxxx)
+                        
+                        if attributes.protected {
+                            field_attr |= 0x20; // Set protection bit
+                        }
+                        // For unprotected fields, leave protection bit as 0
+                        
+                        if attributes.numeric {
+                            field_attr |= 0x10; // Set numeric bit
+                        }
+                        
+                        // Set display attributes (bits 3-2)
+                        // 00 = normal display (default for input fields)
+                        // We can add intensity/visibility options later if needed
+                        
+                        // Debug logging for field attributes
+                        println!("🔍 FIELD DEBUG: name={} protected={} numeric={} attr=0x{:02X}", 
+                                attributes.name, attributes.protected, attributes.numeric, field_attr);
+                        
                         screen_data.push(field_attr);
 
                         if !attributes.default_value.is_empty() {
                             let def = self.codec.to_host(attributes.default_value.as_bytes());
                             screen_data.extend_from_slice(&def);
+                        } else if !attributes.protected && attributes.length.is_some() {
+                            // Para campos de entrada vacíos, agregar espacios para indicar el área de entrada
+                            let field_length = attributes.length.unwrap_or(10);
+                            let spaces = vec![0x40; field_length]; // 0x40 = espacio en EBCDIC
+                            screen_data.extend_from_slice(&spaces);
                         }
 
                         let screen_field = ScreenField::new(
@@ -352,22 +404,35 @@ impl ScreenManager {
             }
         }
 
-        // Add initial protected field at end of screen to ensure proper field setup
+        // Add final protected field at end of screen to ensure proper field setup
         // Position it at the last position of the screen (row 24, col 80)
         let (high, low) = Self::encode_buffer_addr(23, 79); // 0-based: 23,79 = 24,80
         screen_data.extend_from_slice(&[0x11, high, low]); // SBA
         screen_data.push(0x1D); // SF
-        screen_data.push(0x20); // Protected
+        screen_data.push(0xE0); // Proper protected field attribute (same as initial field)
 
-        // Position cursor at first input field if any
-        if let Some(first_input_field) = field_manager
-            .get_fields_by_position()
-            .iter()
-            .find(|f| !f.attributes.protected)
-        {
-            let (high, low) = Self::encode_buffer_addr(first_input_field.row - 1, first_input_field.col - 1);
-            screen_data.extend_from_slice(&[0x11, high, low]);
-            screen_data.push(0x13); // IC
+        // Initialize field navigator with current fields
+        if let Err(e) = self.field_navigator.initialize_from_field_manager(&field_manager) {
+            warn!("Failed to initialize field navigator: {}", e);
+        } else {
+            // Get navigation statistics for debugging
+            let nav_stats = self.field_navigator.get_navigation_stats();
+            println!("🔍 FIELD NAVIGATOR INITIALIZED: {} input fields found", nav_stats.total_input_fields);
+            
+            if let Some(field_name) = &nav_stats.current_field_name {
+                println!("🔍 ACTIVE FIELD: '{}' at cursor position ({},{})", 
+                         field_name, nav_stats.cursor_position.0, nav_stats.cursor_position.1);
+                
+                // Generate cursor positioning bytes using the field navigator
+                if let Ok(cursor_bytes) = self.field_navigator.generate_cursor_positioning_bytes(field_name) {
+                    screen_data.extend_from_slice(&cursor_bytes);
+                    println!("🔍 CURSOR POSITIONED: Using field navigator for field '{}'", field_name);
+                } else {
+                    warn!("Failed to generate cursor positioning bytes for field '{}'", field_name);
+                }
+            } else {
+                println!("🔍 WARNING: No input fields found - cursor not positioned");
+            }
         }
 
         self.screen_buffer = screen_data.clone();
@@ -761,6 +826,75 @@ impl ScreenManager {
         trace!("Datos completos (hex): {:02X?}", screen_data);
         
         Ok(screen_data)
+    }
+
+    /// Genera una pantalla por nombre, permitiendo navegación dinámica
+    pub fn generate_screen_by_name(&mut self, screen_name: &str) -> Result<Vec<u8>, String> {
+        debug!("Entering ScreenManager::generate_screen_by_name with name: {}", screen_name);
+        
+        match screen_name.to_uppercase().as_str() {
+            "WELCOME" | "HOME" | "INICIO" => {
+                // Usar plantilla welcome_markup.txt
+                self.generate_tn3270_screen("welcome").map_err(|e| e.to_string())
+            },
+            "MENU" | "MAIN" => {
+                // Usar plantilla MENU_markup.txt
+                self.generate_tn3270_screen("MENU").map_err(|e| e.to_string())
+            },
+            "STATUS" | "ESTADO" => {
+                // Usar plantilla STATUS_markup.txt
+                self.generate_tn3270_screen("STATUS").map_err(|e| e.to_string())
+            },
+            "COLORS" | "COLORES" | "COLOR" => {
+                // Usar plantilla COLORS_markup.txt
+                self.generate_tn3270_screen("COLORS").map_err(|e| e.to_string())
+            },
+            "TEST" | "PRUEBA" | "FIELDS" => {
+                // Usar plantilla TEST_markup.txt
+                self.generate_tn3270_screen("TEST").map_err(|e| e.to_string())
+            },
+            "HELP" | "AYUDA" => {
+                // Usar plantilla HELP_markup.txt
+                self.generate_tn3270_screen("HELP").map_err(|e| e.to_string())
+            },
+            "EXIT" | "SALIR" | "QUIT" => {
+                // Usar plantilla EXIT_markup.txt
+                self.generate_tn3270_screen("EXIT").map_err(|e| e.to_string())
+            },
+            // Soporte para navegación numérica desde el menú
+            "1" => {
+                self.generate_tn3270_screen("welcome").map_err(|e| e.to_string())
+            },
+            "2" => {
+                self.generate_tn3270_screen("STATUS").map_err(|e| e.to_string())
+            },
+            "3" => {
+                self.generate_tn3270_screen("COLORS").map_err(|e| e.to_string())
+            },
+            "4" => {
+                self.generate_tn3270_screen("TEST").map_err(|e| e.to_string())
+            },
+            "5" => {
+                self.generate_tn3270_screen("TEST").map_err(|e| e.to_string())
+            },
+            "6" => {
+                self.generate_tn3270_screen("HELP").map_err(|e| e.to_string())
+            },
+            "7" => {
+                self.generate_tn3270_screen("EXIT").map_err(|e| e.to_string())
+            },
+            _ => {
+                // Intentar cargar como plantilla personalizada
+                debug!("Attempting to load custom template: {}", screen_name);
+                match self.generate_tn3270_screen(screen_name) {
+                    Ok(screen) => Ok(screen),
+                    Err(e) => {
+                        debug!("Failed to load template '{}': {}", screen_name, e);
+                        Err(format!("Pantalla '{}' no encontrada", screen_name))
+                    }
+                }
+            }
+        }
     }
 }
 

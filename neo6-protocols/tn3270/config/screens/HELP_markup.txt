@@ -1,0 +1,39 @@
+                       ## NEO6 TN3270 HELP SYSTEM ##
+                       ═══════════════════════════════
+
+      [YELLOW]NEO6 Protocol Server - Command Reference[/YELLOW]
+      [BLUE]════════════════════════════════════════════════[/BLUE]
+
+      [CYAN]Terminal Navigation:[/CYAN]
+      • ENTER          - Execute command/navigate to screen
+      • CLEAR          - Clear screen/return to welcome
+      • TAB            - Move between input fields
+      • BACKSPACE      - Delete character to the left
+
+      [CYAN]Function Keys (PF Keys):[/CYAN]
+      • PF1            - Display this help screen
+      • PF2            - Return to main menu  
+      • PF3 / PF12     - Exit application/return to previous
+      • PF4-PF11       - Reserved for future functions
+
+      [CYAN]Program Attention Keys:[/CYAN]
+      • PA1/PA2/PA3    - Special attention signals
+
+      [CYAN]Available Screens:[/CYAN]
+      • [WHITE]WELCOME[/WHITE]        - Main welcome screen
+      • [WHITE]MENU[/WHITE]           - Navigation menu
+      • [WHITE]STATUS[/WHITE]         - System status information
+      • [WHITE]COLORS[/WHITE]         - Color capability test
+      • [WHITE]TEST[/WHITE]           - System diagnostics
+      • [WHITE]HELP[/WHITE]           - This help screen
+      • [WHITE]EXIT[/WHITE]           - Terminate session
+
+      [CYAN]Navigation Methods:[/CYAN]
+      1. Type screen name and press ENTER
+      2. Use PF keys for quick navigation
+      3. Select menu options with numbers
+
+      [GREEN]Example: Type 'STATUS' and press ENTER to view system status[/GREEN]
+
+      Enter command: [FIELD:input:15]_______________[/FIELD]
+      [PINK]PF2=Menu  PF3=Exit  CLEAR=Welcome[/PINK]

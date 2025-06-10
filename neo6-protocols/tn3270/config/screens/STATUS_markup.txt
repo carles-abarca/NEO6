@@ -1,0 +1,27 @@
+                      ## NEO6 SYSTEM STATUS ##
+                      ═════════════════════════
+
+      [GREEN]◉ NEO6 Protocol Server Status[/GREEN]
+      [BLUE]════════════════════════════════════════════════[/BLUE]
+
+      [YELLOW]Server Status:[/YELLOW]    [GREEN]ONLINE[/GREEN]
+      [YELLOW]Active Sessions:[/YELLOW]  [WHITE]001[/WHITE]
+      [YELLOW]Protocol Mode:[/YELLOW]    [CYAN]TN3270E[/CYAN]
+      [YELLOW]Terminal Type:[/YELLOW]    [WHITE]IBM-3279-3-E[/WHITE]
+
+      [YELLOW]Resource Usage:[/YELLOW]
+      • Memory Usage:     [GREEN]15%[/GREEN] (245 MB / 1.6 GB)
+      • CPU Usage:        [GREEN]3%[/GREEN]  (Low load)
+      • Network I/O:      [GREEN]Normal[/GREEN]
+
+      [YELLOW]Uptime:[/YELLOW]          [WHITE]02:45:33[/WHITE]
+      [YELLOW]Last Update:[/YELLOW]     [WHITE]2024-01-15 14:30:25[/WHITE]
+
+      [CYAN]Available Protocols:[/CYAN]
+      • TN3270/TN3270E  ✓ Active
+      • LU6.2           ✓ Ready  
+      • TCP Proxy       ✓ Ready
+      • REST Gateway    ✓ Ready
+
+      Enter command: [FIELD:input:15]_______________[/FIELD]
+      [PINK]PF1=Help  PF2=Menu  PF3=Exit[/PINK]

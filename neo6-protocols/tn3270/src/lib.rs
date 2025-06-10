@@ -1,7 +1,6 @@
 use tokio::net::{TcpListener, TcpStream};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use bytes::BytesMut;
-use ebcdic::ebcdic::Ebcdic;
 use std::error::Error;
 use async_trait::async_trait;
 use serde_json::Value;
@@ -13,13 +12,14 @@ use tracing::{debug, info, warn, trace};
 mod tn3270_screens;
 mod template_parser;
 mod field_manager;
+mod field_navigation;
 mod ascii_to_ebcdic_ibm037;
 
 // Imports de los módulos
 pub use tn3270_screens::ScreenManager;
-use template_parser::{TemplateParser, TemplateElement, Color3270};
+use template_parser::TemplateParser;
 use field_manager::{FieldManager, ScreenField};
-use ascii_to_ebcdic_ibm037::ascii_to_ebcdic_ibm037;
+use field_navigation::FieldNavigator;
 
 // --- Constantes Telnet y TN3270E ---
 // Comandos Telnet
@@ -423,6 +423,7 @@ struct Session {
     tn3270e: TN3270EState,
     codec: Codec,
     screen_manager: ScreenManager,
+    field_navigator: FieldNavigator, // For managing field navigation and cursor positioning
     terminal_type: String, // Se llenará durante la negociación
     logical_unit: String, // Nombre de la LU, puede ser asignado por el servidor o negociado
     tn3270e_bound: bool, // True cuando la negociación TN3270E está completa y se puede enviar datos 3270
@@ -437,6 +438,7 @@ impl Session {
             tn3270e: TN3270EState::default(),
             codec: Codec::new(),
             screen_manager: ScreenManager::new(),
+            field_navigator: FieldNavigator::new(),
             terminal_type: String::new(), 
             logical_unit: "NEO6LU".to_string(), // LU por defecto, puede ser sobrescrita por el cliente
             tn3270e_bound: false, // Se pone a true cuando la negociación TN3270E está completa
@@ -852,7 +854,7 @@ impl Session {
 
 
     async fn handle_negotiation(&mut self, buf: &[u8]) -> Result<(), Box<dyn Error>> {
-        println!("[tn3270][RECV] handle_negotiation: {:02X?}", buf);
+        println!("[tn3270][RECV] handle_negotiation: buffer size={}, data={:02X?}", buf.len(), buf);
         let mut i = 0;
         while i < buf.len() {
             if buf[i] == IAC { // IAC
@@ -912,9 +914,13 @@ impl Session {
                 // Si no es ninguno de los dos, son datos NVT.
                 let data_chunk = &buf[i..];
                 if self.telnet_state.tn3270e_enabled && self.tn3270e_bound {
-                    println!("[tn3270][DEBUG] Datos inesperados ({:02X?}) fuera de subnegociación en modo TN3270E bound. Podrían ser datos de usuario.", data_chunk);
+                    println!("[tn3270][DEBUG] *** DATOS POSIBLEMENTE DE USUARIO *** en modo TN3270E bound");
+                    println!("[tn3270][DEBUG] Tamaño del chunk: {} bytes", data_chunk.len());
+                    println!("[tn3270][DEBUG] Datos hex: {:02X?}", data_chunk);
+                    println!("[tn3270][DEBUG] Datos ASCII (ignorando EBCDIC): {}", String::from_utf8_lossy(data_chunk));
                     // En lugar de tratarlos como error, procesarlos como posible entrada del usuario
                     if !data_chunk.is_empty() {
+                        println!("[tn3270][DEBUG] Enviando datos a send_3270_data...");
                         self.send_3270_data(data_chunk).await?;
                     }
                 } else if !self.telnet_state.tn3270e_enabled && self.telnet_state.binary_negotiated && self.telnet_state.eor_negotiated {
@@ -1249,31 +1255,354 @@ impl Session {
     // async fn send_tn3270e_device_type_request(&mut self) -> Result<(), Box<dyn Error>> { ... }
 
     // Esta función ya no es necesaria aquí, se integra en el flujo de process_incoming_tn3270e_message
-    // async fn handle_tn3270e(...) -> Result<(), Box<dyn Error>> { ... }
-
-    // Función de ayuda para enviar datos 3270 (AID, cursor, etc.)
-    // Esta es una simplificación. Un servidor real tendría una lógica más compleja.
-    async fn send_3270_data(&mut self, _data: &[u8]) -> Result<(), Box<dyn Error>> {
-        // Ejemplo: enviar un AID nulo (como un Enter pasivo) o datos de pantalla.
-        // Por ahora, esta función es un placeholder.
-        // La pantalla inicial se envía en maybe_send_screen.
-        // Las respuestas a AID del cliente se manejarían aquí.
-        println!("[tn3270][INFO] send_3270_data (placeholder) - datos recibidos del cliente (AID, etc.) serían procesados aquí.");
-
-        // Como ejemplo, si recibimos un AID, podríamos reenviar la pantalla (o una actualizada).
-        // Esto es muy simplificado.
-        if self.tn3270e_bound || (!self.telnet_state.tn3270e_enabled && self.terminal_type.contains("327")) {
-            // Reenviar la misma pantalla de bienvenida como ejemplo de respuesta.
-            // En una app real, se generaría una nueva pantalla basada en la entrada.
-            
-            // Marcar screen_sent = false para forzar el reenvío de la pantalla de ejemplo.
-            // ¡CUIDADO! Esto es solo para demostración y causaría un bucle si no se maneja bien.
-            // self.screen_manager.reset_screen_sent(); 
-            // self.maybe_send_screen().await?;
-
-            // En lugar de reenviar, solo un log por ahora.
-             println!("[tn3270][DEBUG] Simulación de procesamiento de AID y posible actualización de pantalla.");
+    // async fn handle_tn3270e(...) -> Result<(), Box<dyn Error>> { ... }    // Función principal para procesar datos de entrada del cliente (AID, campo de datos, etc.)
+    async fn send_3270_data(&mut self, data: &[u8]) -> Result<(), Box<dyn Error>> {
+        if data.is_empty() {
+            println!("[tn3270][DEBUG] send_3270_data: datos vacíos recibidos");
+            return Ok(());
         }
+
+        println!("[tn3270][INFO] send_3270_data: procesando {} bytes de entrada del cliente", data.len());
+        println!("[tn3270][DEBUG] Datos completos recibidos: {:02X?}", data);
+        
+        // Para TN3270E, los datos incluyen un header de 5 bytes seguido del stream 3270 real
+        // Header TN3270E: [00, 00, 00, 00, 00] seguido de AID y datos
+        let actual_data = if data.len() >= 6 && data[0] == 0x00 && data[1] == 0x00 && 
+                            data[2] == 0x00 && data[3] == 0x00 && data[4] == 0x00 {
+            println!("[tn3270][DEBUG] Detectado header TN3270E, saltando 5 bytes");
+            &data[5..] // Saltar el header TN3270E
+        } else {
+            println!("[tn3270][DEBUG] Datos 3270 sin header TN3270E");
+            data // Usar datos tal como están
+        };
+
+        if actual_data.is_empty() {
+            println!("[tn3270][DEBUG] send_3270_data: datos 3270 vacíos después de procesar header");
+            return Ok(());
+        }
+        
+        // Primero verificar si tenemos datos de teclado especiales (Tab, BackTab)
+        // Estos pueden aparecer como datos EBCDIC sin AID
+        if self.contains_tab_or_backtab_input(actual_data) {
+            println!("[tn3270][INFO] Detectado Tab/BackTab en entrada de teclado");
+            return self.process_keyboard_navigation(actual_data).await;
+        }
+        
+        // Analizar el primer byte del stream 3270 para identificar el AID (Attention Identifier)
+        let aid_byte = actual_data[0];
+        println!("[tn3270][DEBUG] AID recibido: 0x{:02X}", aid_byte);
+        
+        // Si el AID es 0x00, puede indicar datos sin AID válido o problemas de parsing
+        if aid_byte == 0x00 {
+            println!("[tn3270][WARN] AID 0x00 recibido - posible problema de formato o entrada inválida");
+            println!("[tn3270][DEBUG] Intentando interpretar datos como texto plano...");
+            
+            // Intentar extraer texto directamente de los datos
+            if actual_data.len() > 1 {
+                let text_data = String::from_utf8_lossy(&actual_data[1..]).trim().to_string();
+                if !text_data.is_empty() {
+                    println!("[tn3270][INFO] Texto extraído: '{}'", text_data);
+                    // Procesar como comando directo
+                    return self.process_text_command(&text_data).await;
+                }
+            }
+            
+            // Si no hay texto útil, enviar mensaje de error
+            let error_msg = "Entrada no válida - verifique el formato";
+            let error_screen = self.screen_manager.generate_error_screen(&error_msg)?;
+            self.send_screen_data(error_screen).await?;
+            return Ok(());
+        }
+
+        match aid_byte {
+            0x7D => {
+                // AID_ENTER (0x7D) - tecla Enter
+                println!("[tn3270][INFO] Procesando AID_ENTER");
+                self.process_enter_aid(actual_data).await?;
+            },
+            0x6C => {
+                // AID_CLEAR (0x6C) - tecla Clear
+                println!("[tn3270][INFO] Procesando AID_CLEAR");
+                self.process_clear_aid().await?;
+            },
+            0x6D => {
+                // AID_PA1 (0x6D) - tecla PA1
+                println!("[tn3270][INFO] Procesando AID_PA1");
+                self.process_pa_aid("PA1").await?;
+            },
+            0x6E => {
+                // AID_PA2 (0x6E) - tecla PA2
+                println!("[tn3270][INFO] Procesando AID_PA2");
+                self.process_pa_aid("PA2").await?;
+            },
+            0x6B => {
+                // AID_PA3 (0x6B) - tecla PA3
+                println!("[tn3270][INFO] Procesando AID_PA3");
+                self.process_pa_aid("PA3").await?;
+            },
+            0xF1..=0xFC => {
+                // AID_PF1 through AID_PF24 - teclas de función
+                let pf_num = match aid_byte {
+                    0xF1 => 1, 0xF2 => 2, 0xF3 => 3, 0xF4 => 4, 0xF5 => 5,
+                    0xF6 => 6, 0xF7 => 7, 0xF8 => 8, 0xF9 => 9, 0x7A => 10,
+                    0x7B => 11, 0x7C => 12, 0xC1 => 13, 0xC2 => 14, 0xC3 => 15,
+                    0xC4 => 16, 0xC5 => 17, 0xC6 => 18, 0xC7 => 19, 0xC8 => 20,
+                    0xC9 => 21, 0x4A => 22, 0x4B => 23, 0x4C => 24,
+                    _ => 0,
+                };
+                println!("[tn3270][INFO] Procesando AID_PF{}", pf_num);
+                self.process_pf_aid(pf_num).await?;
+            },
+            _ => {
+                println!("[tn3270][WARN] AID desconocido: 0x{:02X}, procesando como entrada genérica", aid_byte);
+                self.process_unknown_aid(actual_data).await?;
+            }
+        }
+
+        Ok(())
+    }
+
+    // Procesa la tecla Enter - extrae datos de campos y navega según el input
+    async fn process_enter_aid(&mut self, data: &[u8]) -> Result<(), Box<dyn Error>> {
+        println!("[tn3270][DEBUG] process_enter_aid: analizando datos de campo");
+        
+        if data.len() < 3 {
+            println!("[tn3270][WARN] Datos insuficientes para procesar Enter");
+            return Ok(());
+        }
+
+        // Los bytes 1-2 contienen la posición del cursor (dirección de buffer)
+        let cursor_high = data[1];
+        let cursor_low = data[2];
+        let cursor_addr = ((cursor_high & 0x3F) << 6) | (cursor_low & 0x3F);
+        println!("[tn3270][DEBUG] Posición del cursor: {}", cursor_addr);
+
+        // Extraer datos de campo del stream TN3270
+        let field_data = self.extract_field_data(&data[3..]).await?;
+        println!("[tn3270][DEBUG] Datos de campo extraídos: {:?}", field_data);
+
+        // Si tenemos datos de campo, usar el primer valor como nombre de pantalla
+        if let Some(first_value) = field_data.first() {
+            if !first_value.trim().is_empty() {
+                let screen_name = first_value.trim().to_uppercase();
+                println!("[tn3270][INFO] Navegando a pantalla: {}", screen_name);
+                
+                // IMPORTANTE: Resetear el estado de pantalla antes de generar nueva pantalla
+                self.screen_manager.reset_screen_sent();
+                
+                // Intentar generar la pantalla solicitada
+                let screen_result = self.screen_manager.generate_screen_by_name(&screen_name);
+                match screen_result {
+                    Ok(screen_data) => {
+                        self.send_screen_data(screen_data).await?;
+                        return Ok(());
+                    },
+                    Err(_) => {
+                        println!("[tn3270][WARN] Error generando pantalla '{}'", screen_name);
+                        // Resetear estado también para pantalla de error
+                        self.screen_manager.reset_screen_sent();
+                        // Enviar pantalla de error
+                        let error_msg = format!("Pantalla '{}' no encontrada", screen_name);
+                        let error_screen = self.screen_manager.generate_error_screen(&error_msg)?;
+                        self.send_screen_data(error_screen).await?;
+                        return Ok(());
+                    }
+                }
+            }
+        }
+
+        // Si no hay entrada válida, reenviar la pantalla actual
+        println!("[tn3270][INFO] Sin entrada válida, reenviando pantalla actual");
+        self.screen_manager.reset_screen_sent();
+        self.maybe_send_screen().await?;
+        Ok(())
+    }
+
+    // Procesa la tecla Clear - limpia la pantalla y envía pantalla de bienvenida
+    async fn process_clear_aid(&mut self) -> Result<(), Box<dyn Error>> {
+        println!("[tn3270][INFO] Clear recibido, enviando pantalla de bienvenida");
+        let welcome_screen = self.screen_manager.generate_welcome_screen()?;
+        self.send_screen_data(welcome_screen).await?;
+        Ok(())
+    }
+
+    // Procesa teclas PA (Program Attention) - usualmente no modifican datos
+    async fn process_pa_aid(&mut self, pa_name: &str) -> Result<(), Box<dyn Error>> {
+        println!("[tn3270][INFO] {} recibido, sin acción específica", pa_name);
+        // Las teclas PA normalmente no requieren respuesta especial
+        Ok(())
+    }
+
+    // Procesa teclas PF (Program Function) - pueden activar funciones especiales
+    async fn process_pf_aid(&mut self, pf_num: u8) -> Result<(), Box<dyn Error>> {
+        println!("[tn3270][INFO] PF{} recibido", pf_num);
+        
+        // Mapear teclas PF a funciones específicas
+        match pf_num {
+            1 => {
+                // PF1 = Help
+                let help_screen = self.screen_manager.generate_tn3270_screen("help")?;
+                self.send_screen_data(help_screen).await?;
+            },
+            2 => {
+                // PF2 = Menu
+                let menu_options = [
+                    ("1", "Pantalla de bienvenida"),
+                    ("2", "Estado del sistema"),
+                    ("3", "Demostración de colores"),
+                    ("4", "Salir"),
+                ];
+                let menu_screen = self.screen_manager.generate_menu_screen("MENU PRINCIPAL NEO6", &menu_options)?;
+                self.send_screen_data(menu_screen).await?;
+            },
+            3 => {
+                // PF3 = Exit/Return
+                let welcome_screen = self.screen_manager.generate_welcome_screen()?;
+                self.send_screen_data(welcome_screen).await?;
+            },
+            12 => {
+                // PF12 = Cancel/Exit
+                let welcome_screen = self.screen_manager.generate_welcome_screen()?;
+                self.send_screen_data(welcome_screen).await?;
+            },
+            _ => {
+                // Tecla PF no definida
+                let error_msg = format!("Función PF{} no implementada", pf_num);
+                let error_screen = self.screen_manager.generate_error_screen(&error_msg)?;
+                self.send_screen_data(error_screen).await?;
+            }
+        }
+        Ok(())
+    }
+
+    // Procesa AIDs desconocidos
+    async fn process_unknown_aid(&mut self, data: &[u8]) -> Result<(), Box<dyn Error>> {
+        println!("[tn3270][WARN] AID desconocido, datos: {:02X?}", data);
+        let error_msg = format!("Comando no reconocido (AID: 0x{:02X})", data[0]);
+        let error_screen = self.screen_manager.generate_error_screen(&error_msg)?;
+        self.send_screen_data(error_screen).await?;
+        Ok(())
+    }
+
+    // Extrae datos de campo del stream TN3270
+    async fn extract_field_data(&self, data: &[u8]) -> Result<Vec<String>, Box<dyn Error>> {
+        let mut field_data = Vec::new();
+        let mut i = 0;
+
+        while i < data.len() {
+            // Buscar SBA (Set Buffer Address) orders que indican posiciones de campo
+            if i + 2 < data.len() && data[i] == 0x11 {
+                // SBA encontrado, saltar dirección (2 bytes)
+                i += 3;
+                continue;
+            }
+
+            // Buscar datos de campo EBCDIC
+            let mut field_start = i;
+            while i < data.len() && data[i] != 0x11 && data[i] != 0x00 {
+                i += 1;
+            }
+
+            if i > field_start {
+                // Convertir de EBCDIC a ASCII
+                let ebcdic_data = &data[field_start..i];
+                let ascii_data = self.screen_manager.codec.from_host(ebcdic_data);
+                let field_string = String::from_utf8_lossy(&ascii_data).trim().to_string();
+                
+                // Filtrar espacios, underscores y otros caracteres de relleno
+                let cleaned_field = field_string.chars()
+                    .filter(|&c| c != '_' && c != ' ')
+                    .collect::<String>();
+                
+                if !cleaned_field.is_empty() {
+                    println!("[tn3270][DEBUG] Campo extraído: '{}' (limpiado de: '{}')", cleaned_field, field_string);
+                    field_data.push(cleaned_field);
+                }
+            }
+
+            if i < data.len() {
+                i += 1;
+            }
+        }
+
+        Ok(field_data)
+    }
+
+    // Procesa comandos de texto directo (cuando no hay AID válido)
+    async fn process_text_command(&mut self, command: &str) -> Result<(), Box<dyn Error>> {
+        println!("[tn3270][INFO] Procesando comando de texto: '{}'", command);
+        
+        let upper_command = command.to_uppercase();
+        match self.screen_manager.generate_screen_by_name(&upper_command) {
+            Ok(screen_data) => {
+                self.send_screen_data(screen_data).await?;
+            },
+            Err(_) => {
+                let error_msg = format!("Comando '{}' no reconocido", command);
+                let error_screen = self.screen_manager.generate_error_screen(&error_msg)?;
+                self.send_screen_data(error_screen).await?;
+            }
+        }
+        Ok(())
+    }
+
+    // Envía datos de pantalla usando el protocolo apropiado
+    async fn send_screen_data(&mut self, screen_data: Vec<u8>) -> Result<(), Box<dyn Error>> {
+        if self.tn3270e_bound {
+            // Formato TN3270E
+            self.send_tn3270e_data(&screen_data).await?;
+        } else if self.telnet_state.tn3270e_enabled {
+            // TN3270E habilitado pero no bound
+            self.send_tn3270e_data(&screen_data).await?;
+        } else {
+            // Telnet clásico
+            self.send_classic_telnet_data(&screen_data).await?;
+        }
+        
+        self.screen_manager.mark_screen_sent();
+        Ok(())
+    }
+
+    // Envía datos usando protocolo TN3270E
+    async fn send_tn3270e_data(&mut self, screen_data: &[u8]) -> Result<(), Box<dyn Error>> {
+        let mut tn3270e_data = Vec::new();
+        
+        // Header TN3270E para datos 3270
+        tn3270e_data.push(0x00); // data_type: 3270-DATA
+        tn3270e_data.push(0x00); // request_flag
+        tn3270e_data.push(0x00); // response_flag  
+        tn3270e_data.push(0x00); // seq_number[0]
+        tn3270e_data.push(0x00); // seq_number[1]
+        
+        // Agregar datos de pantalla
+        tn3270e_data.extend_from_slice(screen_data);
+        
+        // Terminar con IAC EOR
+        tn3270e_data.push(0xFF); // IAC
+        tn3270e_data.push(0xEF); // EOR
+        
+        self.stream.write_all(&tn3270e_data).await?;
+        self.stream.flush().await?;
+        
+        println!("[tn3270][DEBUG] Enviados {} bytes vía TN3270E", tn3270e_data.len());
+        Ok(())
+    }
+
+    // Envía datos usando Telnet clásico
+    async fn send_classic_telnet_data(&mut self, screen_data: &[u8]) -> Result<(), Box<dyn Error>> {
+        let mut telnet_data = Vec::new();
+        
+        // Agregar datos de pantalla
+        telnet_data.extend_from_slice(screen_data);
+        
+        // Terminar con IAC EOR
+        telnet_data.push(0xFF); // IAC
+        telnet_data.push(0xEF); // EOR
+        
+        self.stream.write_all(&telnet_data).await?;
+        self.stream.flush().await?;
+        
+        println!("[tn3270][DEBUG] Enviados {} bytes vía Telnet clásico", telnet_data.len());
         Ok(())
     }
 }

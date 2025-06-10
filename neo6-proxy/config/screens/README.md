@@ -12,7 +12,7 @@ Las plantillas de pantalla TN3270 utilizan un sistema de marcado basado en etiqu
 
 ## Sintaxis General
 
-### Etiquetas de Color
+### Etiquetas de Colorcd
 
 Las etiquetas de color envuelven el texto que debe aparecer en un color específico:
 

@@ -1,0 +1,23 @@
+<pos:1,1><color:blue>+=============================================================================+</color>
+<pos:2,1><color:blue>|</color><pos:2,30><color:yellow><bright>AYUDA DEL SISTEMA</bright></color><pos:2,79><color:blue>|</color>
+<pos:3,1><color:blue>+=============================================================================+</color>
+<pos:4,1><color:blue>|</color><pos:4,79><color:blue>|</color>
+<pos:5,1><color:blue>|</color><pos:5,4><color:white><bright>Comandos disponibles:</bright></color><pos:5,79><color:blue>|</color>
+<pos:6,1><color:blue>|</color><pos:6,79><color:blue>|</color>
+<pos:7,1><color:blue>|</color><pos:7,4><color:turquoise>MENU     - Volver al menu principal</color><pos:7,79><color:blue>|</color>
+<pos:8,1><color:blue>|</color><pos:8,4><color:turquoise>STATUS   - Ver estado del sistema</color><pos:8,79><color:blue>|</color>
+<pos:9,1><color:blue>|</color><pos:9,4><color:turquoise>COLORS   - Prueba de colores</color><pos:9,79><color:blue>|</color>
+<pos:10,1><color:blue>|</color><pos:10,4><color:turquoise>TEST     - Prueba de campos</color><pos:10,79><color:blue>|</color>
+<pos:11,1><color:blue>|</color><pos:11,4><color:turquoise>HELP     - Esta pantalla de ayuda</color><pos:11,79><color:blue>|</color>
+<pos:12,1><color:blue>|</color><pos:12,4><color:turquoise>EXIT     - Salir del sistema</color><pos:12,79><color:blue>|</color>
+<pos:13,1><color:blue>|</color><pos:13,79><color:blue>|</color>
+<pos:14,1><color:blue>|</color><pos:14,4><color:white><bright>Teclas de funcion:</bright></color><pos:14,79><color:blue>|</color>
+<pos:15,1><color:blue>|</color><pos:15,79><color:blue>|</color>
+<pos:16,1><color:blue>|</color><pos:16,4><color:green>PF1  = HELP   - Mostrar esta ayuda</color><pos:16,79><color:blue>|</color>
+<pos:17,1><color:blue>|</color><pos:17,4><color:green>PF2  = MENU   - Ir al menu principal</color><pos:17,79><color:blue>|</color>
+<pos:18,1><color:blue>|</color><pos:18,4><color:green>PF3  = EXIT   - Salir del sistema</color><pos:18,79><color:blue>|</color>
+<pos:19,1><color:blue>|</color><pos:19,4><color:green>PF12 = EXIT   - Salir del sistema</color><pos:19,79><color:blue>|</color>
+<pos:20,1><color:blue>+=============================================================================+</color>
+
+<pos:21,4><color:pink>Introduzca comando:</color>
+<pos:21,1><color:pink>COMANDO === </color><color:yellow>></color> <pos:21,15><field:command,length=20,uppercase></field>

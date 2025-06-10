@@ -1,0 +1,22 @@
+<pos:1,1><color:blue>+=============================================================================+</color>
+<pos:2,1><color:blue>|</color><pos:2,28><color:yellow><bright>ESTADO DEL SISTEMA NEO6</bright></color><pos:2,79><color:blue>|</color>
+<pos:3,1><color:blue>+=============================================================================+</color>
+<pos:4,1><color:blue>|</color><pos:4,79><color:blue>|</color>
+<pos:5,1><color:blue>|</color><pos:5,4><color:white>Estado general del sistema:</color><pos:5,79><color:blue>|</color>
+<pos:6,1><color:blue>|</color><pos:6,79><color:blue>|</color>
+<pos:7,1><color:blue>|</color><pos:7,4><color:turquoise>Sistema:</color><pos:7,25><color:green><bright>ACTIVO</bright></color><pos:7,79><color:blue>|</color>
+<pos:8,1><color:blue>|</color><pos:8,4><color:turquoise>Memoria:</color><pos:8,25><color:green>85% disponible</color><pos:8,79><color:blue>|</color>
+<pos:9,1><color:blue>|</color><pos:9,4><color:turquoise>CPU:</color><pos:9,25><color:green>12% uso</color><pos:9,79><color:blue>|</color>
+<pos:10,1><color:blue>|</color><pos:10,4><color:turquoise>Conexiones:</color><pos:10,25><color:green>24 activas</color><pos:10,79><color:blue>|</color>
+<pos:11,1><color:blue>|</color><pos:11,4><color:turquoise>Fecha:</color><pos:11,25><color:white>{system_date}</color><pos:11,79><color:blue>|</color>
+<pos:12,1><color:blue>|</color><pos:12,4><color:turquoise>Hora:</color><pos:12,25><color:white>{system_time}</color><pos:12,79><color:blue>|</color>
+<pos:13,1><color:blue>|</color><pos:13,4><color:turquoise>Sesion:</color><pos:13,25><color:white>{session_id}</color><pos:13,79><color:blue>|</color>
+<pos:14,1><color:blue>|</color><pos:14,4><color:turquoise>Terminal:</color><pos:14,25><color:white>{terminal_type}</color><pos:14,79><color:blue>|</color>
+<pos:15,1><color:blue>|</color><pos:15,79><color:blue>|</color>
+<pos:16,1><color:blue>+=============================================================================+</color>
+
+<pos:18,4><color:white><bright>Teclas de funcion:</bright></color>
+<pos:19,7><color:green>PF1=HELP   PF2=MENU   PF3=EXIT   PF12=EXIT</color>
+
+<pos:21,4><color:pink>Introduzca comando:</color>
+<pos:21,1><color:pink>COMANDO === </color><color:yellow>></color> <pos:21,15><field:command,length=20,uppercase></field>

@@ -1,0 +1,24 @@
+## WELCOME TO NEO6 TN3270 TERMINAL ##
+                 ═══════════════════════════════════════
+
+      [GREEN]NEO6 Protocol Server - TN3270 Interface[/GREEN]
+      [BLUE]═════════════════════════════════════════════════[/BLUE]
+
+      Welcome to the NEO6 TN3270 terminal interface.
+      This system provides access to legacy mainframe
+      applications through modern protocol translation.
+
+      [YELLOW]Available Commands:[/YELLOW]
+      • MENU    - Main navigation menu
+      • STATUS  - System status information  
+      • COLORS  - Color capability demonstration
+      • TEST    - Basic connectivity test
+      • HELP    - Help and command reference
+      • EXIT    - Terminate session
+
+      [CYAN]Quick Access Keys:[/CYAN]
+      PF1=Help  PF2=Menu  PF3=Exit  PF12=Cancel
+
+      Enter command: [FIELD:input:20]____________________[/FIELD]
+
+      [PINK]© 2024 NEO6 Systems - TN3270 Protocol Server[/PINK]

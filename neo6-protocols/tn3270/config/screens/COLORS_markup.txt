@@ -1,0 +1,32 @@
+                      ## TN3270 COLOR DEMONSTRATION ##
+                      ══════════════════════════════════
+
+      [YELLOW]Testing terminal color capabilities for NEO6[/YELLOW]
+      [BLUE]═══════════════════════════════════════════════════[/BLUE]
+
+      [WHITE]Standard Colors:[/WHITE]
+      • [DEFAULT]Default text color[/DEFAULT]
+      • [BLUE]Blue - Information and headers[/BLUE]
+      • [RED]Red - Errors and alerts[/RED]
+      • [PINK]Pink/Magenta - Special emphasis[/PINK]
+      • [GREEN]Green - Success and status OK[/GREEN]
+      • [TURQUOISE]Turquoise/Cyan - Highlights[/TURQUOISE]
+      • [YELLOW]Yellow - Warnings and titles[/YELLOW]
+      • [WHITE]White - High contrast text[/WHITE]
+
+      [CYAN]Field Attributes:[/CYAN]
+      • Normal intensity text
+      • [BRIGHT]Bright/High intensity text[/BRIGHT]
+      • [BLINK]Blinking text (if supported)[/BLINK]
+      • [UNDERLINE]Underlined text (if supported)[/UNDERLINE]
+
+      [PINK]Combination Examples:[/PINK]
+      • [GREEN:BRIGHT]Bright green success message[/GREEN:BRIGHT]
+      • [RED:BLINK]Blinking red alert[/RED:BLINK]
+      • [BLUE:UNDERLINE]Underlined blue information[/BLUE:UNDERLINE]
+
+      Note: Color support depends on terminal capabilities.
+      Modern terminals (c3270, x3270) support full colors.
+
+      Enter command: [FIELD:input:15]_______________[/FIELD]
+      [TURQUOISE]PF1=Help  PF2=Menu  PF3=Exit[/TURQUOISE]
