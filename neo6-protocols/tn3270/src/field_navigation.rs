@@ -1,5 +1,4 @@
 use tracing::{debug, warn, error};
-use crate::FieldManager;
 
 /// Estructura para manejar la navegación entre campos en TN3270
 #[derive(Debug, Clone)]
@@ -39,7 +38,7 @@ impl FieldNavigator {
     }
 
     /// Inicializa el navegador con los campos del FieldManager
-    pub fn initialize_from_field_manager(&mut self, field_manager: &FieldManager) -> Result<(), String> {
+    pub fn initialize_from_field_manager(&mut self, field_manager: &crate::FieldManager) -> Result<(), String> {
         debug!("Initializing FieldNavigator from FieldManager");
         
         self.input_fields.clear();
@@ -125,19 +124,37 @@ impl FieldNavigator {
         debug!("Tabbing to next field from current position ({},{})", 
                self.cursor_position.0, self.cursor_position.1);
 
-        if let Some(next_field) = self.find_next_unprotected(self.cursor_position) {
-            // Encontrar el índice del campo
-            if let Some(index) = self.input_fields.iter().position(|f| f.name == next_field.name) {
-                self.current_field_index = Some(index);
-                // Posicionar cursor en la primera posición de datos del campo
-                self.cursor_position = (next_field.position.0, next_field.position.1 + 1);
-                debug!("Tabbed to field '{}' - cursor at ({},{})", 
-                       next_field.name, self.cursor_position.0, self.cursor_position.1);
-                Ok(self.cursor_position)
-            } else {
-                error!("Field found but not in our list - this should not happen");
-                Err("Internal navigation error".to_string())
+        // Encontrar el índice del siguiente campo no protegido
+        let from_addr = self.cursor_position.0 * 80 + self.cursor_position.1;
+        
+        // Buscar el primer campo que esté después de la posición actual
+        let mut next_field_index = None;
+        for (index, field) in self.input_fields.iter().enumerate() {
+            let field_addr = field.position.0 * 80 + field.position.1;
+            if field_addr > from_addr && !field.protected {
+                next_field_index = Some(index);
+                break;
             }
+        }
+        
+        // Si no encontramos ninguno después, buscar desde el principio (wrap around)
+        if next_field_index.is_none() {
+            for (index, field) in self.input_fields.iter().enumerate() {
+                if !field.protected {
+                    next_field_index = Some(index);
+                    break;
+                }
+            }
+        }
+
+        if let Some(index) = next_field_index {
+            let next_field = &self.input_fields[index];
+            self.current_field_index = Some(index);
+            // Posicionar cursor en la primera posición de datos del campo
+            self.cursor_position = (next_field.position.0, next_field.position.1 + 1);
+            debug!("Tabbed to field '{}' - cursor at ({},{})", 
+                   next_field.name, self.cursor_position.0, self.cursor_position.1);
+            Ok(self.cursor_position)
         } else {
             warn!("No next field available for tab navigation");
             Err("No next field available".to_string())
@@ -151,35 +168,34 @@ impl FieldNavigator {
 
         let current_addr = self.cursor_position.0 * 80 + self.cursor_position.1;
         
-        // Buscar el último campo antes de la posición actual
-        let mut previous_field: Option<&InputField> = None;
-        
-        for field in self.input_fields.iter().rev() {
+        // Buscar el último campo no protegido que esté antes de la posición actual
+        let mut prev_field_index = None;
+        for (index, field) in self.input_fields.iter().enumerate().rev() {
             let field_addr = field.position.0 * 80 + field.position.1;
             if field_addr < current_addr && !field.protected {
-                previous_field = Some(field);
+                prev_field_index = Some(index);
                 break;
             }
         }
-
-        // Si no encontramos ninguno antes, usar el último campo (wrap around)
-        if previous_field.is_none() {
-            previous_field = self.input_fields.iter().rev().find(|f| !f.protected);
+        
+        // Si no encontramos ninguno antes, buscar el último campo (wrap around)
+        if prev_field_index.is_none() {
+            for (index, field) in self.input_fields.iter().enumerate().rev() {
+                if !field.protected {
+                    prev_field_index = Some(index);
+                    break;
+                }
+            }
         }
 
-        if let Some(prev_field) = previous_field {
-            // Encontrar el índice del campo
-            if let Some(index) = self.input_fields.iter().position(|f| f.name == prev_field.name) {
-                self.current_field_index = Some(index);
-                // Posicionar cursor en la primera posición de datos del campo
-                self.cursor_position = (prev_field.position.0, prev_field.position.1 + 1);
-                debug!("BackTabbed to field '{}' - cursor at ({},{})", 
-                       prev_field.name, self.cursor_position.0, self.cursor_position.1);
-                Ok(self.cursor_position)
-            } else {
-                error!("Previous field found but not in our list - this should not happen");
-                Err("Internal navigation error".to_string())
-            }
+        if let Some(index) = prev_field_index {
+            let prev_field = &self.input_fields[index];
+            self.current_field_index = Some(index);
+            // Posicionar cursor en la primera posición de datos del campo
+            self.cursor_position = (prev_field.position.0, prev_field.position.1 + 1);
+            debug!("BackTabbed to field '{}' - cursor at ({},{})", 
+                   prev_field.name, self.cursor_position.0, self.cursor_position.1);
+            Ok(self.cursor_position)
         } else {
             warn!("No previous field available for backtab navigation");
             Err("No previous field available".to_string())
@@ -261,6 +277,42 @@ impl FieldNavigator {
             current_field_name: self.get_current_field().map(|f| f.name.clone()),
         }
     }
+
+    fn find_next_field_index(&self) -> Option<usize> {
+        if let Some(current_index) = self.current_field_index {
+            // Buscar el siguiente campo no protegido
+            for (index, field) in self.input_fields.iter().enumerate().skip(current_index + 1) {
+                if !field.protected {
+                    return Some(index);
+                }
+            }
+        }
+        None
+    }
+
+    fn find_previous_field_index(&self) -> Option<usize> {
+        if let Some(current_index) = self.current_field_index {
+            // Buscar el campo anterior no protegido
+            for (index, field) in self.input_fields.iter().enumerate().rev() {
+                if !field.protected && index < current_index {
+                    return Some(index);
+                }
+            }
+        }
+        None
+    }
+
+    pub fn move_to_next_field(&mut self) {
+        if let Some(next_index) = self.find_next_field_index() {
+            self.current_field_index = Some(next_index);
+        }
+    }
+
+    pub fn move_to_previous_field(&mut self) {
+        if let Some(prev_index) = self.find_previous_field_index() {
+            self.current_field_index = Some(prev_index);
+        }
+    }
 }
 
 /// Estadísticas de navegación para debugging
@@ -281,7 +333,6 @@ impl Default for FieldNavigator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{FieldManager, TemplateFieldAttributes};
 
     #[test]
     fn test_field_navigator_creation() {

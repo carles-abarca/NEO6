@@ -1257,6 +1257,7 @@ impl Session {
     // Esta función ya no es necesaria aquí, se integra en el flujo de process_incoming_tn3270e_message
     // async fn handle_tn3270e(...) -> Result<(), Box<dyn Error>> { ... }    // Función principal para procesar datos de entrada del cliente (AID, campo de datos, etc.)
     async fn send_3270_data(&mut self, data: &[u8]) -> Result<(), Box<dyn Error>> {
+
         if data.is_empty() {
             println!("[tn3270][DEBUG] send_3270_data: datos vacíos recibidos");
             return Ok(());
@@ -1498,7 +1499,7 @@ impl Session {
             }
 
             // Buscar datos de campo EBCDIC
-            let mut field_start = i;
+            let field_start = i;
             while i < data.len() && data[i] != 0x11 && data[i] != 0x00 {
                 i += 1;
             }
@@ -1531,7 +1532,6 @@ impl Session {
     // Procesa comandos de texto directo (cuando no hay AID válido)
     async fn process_text_command(&mut self, command: &str) -> Result<(), Box<dyn Error>> {
         println!("[tn3270][INFO] Procesando comando de texto: '{}'", command);
-        
         let upper_command = command.to_uppercase();
         match self.screen_manager.generate_screen_by_name(&upper_command) {
             Ok(screen_data) => {
@@ -1603,6 +1603,19 @@ impl Session {
         self.stream.flush().await?;
         
         println!("[tn3270][DEBUG] Enviados {} bytes vía Telnet clásico", telnet_data.len());
+        Ok(())
+    }
+}
+
+// Move impl Session to module scope and update method stubs
+impl Session {
+    pub fn contains_tab_or_backtab_input(&self, _actual_data: &[u8]) -> bool {
+        // TODO: Implement actual logic
+        false
+    }
+
+    pub async fn process_keyboard_navigation(&mut self, _actual_data: &[u8]) -> Result<(), Box<dyn Error>> {
+        // TODO: Implement actual logic
         Ok(())
     }
 }

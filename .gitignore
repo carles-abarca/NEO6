@@ -37,3 +37,4 @@ neo6-protocols/target/
 **/incremental/
 **/examples/
 **/tmp/
+neo6-proxy/target/.rustc_info.json
