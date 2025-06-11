@@ -10,10 +10,9 @@ use tracing::{debug, info, warn, trace};
 
 // Módulos del protocolo TN3270
 mod tn3270_screens;
-mod template_parser;
+pub mod template_parser;
 mod field_manager;
-mod field_navigation;
-mod ascii_to_ebcdic_ibm037;
+pub mod field_navigation;
 
 // Imports de los módulos
 pub use tn3270_screens::ScreenManager;
@@ -45,15 +44,12 @@ const OPT_TN3270E: u8 = 40;
 // These are the operation codes used in TN3270E subnegotiation messages
 
 // TN3270E Operations (used for both client and server messages)
-const TN3270E_OP_ASSOCIATE: u8 = 0;
 const TN3270E_OP_CONNECT: u8 = 1;
 const TN3270E_OP_DEVICE_TYPE: u8 = 2;
 const TN3270E_OP_FUNCTIONS: u8 = 3;
 const TN3270E_OP_IS: u8 = 4;
-const TN3270E_OP_REASON: u8 = 5;
 const TN3270E_OP_REJECT: u8 = 6;
 const TN3270E_OP_REQUEST: u8 = 7;
-const TN3270E_OP_SEND: u8 = 8;
 
 // TN3270E Functions (RFC 2355 Section 4.6)
 const FUNC_BIND_IMAGE: u8 = 0x00;
@@ -76,7 +72,6 @@ const EOR: u8 = EOR_TELNET_CMD;  // Alias for consistency
 // Estados de negociación Telnet
 #[derive(Debug, Default)]
 struct TelnetState {
-    will_echo: bool,
     binary_mode: bool, // True si BINARY ha sido negociado (WILL/DO intercambiados)
     tn3270e_enabled: bool, // True si TN3270E ha sido negociado (WILL/DO intercambiados)
     termtype_negotiated: bool,
@@ -379,14 +374,12 @@ fn ebcdic_to_ascii_byte(ebcdic: u8) -> u8 {
 #[derive(Debug)]
 pub struct Codec {
     use_ebcdic: bool,
-    code_page: String,
 }
 
 impl Codec {
     pub fn new() -> Self {
         Codec {
             use_ebcdic: true,
-            code_page: "CP037".to_string(),
         }
     }
 
@@ -418,7 +411,8 @@ impl Codec {
 
 // Sesión de cliente
 #[derive(Debug)]
-struct Session {
+#[allow(dead_code)] // These fields are part of WIP implementation
+pub struct Session {
     stream: TcpStream,
     telnet_state: TelnetState,
     tn3270e: TN3270EState,
@@ -431,7 +425,7 @@ struct Session {
 }
 
 impl Session {
-    async fn new(stream: TcpStream) -> Self {
+    pub async fn new(stream: TcpStream) -> Self {
         debug!("Session::new() - Iniciando nueva sesión TN3270");
         Session {
             stream,

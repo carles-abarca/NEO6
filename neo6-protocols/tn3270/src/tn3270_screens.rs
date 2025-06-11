@@ -17,17 +17,6 @@ pub struct FieldAttribute {
 }
 
 impl FieldAttribute {
-    /// Crea un nuevo atributo de campo básico
-    pub fn new() -> Self {
-        debug!("Entering FieldAttribute::new");
-        FieldAttribute {
-            protected: true,
-            numeric: false,
-            display: true,
-            intensity: 0,
-            color: Color3270::Default,
-        }
-    }
     
     /// Crea un atributo protegido con color
     pub fn protected_with_color(color: Color3270) -> Self {
@@ -474,82 +463,11 @@ impl ScreenManager {
         Ok(screen_data)
     }
 
-    /// Agrega un campo protegido con color y atributos extendidos
-    fn add_protected_field_with_color(
-        &self,
-        screen_data: &mut Vec<u8>,
-        row: u16,
-        col: u16,
-        text: &str,
-        color: Color3270,
-        bright: bool,
-        blink: bool,
-        underline: bool,
-    ) {
-        let (high, low) = Self::encode_buffer_addr(row, col);
-        screen_data.extend_from_slice(&[0x11, high, low]); // SBA
-
-        screen_data.push(0x1D); // SF
-        screen_data.push(0x20); // Protected
-
-        // SFE para aplicar color y estilo
-        screen_data.push(0x29); // SFE
-        let mut count = 1;
-        if bright || blink || underline {
-            count += 1;
-        }
-        screen_data.push(count); // Número de atributos
-
-        // Color
-        screen_data.push(0x42);
-        screen_data.push(color as u8);
-
-        if bright || blink || underline {
-            screen_data.push(0xC0); // Extended highlighting
-            let mut attr = 0x00;
-            if bright { attr |= 0x08; }
-            if blink { attr |= 0x10; }
-            if underline { attr |= 0x20; }
-            screen_data.push(attr);
-        }
-
-        let text_ebcdic = self.codec.to_host(text.as_bytes());
-        screen_data.extend_from_slice(&text_ebcdic);
-    }
-
     /// Genera la pantalla de bienvenida de NEO6 usando el nuevo parser de templates
     pub fn generate_welcome_screen(&mut self) -> Result<Vec<u8>, Box<dyn Error>> {
         debug!("Entering ScreenManager::generate_welcome_screen");
         // Use the new generic template generation method with "welcome" template
         self.generate_tn3270_screen("welcome")
-    }    
-    /// Calcula el byte de atributo basado en los flags de formato
-    fn calculate_attribute_byte(&self, bright: bool, blink: bool, underline: bool) -> u8 {
-        debug!("Entering ScreenManager::calculate_attribute_byte");
-        let mut attr = 0x20; // Protegido por defecto
-        
-        if bright {
-            attr |= 0x08; // Alta intensidad
-        }
-        if blink {
-            attr |= 0x04; // Parpadeo
-        }
-        if underline {
-            attr |= 0x01; // Subrayado
-        }
-        
-        attr
-    }
-
-    /// Agrega atributos de color al stream de datos
-    fn add_color_attribute(&self, screen_data: &mut Vec<u8>, color: Color3270) {
-        debug!("Entering ScreenManager::add_color_attribute");
-        screen_data.push(0x29); // SFE (Start Field Extended)
-        screen_data.push(0x02); // Número de pares atributo-valor
-        screen_data.push(0xC0); // Extended highlighting attribute
-        screen_data.push(0x00); // Valor por defecto
-        screen_data.push(0x42); // Foreground color attribute
-        screen_data.push(color as u8); // Color value
     }
 
     /// Genera una pantalla de demostración de colores 3270

@@ -1,4 +1,5 @@
-// Template parser para el lenguaje de marcado de pantallas TN3270
+// Template parser v2.0 para el lenguaje de marcado de pantallas TN3270 con sintaxis de brackets
+// Soporte completo para la especificación v2.0 definida en README2.md
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
@@ -49,15 +50,15 @@ pub enum Color3270 {
 impl Color3270 {
     pub fn from_str(color_name: &str) -> Result<Self, TemplateError> {
         debug!("Entering Color3270::from_str");
-        match color_name.to_lowercase().as_str() {
-            "default" => Ok(Color3270::Default),
-            "blue" => Ok(Color3270::Blue),
-            "red" => Ok(Color3270::Red),
-            "pink" | "magenta" => Ok(Color3270::Pink),
-            "green" => Ok(Color3270::Green),
-            "turquoise" | "cyan" => Ok(Color3270::Turquoise),
-            "yellow" => Ok(Color3270::Yellow),
-            "white" => Ok(Color3270::White),
+        match color_name.to_uppercase().as_str() {
+            "DEFAULT" => Ok(Color3270::Default),
+            "BLUE" => Ok(Color3270::Blue),
+            "RED" => Ok(Color3270::Red),
+            "PINK" | "MAGENTA" => Ok(Color3270::Pink),
+            "GREEN" => Ok(Color3270::Green),
+            "TURQUOISE" | "CYAN" => Ok(Color3270::Turquoise),
+            "YELLOW" => Ok(Color3270::Yellow),
+            "WHITE" => Ok(Color3270::White),
             _ => Err(TemplateError::InvalidColor(format!("Color desconocido: {}", color_name))),
         }
     }
@@ -156,11 +157,15 @@ pub struct TemplateParser {
 impl TemplateParser {
     // ...existing code...
     
-    /// Calculate the actual text length by stripping markup tags
+    /// Calcula la longitud real del texto eliminando tags de markup (v1.0 y v2.0)
     fn calculate_text_length(content: &str) -> usize {
-        // Simple regex to remove all markup tags
-        let re = Regex::new(r"<[^>]*>").unwrap();
-        re.replace_all(content, "").len()
+        // Regex para eliminar tags v1.0 (<tag>) y v2.0 ([tag])
+        let html_regex = Regex::new(r"<[^>]*>").unwrap();
+        let bracket_regex = Regex::new(r"\[[^\]]*\]").unwrap();
+        
+        let without_html = html_regex.replace_all(content, "");
+        let without_brackets = bracket_regex.replace_all(&without_html, "");
+        without_brackets.len()
     }
     
     /// Advance cursor position with bounds checking and line wrapping
@@ -244,10 +249,10 @@ impl TemplateParser {
         Ok(result)
     }
 
-    /// Procesa las etiquetas de marcado
+    /// Procesa las etiquetas de marcado v2.0 con sintaxis de brackets
     fn parse_markup_tags(&self, content: &str) -> Result<Vec<TemplateElement>, Box<dyn Error>> {
-        debug!("Entering TemplateParser::parse_markup_tags");
-        self.parse_markup_tags_ctx(
+        debug!("Entering TemplateParser::parse_markup_tags v2.0");
+        self.parse_bracket_markup(
             content,
             None,
             None,
@@ -258,8 +263,8 @@ impl TemplateParser {
         )
     }
 
-    /// Procesa las etiquetas de marcado con contexto de posición y atributos
-    fn parse_markup_tags_ctx(
+    /// Procesa las etiquetas de marcado v2.0 con sintaxis de brackets  
+    fn parse_bracket_markup(
         &self,
         content: &str,
         mut current_row: Option<u16>,
@@ -269,117 +274,37 @@ impl TemplateParser {
         blink: bool,
         underline: bool,
     ) -> Result<Vec<TemplateElement>, Box<dyn Error>> {
-        debug!("Entering TemplateParser::parse_markup_tags_ctx");
+        debug!("Entering TemplateParser::parse_bracket_markup v2.0");
         let mut elements = Vec::new();
 
-        // Regex para directivas (sin grupos duplicados ni backreferences)
-        let re_directive = Regex::new(r#"<(pos|col)(?::([^>]+))?>"#)?;
-
-        // Define enum to unify directive/container match
-        enum NextTagMatch<'a> {
-            Directive(regex::Captures<'a>),
-            Container(&'a str, &'a str, usize, usize),
-        }
+        // Expresiones regulares para sintaxis v2.0 con brackets
+        let pos_xy_regex = Regex::new(r"^\[XY(\d+),(\d+)\]")?;
+        let pos_x_regex = Regex::new(r"^\[X(\d+)\]")?;
+        let pos_y_regex = Regex::new(r"^\[Y(\d+)\]")?;
+        
+        // Regex para tags de color y atributos
+        let color_start_regex = Regex::new(r"^\[(BLUE|RED|PINK|GREEN|TURQUOISE|YELLOW|WHITE|DEFAULT)\]")?;
+        let bright_start_regex = Regex::new(r"^\[BRIGHT\]")?;
+        let blink_start_regex = Regex::new(r"^\[BLINK\]")?;
+        let underline_start_regex = Regex::new(r"^\[UNDERLINE\]")?;
+        
+        // Regex para campos
+        let field_start_regex = Regex::new(r"^\[FIELD ([^\]]+)\]")?;
 
         let mut pos = 0;
-        let len = content.len();
-        while pos < len {
-            let rest_str = &content[pos..];
-            // Buscar el primer match de directiva
-            let dir_match = re_directive.captures(rest_str).and_then(|cap| {
-                let m = cap.get(0).unwrap();
-                Some((m.start(), m.end(), cap))
-            });
-
-            // Buscar el primer tag contenedor manualmente (soporta anidamiento)
-            let mut cont_start = None;
-            let mut cont_tag = "";
-            let mut cont_params = "";
-            let mut cont_open_len = 0;
-            let mut cont_content_start = 0;
-            if let Some(open) = rest_str.find('<') {
-                let after = &rest_str[open..];
-                if let Some(cap) = Regex::new(r#"^<(color|bright|blink|underline|field)(?::([^>]+))?>"#)
-                    .unwrap()
-                    .captures(after)
-                {
-                    cont_tag = cap.get(1).unwrap().as_str();
-                    cont_params = cap.get(2).map(|m| m.as_str()).unwrap_or("");
-                    cont_start = Some(open);
-                    cont_open_len = cap.get(0).unwrap().end();
-                    cont_content_start = open + cont_open_len;
-                }
-            }
-
-            let mut cont_match = None;
-            if let Some(start) = cont_start {
-                let tag = cont_tag;
-                let mut depth = 1;
-                let mut search_pos = cont_content_start;
-                while depth > 0 {
-                    if let Some(next_open) = rest_str[search_pos..].find(&format!("<{}", tag)) {
-                        let next_open_abs = search_pos + next_open;
-                        let next_close = rest_str[search_pos..].find(&format!("</{}>", tag));
-                        match next_close {
-                            Some(close_rel) if next_open < close_rel => {
-                                depth += 1;
-                                search_pos = next_open_abs + 1;
-                            }
-                            Some(close_rel) => {
-                                depth -= 1;
-                                if depth == 0 {
-                                    let close_abs = search_pos + close_rel;
-                                    let end = close_abs + tag.len() + 3; // </tag>
-                                    cont_match = Some((start, end, tag, cont_params, cont_content_start, close_abs));
-                                    break;
-                                } else {
-                                    search_pos = search_pos + close_rel + 1;
-                                }
-                            }
-                            None => break,
-                        }
-                    } else if let Some(close_rel) = rest_str[search_pos..].find(&format!("</{}>", tag)) {
-                        depth -= 1;
-                        if depth == 0 {
-                            let close_abs = search_pos + close_rel;
-                            let end = close_abs + tag.len() + 3; // </tag>
-                            cont_match = Some((start, end, tag, cont_params, cont_content_start, close_abs));
-                            break;
-                        } else {
-                            search_pos = search_pos + close_rel + 1;
-                        }
-                    } else {
-                        break;
-                    }
-                }
-            }
-
-            // Determinar cuál ocurre antes
-            let (next_type, start, end, cap) = match (dir_match, cont_match) {
-                (Some((ds, de, dcap)), Some((cs, ce, tag, params, content_start, content_end))) => {
-                    if ds <= cs {
-                        ("dir", ds, de, NextTagMatch::Directive(dcap))
-                    } else {
-                        ("cont_manual", cs, ce, NextTagMatch::Container(tag, params, content_start, content_end))
-                    }
-                }
-                (Some((ds, de, dcap)), None) => ("dir", ds, de, NextTagMatch::Directive(dcap)),
-                (None, Some((cs, ce, tag, params, content_start, content_end))) => {
-                    ("cont_manual", cs, ce, NextTagMatch::Container(tag, params, content_start, content_end))
-                }
-                (None, None) => {
-                    let text_rest = &content[pos..];
-                    if !text_rest.is_empty() {
-                        trace!("Texto plano: {:?}", text_rest);
-                        
-                        // Log específico para caracteres problemáticos
-                        if text_rest.contains('+') || text_rest.contains('|') || text_rest.contains('=') {
-                            println!("🚨 PARSER: Creating text element with special chars: {:?} at pos ({:?},{:?})", 
-                                    text_rest, current_row, current_col);
-                        }
-                        
+        
+        while pos < content.len() {
+            let remaining = &content[pos..];
+            
+            // Buscar el siguiente tag bracket
+            if let Some(bracket_pos) = remaining.find('[') {
+                // Si hay texto antes del bracket, procesarlo
+                if bracket_pos > 0 {
+                    let text_before = &remaining[..bracket_pos];
+                    if !text_before.is_empty() {
+                        trace!("Texto v2.0: {:?}", text_before);
                         elements.push(TemplateElement::Text {
-                            content: text_rest.to_string(),
+                            content: text_before.to_string(),
                             color: current_color,
                             row: current_row,
                             col: current_col,
@@ -387,25 +312,237 @@ impl TemplateParser {
                             blink,
                             underline,
                         });
+                        
+                        // Avanzar posición del cursor
+                        let (new_row, new_col) = Self::advance_position(current_row, current_col, text_before.len() as u16);
+                        current_row = new_row;
+                        current_col = new_col;
                     }
-                    break;
                 }
-            };
-
-            // Si hay texto antes del tag, añadirlo como texto plano
-            if start > 0 {
-                let text_before = &rest_str[..start];
-                if !text_before.is_empty() {
-                    trace!("Texto antes de tag: {:?}", text_before);
+                
+                let from_bracket = &remaining[bracket_pos..];
+                
+                // Verificar qué tipo de tag es
+                if let Some(cap) = pos_xy_regex.captures(from_bracket) {
+                    // [XY5,10] - posición absoluta
+                    let row = cap[1].parse::<u16>().map_err(|_| 
+                        TemplateError::InvalidPosition(format!("Fila inválida: {}", &cap[1])))?;
+                    let col = cap[2].parse::<u16>().map_err(|_| 
+                        TemplateError::InvalidPosition(format!("Columna inválida: {}", &cap[2])))?;
                     
-                    // Log específico para caracteres problemáticos
-                    if text_before.contains('+') || text_before.contains('|') || text_before.contains('=') {
-                        println!("🚨 PARSER: Creating text element (before tag) with special chars: {:?} at pos ({:?},{:?})", 
-                                text_before, current_row, current_col);
+                    if row < 1 || row > 24 || col < 1 || col > 80 {
+                        return Err(Box::new(TemplateError::PositionOutOfBounds(row, col)));
                     }
                     
+                    current_row = Some(row);
+                    current_col = Some(col);
+                    pos += bracket_pos + cap.get(0).unwrap().len();
+                    continue;
+                    
+                } else if let Some(cap) = pos_x_regex.captures(from_bracket) {
+                    // [X10] - solo columna
+                    let col = cap[1].parse::<u16>().map_err(|_| 
+                        TemplateError::InvalidPosition(format!("Columna inválida: {}", &cap[1])))?;
+                    
+                    if col < 1 || col > 80 {
+                        return Err(Box::new(TemplateError::PositionOutOfBounds(current_row.unwrap_or(1), col)));
+                    }
+                    
+                    current_col = Some(col);
+                    pos += bracket_pos + cap.get(0).unwrap().len();
+                    continue;
+                    
+                } else if let Some(cap) = pos_y_regex.captures(from_bracket) {
+                    // [Y5] - solo fila
+                    let row = cap[1].parse::<u16>().map_err(|_| 
+                        TemplateError::InvalidPosition(format!("Fila inválida: {}", &cap[1])))?;
+                    
+                    if row < 1 || row > 24 {
+                        return Err(Box::new(TemplateError::PositionOutOfBounds(row, current_col.unwrap_or(1))));
+                    }
+                    
+                    current_row = Some(row);
+                    pos += bracket_pos + cap.get(0).unwrap().len();
+                    continue;
+                    
+                } else if let Some(cap) = color_start_regex.captures(from_bracket) {
+                    // [COLOR] - inicio de color
+                    let color_name = &cap[1];
+                    let color = Color3270::from_str(color_name)?;
+                    let tag_len = cap.get(0).unwrap().len();
+                    
+                    // Buscar el tag de cierre correspondiente usando un algoritmo más robusto
+                    let close_tag = format!("[/{}]", color_name);
+                    let content_start = pos + bracket_pos + tag_len;
+                    
+                    // Buscar el cierre balanceado, considerando tags anidados
+                    if let Some(close_pos) = self.find_balanced_closing_tag(&content[content_start..], color_name) {
+                        let content_end = content_start + close_pos;
+                        let inner_content = &content[content_start..content_end];
+                        
+                        // Procesar contenido interno recursivamente
+                        let inner_elements = self.parse_bracket_markup(
+                            inner_content,
+                            current_row,
+                            current_col,
+                            color,
+                            bright,
+                            blink,
+                            underline,
+                        )?;
+                        
+                        elements.extend(inner_elements);
+                        
+                        // Avanzar posición
+                        let text_length = Self::calculate_text_length(inner_content);
+                        let (new_row, new_col) = Self::advance_position(current_row, current_col, text_length as u16);
+                        current_row = new_row;
+                        current_col = new_col;
+                        
+                        pos = content_end + close_tag.len();
+                        continue;
+                    } else {
+                        return Err(Box::new(TemplateError::UnmatchedTag(format!("[{}]", color_name))));
+                    }
+                    
+                } else if let Some(cap) = bright_start_regex.captures(from_bracket) {
+                    // [BRIGHT] - inicio de brillo
+                    let tag_len = cap.get(0).unwrap().len();
+                    let content_start = pos + bracket_pos + tag_len;
+                    
+                    if let Some(close_pos) = content[content_start..].find("[/BRIGHT]") {
+                        let content_end = content_start + close_pos;
+                        let inner_content = &content[content_start..content_end];
+                        
+                        // Procesar contenido interno recursivamente
+                        let inner_elements = self.parse_bracket_markup(
+                            inner_content,
+                            current_row,
+                            current_col,
+                            current_color,
+                            true,
+                            blink,
+                            underline,
+                        )?;
+                        
+                        elements.extend(inner_elements);
+                        
+                        // Avanzar posición
+                        let text_length = Self::calculate_text_length(inner_content);
+                        let (new_row, new_col) = Self::advance_position(current_row, current_col, text_length as u16);
+                        current_row = new_row;
+                        current_col = new_col;
+                        
+                        pos = content_end + 9; // "[/BRIGHT]".len()
+                        continue;
+                    } else {
+                        return Err(Box::new(TemplateError::UnmatchedTag("[BRIGHT]".to_string())));
+                    }
+                    
+                } else if let Some(cap) = blink_start_regex.captures(from_bracket) {
+                    // [BLINK] - inicio de parpadeo
+                    let tag_len = cap.get(0).unwrap().len();
+                    let content_start = pos + bracket_pos + tag_len;
+                    
+                    if let Some(close_pos) = content[content_start..].find("[/BLINK]") {
+                        let content_end = content_start + close_pos;
+                        let inner_content = &content[content_start..content_end];
+                        
+                        // Procesar contenido interno recursivamente
+                        let inner_elements = self.parse_bracket_markup(
+                            inner_content,
+                            current_row,
+                            current_col,
+                            current_color,
+                            bright,
+                            true,
+                            underline,
+                        )?;
+                        
+                        elements.extend(inner_elements);
+                        
+                        // Avanzar posición
+                        let text_length = Self::calculate_text_length(inner_content);
+                        let (new_row, new_col) = Self::advance_position(current_row, current_col, text_length as u16);
+                        current_row = new_row;
+                        current_col = new_col;
+                        
+                        pos = content_end + 8; // "[/BLINK]".len()
+                        continue;
+                    } else {
+                        return Err(Box::new(TemplateError::UnmatchedTag("[BLINK]".to_string())));
+                    }
+                    
+                } else if let Some(cap) = underline_start_regex.captures(from_bracket) {
+                    // [UNDERLINE] - inicio de subrayado
+                    let tag_len = cap.get(0).unwrap().len();
+                    let content_start = pos + bracket_pos + tag_len;
+                    
+                    if let Some(close_pos) = content[content_start..].find("[/UNDERLINE]") {
+                        let content_end = content_start + close_pos;
+                        let inner_content = &content[content_start..content_end];
+                        
+                        // Procesar contenido interno recursivamente
+                        let inner_elements = self.parse_bracket_markup(
+                            inner_content,
+                            current_row,
+                            current_col,
+                            current_color,
+                            bright,
+                            blink,
+                            true,
+                        )?;
+                        
+                        elements.extend(inner_elements);
+                        
+                        // Avanzar posición
+                        let text_length = Self::calculate_text_length(inner_content);
+                        let (new_row, new_col) = Self::advance_position(current_row, current_col, text_length as u16);
+                        current_row = new_row;
+                        current_col = new_col;
+                        
+                        pos = content_end + 12; // "[/UNDERLINE]".len()
+                        continue;
+                    } else {
+                        return Err(Box::new(TemplateError::UnmatchedTag("[UNDERLINE]".to_string())));
+                    }
+                    
+                } else if let Some(cap) = field_start_regex.captures(from_bracket) {
+                    // [FIELD name,attrs] - campo
+                    let field_spec = &cap[1];
+                    let tag_len = cap.get(0).unwrap().len();
+                    let content_start = pos + bracket_pos + tag_len;
+                    
+                    if let Some(close_pos) = content[content_start..].find("[/FIELD]") {
+                        let content_end = content_start + close_pos;
+                        let field_content = &content[content_start..content_end];
+                        
+                        // Parsear el campo
+                        let field_attrs = self.parse_field_v2(field_spec, field_content)?;
+                        
+                        elements.push(TemplateElement::Field {
+                            attributes: field_attrs,
+                            row: current_row,
+                            col: current_col,
+                        });
+                        
+                        pos = content_end + 8; // "[/FIELD]".len()
+                        continue;
+                    } else {
+                        return Err(Box::new(TemplateError::UnmatchedTag("[FIELD]".to_string())));
+                    }
+                    
+                } else {
+                    // No es un tag reconocido, tratarlo como texto
+                    pos += bracket_pos + 1;
+                    continue;
+                }
+            } else {
+                // No hay más brackets, el resto es texto
+                if !remaining.is_empty() {
+                    trace!("Texto final v2.0: {:?}", remaining);
                     elements.push(TemplateElement::Text {
-                        content: text_before.to_string(),
+                        content: remaining.to_string(),
                         color: current_color,
                         row: current_row,
                         col: current_col,
@@ -413,174 +550,20 @@ impl TemplateParser {
                         blink,
                         underline,
                     });
-                    
-                    // Advance column position for next element
-                    let (new_row, new_col) = Self::advance_position(current_row, current_col, text_before.len() as u16);
-                    current_row = new_row;
-                    current_col = new_col;
                 }
+                break;
             }
-
-            match next_type {
-                "dir" => {
-                    if let NextTagMatch::Directive(cap) = cap {
-                        let dir = cap.get(1).unwrap().as_str();
-                        let params = cap.get(2).map(|m| m.as_str()).unwrap_or("");
-                        trace!("Directiva <{}:{}> en pos {}", dir, params, pos + start);
-                        match dir {
-                            "pos" => {
-                                let (row, col) = self.parse_position(params)?;
-                                current_row = Some(row);
-                                current_col = Some(col);
-                            }
-                            "col" => {
-                                let col = params.parse::<u16>().map_err(|_| {
-                                    TemplateError::InvalidPosition(format!("Columna inválida: {}", params))
-                                })?;
-                                current_col = Some(col);
-                            }
-                            _ => {
-                                return Err(Box::new(TemplateError::UnmatchedTag(dir.to_string())));
-                            }
-                        }
-                    }
-                }
-                "cont_manual" => {
-                    if let NextTagMatch::Container(tag, params, content_start, content_end) = cap {
-                        trace!("Abre <{}:{}> en pos {}", tag, params, pos + start);
-                        let content_text = &rest_str[content_start..content_end];
-                        match tag {
-                            "color" => {
-                                let color = Color3270::from_str(params)?;
-                                if !content_text.is_empty() {
-                                    let inner = self.parse_markup_tags_ctx(
-                                        content_text,
-                                        current_row,
-                                        current_col,
-                                        color,
-                                        bright,
-                                        blink,
-                                        underline,
-                                    )?;
-                                    elements.extend(inner);
-                                    
-                                    // Advance column position based on actual text length (strip markup)
-                                    let text_length = Self::calculate_text_length(content_text);
-                                    let (new_row, new_col) = Self::advance_position(current_row, current_col, text_length as u16);
-                                    current_row = new_row;
-                                    current_col = new_col;
-                                }
-                            }
-                            "bright" => {
-                                if !content_text.is_empty() {
-                                    let inner = self.parse_markup_tags_ctx(
-                                        content_text,
-                                        current_row,
-                                        current_col,
-                                        current_color,
-                                        true,
-                                        blink,
-                                        underline,
-                                    )?;
-                                    elements.extend(inner);
-                                    
-                                    // Advance column position based on actual text length (strip markup)
-                                    let text_length = Self::calculate_text_length(content_text);
-                                    let (new_row, new_col) = Self::advance_position(current_row, current_col, text_length as u16);
-                                    current_row = new_row;
-                                    current_col = new_col;
-                                }
-                            }
-                            "blink" => {
-                                if !content_text.is_empty() {
-                                    let inner = self.parse_markup_tags_ctx(
-                                        content_text,
-                                        current_row,
-                                        current_col,
-                                        current_color,
-                                        bright,
-                                        true,
-                                        underline,
-                                    )?;
-                                    elements.extend(inner);
-                                    
-                                    // Advance column position based on actual text length (strip markup)
-                                    let text_length = Self::calculate_text_length(content_text);
-                                    let (new_row, new_col) = Self::advance_position(current_row, current_col, text_length as u16);
-                                    current_row = new_row;
-                                    current_col = new_col;
-                                }
-                            }
-                            "underline" => {
-                                if !content_text.is_empty() {
-                                    let inner = self.parse_markup_tags_ctx(
-                                        content_text,
-                                        current_row,
-                                        current_col,
-                                        current_color,
-                                        bright,
-                                        blink,
-                                        true,
-                                    )?;
-                                    elements.extend(inner);
-                                    
-                                    // Advance column position based on actual text length (strip markup)
-                                    let text_length = Self::calculate_text_length(content_text);
-                                    let (new_row, new_col) = Self::advance_position(current_row, current_col, text_length as u16);
-                                    current_row = new_row;
-                                    current_col = new_col;
-                                }
-                            }
-                            "field" => {
-                                let field_attrs = self.parse_field(params, content_text)?;
-                                elements.push(TemplateElement::Field {
-                                    attributes: field_attrs,
-                                    row: current_row,
-                                    col: current_col,
-                                });
-                            }
-                            _ => {
-                                return Err(Box::new(TemplateError::UnmatchedTag(tag.to_string())));
-                            }
-                        }
-                        trace!("Cierra </{}> en pos {}", tag, pos + end - 1);
-                    }
-                }
-                _ => unreachable!(),
-            }
-
-            pos += end;
         }
 
         Ok(elements)
     }
 
     /// Parsea una especificación de posición "fila,columna"
-    fn parse_position(&self, pos_str: &str) -> Result<(u16, u16), TemplateError> {
-        debug!("Entering TemplateParser::parse_position");
-        let parts: Vec<&str> = pos_str.split(',').collect();
-        if parts.len() != 2 {
-            return Err(TemplateError::InvalidPosition(
-                format!("Formato de posición inválido: {}. Use 'fila,columna'", pos_str)
-            ));
-        }
-        
-        let row = parts[0].trim().parse::<u16>().map_err(|_| {
-            TemplateError::InvalidPosition(format!("Fila inválida: {}", parts[0]))
-        })?;
-        
-        let col = parts[1].trim().parse::<u16>().map_err(|_| {
-            TemplateError::InvalidPosition(format!("Columna inválida: {}", parts[1]))
-        })?;
-        
-        Ok((row, col))
-    }
-
-    /// Parsea la definición de un campo
-    fn parse_field(&self, params: &str, default_value: &str) -> Result<FieldAttributes, TemplateError> {
-        debug!("Entering TemplateParser::parse_field");
-        let parts: Vec<&str> = params.splitn(2, ',').collect();
-        let field_name = parts[0].to_string();
+    /// Parsea la definición de un campo v2.0 con sintaxis de brackets
+    fn parse_field_v2(&self, field_spec: &str, default_value: &str) -> Result<FieldAttributes, TemplateError> {
+        debug!("Entering TemplateParser::parse_field_v2");
+        let parts: Vec<&str> = field_spec.splitn(2, ',').collect();
+        let field_name = parts[0].trim().to_string();
         
         let mut field_attrs = FieldAttributes::new(field_name);
         field_attrs.default_value = default_value.to_string();
@@ -613,6 +596,54 @@ impl TemplateParser {
             }
         }
         Ok(())
+    }
+    
+    /// Busca el tag de cierre balanceado, manejando tags anidados del mismo tipo
+    fn find_balanced_closing_tag(&self, content: &str, tag_name: &str) -> Option<usize> {
+        let open_tag = format!("[{}]", tag_name);
+        let close_tag = format!("[/{}]", tag_name);
+        
+        let mut depth = 1;
+        let mut pos = 0;
+        
+        while pos < content.len() {
+            if let Some(open_pos) = content[pos..].find(&open_tag) {
+                let open_abs_pos = pos + open_pos;
+                
+                if let Some(close_pos) = content[pos..].find(&close_tag) {
+                    let close_abs_pos = pos + close_pos;
+                    
+                    if open_abs_pos < close_abs_pos {
+                        // Encontramos otro tag de apertura antes del cierre
+                        depth += 1;
+                        pos = open_abs_pos + open_tag.len();
+                    } else {
+                        // Encontramos un tag de cierre
+                        depth -= 1;
+                        if depth == 0 {
+                            return Some(close_abs_pos);
+                        }
+                        pos = close_abs_pos + close_tag.len();
+                    }
+                } else {
+                    // No hay más tags de cierre
+                    return None;
+                }
+            } else if let Some(close_pos) = content[pos..].find(&close_tag) {
+                // Solo hay tag de cierre, no más aperturas
+                let close_abs_pos = pos + close_pos;
+                depth -= 1;
+                if depth == 0 {
+                    return Some(close_abs_pos);
+                }
+                pos = close_abs_pos + close_tag.len();
+            } else {
+                // No hay más tags
+                return None;
+            }
+        }
+        
+        None
     }
 }
 

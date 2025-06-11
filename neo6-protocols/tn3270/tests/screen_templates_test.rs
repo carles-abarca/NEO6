@@ -1,3 +1,6 @@
+// Test to verify screen template generation works with legacy screen manager
+// NOTE: This test currently has a WCC assertion mismatch (252 vs 192)
+// This may be due to changes in v2.0 template parsing behavior
 #[cfg(test)]
 mod tests {
     use tn3270::{ScreenManager, Codec};

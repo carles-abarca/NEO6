@@ -1808,6 +1808,7 @@ dependencies = [
  "async-trait",
  "neo6-protocols-lib",
  "serde_json",
+ "tokio",
 ]
 
 [[package]]
