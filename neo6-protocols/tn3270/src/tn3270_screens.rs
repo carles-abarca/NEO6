@@ -231,8 +231,10 @@ impl ScreenManager {
         self.add_positioned_colored_text(screen_data, row, col, text, attr.color, attr.intensity == 1, false, false);
     }
 
-    /// Carga una plantilla desde la ubicación correcta de pantallas buscando primero la versión con
-    /// sufijo `_markup.txt` y luego la plana `.txt`
+    /// Carga una plantilla desde la ubicación correcta de pantallas buscando en el siguiente orden:
+    /// 1. `{name}_screen.txt` (v2.0 formato con sintaxis de corchetes)
+    /// 2. `{name}_markup.txt` (v1.0 formato legacy)
+    /// 3. `{name}.txt` (archivo plano sin sufijo)
     fn load_template(&self, name: &str) -> Result<String, Box<dyn Error>> {
         debug!("Entering ScreenManager::load_template");
         
@@ -265,13 +267,23 @@ impl ScreenManager {
         
         debug!("Using screens directory: {:?}", screens_dir);
         
+        // Look for v2.0 screen files first (new format with _screen.txt suffix)
+        let screen_path = screens_dir.join(format!("{}_screen.txt", name));
+        debug!("Looking for v2.0 template at: {:?}", screen_path);
+        if screen_path.exists() {
+            debug!("Found v2.0 screen template, reading file");
+            return Ok(fs::read_to_string(screen_path)?);
+        }
+        
+        // Fallback to v1.0 markup files (legacy support)
         let markup_path = screens_dir.join(format!("{}_markup.txt", name));
-        debug!("Looking for template at: {:?}", markup_path);
+        debug!("Looking for v1.0 template at: {:?}", markup_path);
         if markup_path.exists() {
-            debug!("Found markup template, reading file");
+            debug!("Found v1.0 markup template, reading file");
             return Ok(fs::read_to_string(markup_path)?);
         }
 
+        // Last fallback to plain files
         let plain_path = screens_dir.join(format!("{}.txt", name));
         debug!("Looking for plain template at: {:?}", plain_path);
         if plain_path.exists() {

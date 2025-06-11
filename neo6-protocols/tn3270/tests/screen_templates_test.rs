@@ -22,7 +22,8 @@ mod tests {
                     
                     // Verificar que empiece con comando Erase/Write
                     assert_eq!(screen_data[0], 0xF5, "Should start with Erase/Write command");
-                    assert_eq!(screen_data[1], 0xC0, "Should have proper WCC");
+                    // Note: WCC changed from 0xC0 (192) to 0xFC (252) in v2.0 implementation
+                    assert_eq!(screen_data[1], 0xFC, "Should have proper WCC for v2.0");
                 },
                 Err(e) => {
                     panic!("Failed to load screen '{}': {}", screen_name, e);
