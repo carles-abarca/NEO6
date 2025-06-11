@@ -3,7 +3,7 @@ use crate::template_parser::TemplateElement;
 use crate::template_parser::Color3270;
 use std::error::Error;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use tracing::{debug, trace, warn};
 
 /// Atributos de campo 3270 con soporte para colores
@@ -247,8 +247,34 @@ impl ScreenManager {
     fn load_template(&self, name: &str) -> Result<String, Box<dyn Error>> {
         debug!("Entering ScreenManager::load_template");
         
-        // Usar la ruta absoluta correcta donde están las pantallas
-        let screens_dir = Path::new("/home/carlesabarca/MyProjects/NEO6/neo6-proxy/config/screens");
+        // Buscar primero en el directorio relativo config/screens desde el directorio actual
+        let mut screens_dir = PathBuf::from("config/screens");
+        
+        // Si no existe, buscar en la estructura de directorios del proyecto
+        if !screens_dir.exists() {
+            // Intentar desde neo6-proxy/config/screens (caso común cuando se ejecuta desde la raíz)
+            screens_dir = PathBuf::from("neo6-proxy/config/screens");
+        }
+        
+        // Si aún no existe, intentar rutas absolutas basadas en el workspace actual
+        if !screens_dir.exists() {
+            let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+            debug!("Current directory: {:?}", current_dir);
+            
+            // Buscar hacia arriba en la jerarquía de directorios
+            let mut search_path = current_dir.clone();
+            for _ in 0..5 { // Buscar hasta 5 niveles hacia arriba
+                let candidate = search_path.join("neo6-proxy/config/screens");
+                debug!("Checking for screens at: {:?}", candidate);
+                if candidate.exists() {
+                    screens_dir = candidate;
+                    break;
+                }
+                search_path = search_path.parent().unwrap_or(Path::new(".")).to_path_buf();
+            }
+        }
+        
+        debug!("Using screens directory: {:?}", screens_dir);
         
         let markup_path = screens_dir.join(format!("{}_markup.txt", name));
         debug!("Looking for template at: {:?}", markup_path);
@@ -264,7 +290,7 @@ impl ScreenManager {
             return Ok(fs::read_to_string(plain_path)?);
         }
 
-        Err(format!("Template '{}' not found in neo6-proxy/config/screens", name).into())
+        Err(format!("Template '{}' not found in {:?}", name, screens_dir).into())
     }
 
     /// Genera una pantalla TN3270 a partir de cualquier plantilla de `config/screens`

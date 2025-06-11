@@ -29,6 +29,7 @@ const DO: u8 = 253;
 const WONT: u8 = 252;
 const WILL: u8 = 251;
 const SB: u8 = 250;   // Subnegotiation Begin
+const NOP: u8 = 241;  // No Operation (Timing Mark)
 const SE: u8 = 240;   // Subnegotiation End
 const EOR_TELNET_CMD: u8 = 239; // Comando Telnet EOR (diferente de la opción EOR)
 
@@ -781,20 +782,29 @@ impl Session {
 
     async fn maybe_send_screen(&mut self) -> Result<(), Box<dyn Error>> {
         // Solo enviar pantalla si:
-        // 1. TN3270E está habilitado Y la negociación TN3270E está completa (bound)
+        // 1. TN3270E está bound (negociación TN3270E completada exitosamente)
         // O
-        // 2. El modo Telnet clásico (no TN3270E) está completamente negociado Y el tipo de terminal es 3270
+        // 2. El modo Telnet clásico está completamente negociado Y el tipo de terminal es 3270
         // Y
         // 3. La pantalla no se ha enviado aún.
 
         let classic_telnet_ready_for_screen = 
-            !self.telnet_state.tn3270e_enabled && // TN3270E no está en uso
+            !self.tn3270e_bound && // TN3270E no fue bound exitosamente
+            !self.telnet_state.tn3270e_enabled && // TN3270E no está actualmente habilitado
             self.telnet_state.binary_negotiated &&
             self.telnet_state.eor_negotiated &&
             self.telnet_state.termtype_negotiated && self.terminal_type.contains("327");
 
-        let tn3270e_ready_for_screen = 
-            self.telnet_state.tn3270e_enabled && self.tn3270e_bound;
+        // Para TN3270E: si la sesión está bound, ya podemos enviar pantalla
+        // independientemente del estado actual de tn3270e_enabled (que puede cambiar después del binding)
+        let tn3270e_ready_for_screen = self.tn3270e_bound;
+
+        println!("[tn3270][DEBUG] maybe_send_screen - Estado de verificación:");
+        println!("[tn3270][DEBUG]   screen_sent: {}", self.screen_manager.is_screen_sent());
+        println!("[tn3270][DEBUG]   tn3270e_ready_for_screen: {}", tn3270e_ready_for_screen);
+        println!("[tn3270][DEBUG]   classic_telnet_ready_for_screen: {}", classic_telnet_ready_for_screen);
+        println!("[tn3270][DEBUG]   tn3270e_enabled: {}", self.telnet_state.tn3270e_enabled);
+        println!("[tn3270][DEBUG]   tn3270e_bound: {}", self.tn3270e_bound);
 
         if !self.screen_manager.is_screen_sent() && (tn3270e_ready_for_screen || classic_telnet_ready_for_screen) {
             println!("[tn3270][DEBUG] Condiciones cumplidas para enviar pantalla inicial. TN3270E: {}, Bound: {}, Classic: {}",
@@ -848,6 +858,11 @@ impl Session {
             self.stream.flush().await?;
             self.screen_manager.mark_screen_sent();
             println!("[tn3270][DEBUG] Pantalla inicial enviada. Manteniendo conexión abierta para entrada del usuario.");
+        } else {
+            println!("[tn3270][DEBUG] NO se enviará pantalla. Razones:");
+            println!("[tn3270][DEBUG]   screen_sent: {}", self.screen_manager.is_screen_sent());
+            println!("[tn3270][DEBUG]   tn3270e_ready: {}", tn3270e_ready_for_screen);
+            println!("[tn3270][DEBUG]   classic_ready: {}", classic_telnet_ready_for_screen);
         }
         Ok(())
     }
@@ -892,6 +907,12 @@ impl Session {
                     WONT => self.handle_wont(opt).await?,
                     DO => self.handle_do(opt).await?,
                     DONT => self.handle_dont(opt).await?,
+                    NOP => {
+                        println!("[tn3270][DEBUG] Recibido IAC NOP (comando Telnet, no necesita respuesta)");
+                        // El comando NOP (No Operation) no requiere respuesta, solo continuar
+                        i += 2; // Consumir IAC NOP (2 bytes)
+                        continue;
+                    },
                     _ => {
                         println!("[tn3270][WARN] Comando Telnet desconocido o no manejado: 0x{:02X}", cmd);
                         // Podría ser un comando de 2 bytes como IAC EOR_TELNET_CMD (255 239)
@@ -1691,7 +1712,7 @@ async fn handle_client(stream: TcpStream) -> Result<(), Box<dyn Error>> {
                 
                 // Después de procesar los datos, si la sesión está bound pero no se ha enviado la pantalla,
                 // asegurarse de que se envíe
-                if !session.screen_manager.screen_sent && (session.tn3270e_bound || 
+                if !session.screen_manager.is_screen_sent() && (session.tn3270e_bound || 
                     (!session.telnet_state.tn3270e_enabled && session.telnet_state.base_telnet_ready)) {
                     if let Err(e) = session.maybe_send_screen().await {
                         eprintln!("[tn3270][ERROR] Error enviando pantalla: {}", e);
