@@ -699,6 +699,26 @@ impl TemplateParser {
         
         None
     }
+
+    /// Extrae la metadata de una plantilla desde el tag METADATA
+    /// Busca patrones como: [METADATA texto de descripción]
+    pub fn extract_metadata(&self, content: &str) -> Option<String> {
+        debug!("Entering TemplateParser::extract_metadata");
+        
+        // Buscar el patrón METADATA al inicio del archivo
+        let metadata_regex = Regex::new(r"^\[METADATA\s+([^\]]+)\]").unwrap();
+        
+        if let Some(captures) = metadata_regex.captures(content) {
+            if let Some(metadata_match) = captures.get(1) {
+                let metadata = metadata_match.as_str().trim().to_string();
+                debug!("Found metadata: {}", metadata);
+                return Some(metadata);
+            }
+        }
+        
+        debug!("No metadata found in template");
+        None
+    }
 }
 
 impl Default for TemplateParser {

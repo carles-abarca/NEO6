@@ -336,7 +336,28 @@ impl ScreenManager {
         // Bit 0: 0 (not modified)
         screen_data.push(0xE0); // Proper protected field attribute
 
-        let template_content = self.load_template(template_name)?;
+        let mut template_content = self.load_template(template_name)?;
+        
+        // CRITICAL: Handle screen list variable replacement for COMMANDS template
+        if template_name.to_uppercase() == "COMMANDS" {
+            debug!("Processing COMMANDS template - checking for {{screen_list}} variable");
+            if template_content.contains("{screen_list}") {
+                match self.generate_screen_list() {
+                    Ok(screen_list) => {
+                        template_content = template_content.replace("{screen_list}", &screen_list);
+                        debug!("Successfully replaced {{screen_list}} variable with {} lines", 
+                               screen_list.lines().count());
+                    }
+                    Err(e) => {
+                        warn!("Failed to generate screen list: {}", e);
+                        // Fallback: replace with error message
+                        let fallback = "[POS(5,5)][TEXT(Error: Failed to load screen list)]";
+                        template_content = template_content.replace("{screen_list}", fallback);
+                    }
+                }
+            }
+        }
+        
         let parser = TemplateParser::new();
         let elements = parser.parse_template(&template_content)?;
 
@@ -842,6 +863,10 @@ impl ScreenManager {
                 // Usar plantilla STATUS_markup.txt
                 self.generate_tn3270_screen("STATUS").map_err(|e| e.to_string())
             },
+            "COMMANDS" | "COMANDOS" | "LIST" => {
+                // Usar plantilla COMMANDS_screen.txt
+                self.generate_tn3270_screen("COMMANDS").map_err(|e| e.to_string())
+            },
             "COLORS" | "COLORES" | "COLOR" => {
                 // Usar plantilla COLORS_markup.txt
                 self.generate_tn3270_screen("COLORS").map_err(|e| e.to_string())
@@ -892,6 +917,147 @@ impl ScreenManager {
                 }
             }
         }
+    }
+
+    /// Genera una lista formateada de todas las pantallas disponibles con sus descripciones
+    /// extrayendo metadatos de los archivos *_screen.txt
+    pub fn generate_screen_list(&self) -> Result<String, Box<dyn Error>> {
+        debug!("Entering ScreenManager::generate_screen_list");
+        
+        // Buscar archivos de pantalla en el directorio de screens
+        let mut screens_dir = PathBuf::from("config/screens");
+        
+        // Si no existe, buscar en la estructura de directorios del proyecto
+        if !screens_dir.exists() {
+            screens_dir = PathBuf::from("neo6-proxy/config/screens");
+        }
+        
+        // Si aún no existe, intentar rutas absolutas basadas en el workspace actual
+        if !screens_dir.exists() {
+            let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+            let mut search_path = current_dir.clone();
+            for _ in 0..5 {
+                let candidate = search_path.join("neo6-proxy/config/screens");
+                if candidate.exists() {
+                    screens_dir = candidate;
+                    break;
+                }
+                search_path = search_path.parent().unwrap_or(Path::new(".")).to_path_buf();
+            }
+        }
+        
+        debug!("Using screens directory for list generation: {:?}", screens_dir);
+        
+        if !screens_dir.exists() {
+            return Err("Screens directory not found".into());
+        }
+        
+        // Leer archivos *_screen.txt
+        let mut screen_entries = Vec::new();
+        
+        match fs::read_dir(&screens_dir) {
+            Ok(entries) => {
+                for entry in entries {
+                    if let Ok(entry) = entry {
+                        let path = entry.path();
+                        if let Some(file_name) = path.file_name() {
+                            if let Some(name_str) = file_name.to_str() {
+                                if name_str.ends_with("_screen.txt") {
+                                    let screen_name = name_str.replace("_screen.txt", "");
+                                    debug!("Found screen file: {}", name_str);
+                                    
+                                    // Leer el archivo y extraer metadata
+                                    match fs::read_to_string(&path) {
+                                        Ok(content) => {
+                                            let parser = crate::TemplateParser::new();
+                                            if let Some(metadata) = parser.extract_metadata(&content) {
+                                                debug!("Extracted metadata for {}: {}", screen_name, &metadata);
+                                                screen_entries.push((screen_name.to_uppercase(), metadata));
+                                            } else {
+                                                // Si no hay metadata, usar el nombre como descripción
+                                                screen_entries.push((screen_name.to_uppercase(), format!("Pantalla {}", screen_name)));
+                                                debug!("No metadata found for {}, using default description", screen_name);
+                                            }
+                                        }
+                                        Err(e) => {
+                                            warn!("Error reading screen file {}: {}", name_str, e);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                return Err(format!("Error reading screens directory: {}", e).into());
+            }
+        }
+        
+        // Ordenar entradas alfabéticamente
+        screen_entries.sort_by(|a, b| a.0.cmp(&b.0));
+        
+        // Formatear la lista para TN3270 con límite de 77 caracteres por línea
+        let mut formatted_lines = Vec::new();
+        let max_width = 77; // TN3270 screen width minus borders
+        
+        for (screen_name, description) in screen_entries {
+            // Formatear cada entrada: "NOMBRE - Descripción"
+            let entry = format!("{} - {}", screen_name, description);
+            
+            if entry.len() <= max_width - 7 { // -7 for border and padding: "|    " + "   |"
+                // La línea cabe completa
+                formatted_lines.push(format!("[XY{},1][BLUE]|[/BLUE][XY{},4][TURQUOISE]{}[/TURQUOISE][XY{},79][BLUE]|[/BLUE]",
+                    7 + formatted_lines.len(), 7 + formatted_lines.len(), entry, 7 + formatted_lines.len()));
+            } else {
+                // La línea es demasiado larga, dividirla
+                let available_width = max_width - 7; // Espacio disponible para texto
+                
+                // Línea con nombre de pantalla
+                let name_line = format!("{} -", screen_name);
+                formatted_lines.push(format!("[XY{},1][BLUE]|[/BLUE][XY{},4][TURQUOISE]{}[/TURQUOISE][XY{},79][BLUE]|[/BLUE]",
+                    7 + formatted_lines.len(), 7 + formatted_lines.len(), name_line, 7 + formatted_lines.len()));
+                
+                // Dividir descripción en palabras
+                let words: Vec<&str> = description.split_whitespace().collect();
+                let mut current_line = String::new();
+                
+                for word in words {
+                    let test_line = if current_line.is_empty() {
+                        format!("  {}", word) // Indentación para descripción
+                    } else {
+                        format!("{} {}", current_line, word)
+                    };
+                    
+                    if test_line.len() <= available_width {
+                        current_line = test_line;
+                    } else {
+                        // Línea completa, añadir y empezar nueva
+                        if !current_line.is_empty() {
+                            formatted_lines.push(format!("[XY{},1][BLUE]|[/BLUE][XY{},4][WHITE]{}[/WHITE][XY{},79][BLUE]|[/BLUE]",
+                                7 + formatted_lines.len(), 7 + formatted_lines.len(), current_line, 7 + formatted_lines.len()));
+                        }
+                        current_line = format!("  {}", word);
+                    }
+                }
+                
+                // Añadir última línea si tiene contenido
+                if !current_line.is_empty() {
+                    formatted_lines.push(format!("[XY{},1][BLUE]|[/BLUE][XY{},4][WHITE]{}[/WHITE][XY{},79][BLUE]|[/BLUE]",
+                        7 + formatted_lines.len(), 7 + formatted_lines.len(), current_line, 7 + formatted_lines.len()));
+                }
+            }
+        }
+        
+        // Rellenar con líneas vacías hasta la línea 17 (para mantener consistencia con el template)
+        while formatted_lines.len() < 11 { // 11 líneas de contenido (7-17)
+            formatted_lines.push(format!("[XY{},1][BLUE]|[/BLUE][XY{},79][BLUE]|[/BLUE]",
+                7 + formatted_lines.len(), 7 + formatted_lines.len()));
+        }
+        
+        let result = formatted_lines.join("\n");
+        debug!("Generated screen list with {} lines", formatted_lines.len());
+        Ok(result)
     }
 }
 
