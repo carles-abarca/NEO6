@@ -4,6 +4,10 @@ use reqwest::header::{HeaderMap, CONTENT_TYPE};
 use serde_json::Value;
 use async_trait::async_trait;
 
+// FFI support
+mod ffi;
+pub use ffi::*;
+
 pub struct RestHandler {
     pub base_url: String,
     pub default_headers: Option<HeaderMap>,

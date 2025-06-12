@@ -2,6 +2,10 @@ use neo6_protocols_lib::protocol::ProtocolHandler;
 use serde_json::Value;
 use async_trait::async_trait;
 
+// FFI support
+mod ffi;
+pub use ffi::*;
+
 pub struct MqHandler;
 
 #[async_trait]

@@ -3,6 +3,9 @@ name = "tcp"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
 async-trait = "0.1.88"
 neo6-protocols-lib = { path = "../neo6-protocols-lib" }

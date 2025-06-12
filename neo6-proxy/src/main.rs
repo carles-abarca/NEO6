@@ -1,21 +1,25 @@
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
-use tracing::{info};
+use tracing::{info, error, warn};
+use std::collections::HashSet;
 
 use neo6_proxy::config::ProxyConfig;
-use neo6_proxy::proxy::router::create_router;
+use neo6_proxy::proxy::dynamic_router::create_dynamic_router;
 use neo6_proxy::logging::{init_logging_with_level};
 use neo6_proxy::cics::mapping::load_transaction_map;
+use neo6_proxy::protocol_loader::ProtocolLoader;
 
 #[tokio::main]
 async fn main() {
     // Mostrar ayuda si se invoca con --help
     if std::env::args().any(|a| a == "--help" || a == "-h") {
-        println!("neo6-proxy [--protocol=PROTO] [--port=PUERTO] [--log-level=LEVEL]\n\n\t--protocol=PROTO\tProtocolo a escuchar (rest, lu62, mq, tcp, jca)\n\t--port=PUERTO\tPuerto a escuchar (por defecto según protocolo)\n\t--log-level=LEVEL\tNivel de log (info, debug, trace, ...)\n\t--help\t\tMuestra esta ayuda");
+        println!("neo6-proxy [--protocol=PROTO] [--port=PUERTO] [--log-level=LEVEL]\n\n\t--protocol=PROTO\tProtocolo a escuchar (rest, lu62, mq, tcp, jca, tn3270)\n\t--port=PUERTO\tPuerto a escuchar (por defecto según protocolo)\n\t--log-level=LEVEL\tNivel de log (info, debug, trace, ...)\n\t--help\t\tMuestra esta ayuda\n\nNota: neo6-proxy siempre usa carga dinámica de protocolos");
         return;
     }
+
     // Cargar configuración
     let mut config = ProxyConfig::from_default();
+    
     // Permitir override por CLI
     for arg in std::env::args().skip(1) {
         if arg.starts_with("--log-level=") {
@@ -28,9 +32,10 @@ async fn main() {
             }
         }
     }
+    
     // Inicializar logging con el nivel configurado
     init_logging_with_level(&config.log_level);
-    info!(level = %config.log_level, "Inicializando neo6-proxy con nivel de log");
+    info!(level = %config.log_level, "Inicializando neo6-proxy con carga dinámica de protocolos");
 
     // Determinar protocolo y puerto
     let protocol = config.protocol.clone().unwrap_or_else(|| "rest".to_string());
@@ -45,49 +50,114 @@ async fn main() {
     });
 
     // Mostrar protocolo y puerto
-    println!("neo6-proxy escuchando protocolo: {} en puerto: {}", protocol, port);
+    println!("neo6-proxy escuchando protocolo: {} en puerto: {} (modo dinámico)", protocol, port);
 
-    // Mostrar transacciones disponibles
+    // Cargar mapa de transacciones
     let tx_map = load_transaction_map("config/transactions.yaml").expect("No se pudo cargar transactions.yaml");
     println!("Transacciones disponibles:");
     for (txid, tx) in tx_map.iter() {
         println!("  {}  [{}] -> {}", txid, tx.protocol, tx.server);
     }
 
-    // Lanzar el listener adecuado según protocolo
-    match protocol.as_str() {
-        "rest" => {
-            // Build the Axum app with all routes
-            let app = create_router();
-            let addr = SocketAddr::from(([0, 0, 0, 0], port));
-            let listener = TcpListener::bind(addr).await.unwrap();
-            tracing::info!("Starting neo6-proxy REST on {}", addr);
-            axum::serve(listener, app).await.unwrap();
-        },
-        // Aquí irían los listeners de otros protocolos (lu62, mq, tcp, jca)
-        "tn3270" => {
-            // Llama al listener TN3270 con API genérica
-            println!("Iniciando listener TN3270 en puerto {}", port);
-            let tx_map_arc = std::sync::Arc::new(tx_map.clone());
-            let tx_map_for_exec = tx_map_arc.clone();
-            let exec_fn = move |txid: String, params: serde_json::Value| {
-                let tx_map = tx_map_for_exec.clone();
-                async move {
-                    if let Some(tx) = tx_map.get(&txid) {
-                        if let Some(handler) = neo6_proxy::proxy::handler::get_protocol_handler(tx) {
-                            handler.invoke_transaction(&txid, params).await
-                        } else {
-                            Err("No handler for protocol".to_string())
-                        }
-                    } else {
-                        Err("Transaction not found".to_string())
-                    }
-                }
-            };
-            tn3270::start_tn3270_listener(port, tx_map_arc, exec_fn).await.expect("Fallo en listener TN3270");
-        },
-        _ => {
-            eprintln!("Protocolo '{}' no implementado aún como listener.", protocol);
+    // Extraer todos los protocolos únicos de las transacciones
+    let mut protocols_needed: HashSet<String> = tx_map.values()
+        .map(|tx| tx.protocol.clone())
+        .collect();
+    
+    // Agregar el protocolo de escucha si no está ya incluido
+    protocols_needed.insert(protocol.clone());
+    
+    println!("Protocolos requeridos: {:?}", protocols_needed);
+
+    // Inicializar el cargador de protocolos
+    let protocol_loader = ProtocolLoader::new();
+    
+    // Pre-cargar todos los protocolos necesarios
+    for proto in &protocols_needed {
+        match protocol_loader.load_protocol(proto) {
+            Ok(_) => info!("Protocolo {} cargado exitosamente", proto),
+            Err(e) => {
+                error!("Error cargando protocolo {}: {}", proto, e);
+                eprintln!("Warning: No se pudo cargar el protocolo {}: {}", proto, e);
+            }
         }
     }
+
+    // Lanzar el listener del protocolo específico
+    match start_dynamic_listener(&protocol, port, &protocol_loader).await {
+        Ok(_) => {
+            info!("Listener dinámico {} terminó exitosamente", protocol);
+        }
+        Err(e) => {
+            error!("Error en listener dinámico {}: {}", protocol, e);
+            eprintln!("Error: No se pudo iniciar el listener {}: {}", protocol, e);
+            std::process::exit(1);
+        }
+    }
+}
+
+// Función para cargar dinámicamente el listener de cualquier protocolo
+async fn start_dynamic_listener(protocol: &str, port: u16, protocol_loader: &ProtocolLoader) -> Result<(), String> {
+    info!("Iniciando listener dinámico para protocolo: {}", protocol);
+    
+    match protocol {
+        "tn3270" => {
+            // Para TN3270, usar el listener nativo real
+            start_tn3270_native_listener(port, protocol_loader).await
+        }
+        "rest" => {
+            // Para REST, usar directamente la interfaz Axum
+            start_rest_listener(port).await
+        }
+        _ => {
+            // Para otros protocolos, usar interfaz REST por defecto
+            println!("Protocolo '{}' se ejecuta a través de interfaz REST dinámica", protocol);
+            start_rest_listener(port).await
+        }
+    }
+}
+
+// Función para iniciar el listener TN3270 nativo usando la librería dinámica
+async fn start_tn3270_native_listener(port: u16, protocol_loader: &ProtocolLoader) -> Result<(), String> {
+    info!("Iniciando listener TN3270 nativo en puerto {}", port);
+    
+    // Cargar la librería TN3270
+    let protocol_handler = protocol_loader.load_protocol("tn3270")
+        .map_err(|e| format!("No se pudo cargar protocolo TN3270: {}", e))?;
+    
+    println!("Iniciando listener TN3270 nativo real en puerto {}", port);
+    
+    // Usar la función start_listener del protocolo
+    // Esto ahora debería iniciar el listener TN3270 en un hilo separado
+    match protocol_handler.start_listener(port) {
+        Ok(result) => {
+            info!("Listener TN3270 nativo iniciado exitosamente: {:?}", result);
+            println!("Listener TN3270 nativo está corriendo en segundo plano...");
+            
+            // Mantener el programa corriendo indefinidamente
+            // El listener TN3270 se ejecuta en un hilo separado
+            loop {
+                tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+                println!("Listener TN3270 nativo sigue activo...");
+            }
+        }
+        Err(e) => {
+            error!("Error iniciando listener TN3270 nativo: {}", e);
+            Err(format!("Error iniciando listener TN3270 nativo: {}", e))
+        }
+    }
+}
+
+// Función para iniciar el listener REST/Axum
+async fn start_rest_listener(port: u16) -> Result<(), String> {
+    let app = create_dynamic_router();
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    let listener = TcpListener::bind(addr).await
+        .map_err(|e| format!("No se pudo bindear puerto {}: {}", port, e))?;
+    
+    info!("Starting dynamic REST interface on {}", addr);
+    axum::serve(listener, app).await
+        .map_err(|e| format!("Error en servidor REST: {}", e))?;
+    
+    Ok(())
 }

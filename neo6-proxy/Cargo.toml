@@ -18,10 +18,11 @@ bindgen = "0.69"
 libc = "0.2"
 tower = "0.5"
 serde_yaml = "0.9.34"
+libloading = "0.8"
 neo6-protocols-lib = { path = "../neo6-protocols/neo6-protocols-lib" }
-lu62 = { path = "../neo6-protocols/lu62" }
-mq = { path = "../neo6-protocols/mq" }
-rest = { path = "../neo6-protocols/rest" }
-tcp = { path = "../neo6-protocols/tcp" }
-jca = { path = "../neo6-protocols/jca" }
-tn3270 = { path = "../neo6-protocols/tn3270" }
+lu62 = { path = "../neo6-protocols/lu62", optional = true }
+mq = { path = "../neo6-protocols/mq", optional = true }
+rest = { path = "../neo6-protocols/rest", optional = true }
+tcp = { path = "../neo6-protocols/tcp", optional = true }
+jca = { path = "../neo6-protocols/jca", optional = true }
+tn3270 = { path = "../neo6-protocols/tn3270", optional = true }

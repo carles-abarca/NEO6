@@ -2,12 +2,20 @@
 use axum::{extract::Path, Json};
 use serde::{Deserialize, Serialize};
 use std::sync::OnceLock;
+
+#[cfg(feature = "lu62")]
 use lu62::Lu62Handler;
+#[cfg(feature = "mq")]
 use mq::MqHandler;
+#[cfg(feature = "rest")]
 use rest::RestHandler;
+#[cfg(feature = "tcp")]
 use tcp::TcpHandler;
+#[cfg(feature = "jca")]
 use jca::JcaHandler;
+#[cfg(feature = "tn3270")]
 use tn3270::Tn3270Handler;
+
 use neo6_protocols_lib::protocol::{ProtocolHandler, TransactionConfig};
 use tracing::{error, info, debug};
 use crate::cics::mapping::TransactionMap;
@@ -39,11 +47,17 @@ fn get_transaction_map() -> &'static TransactionMap {
 // Returns a boxed protocol handler for the given transaction config, or None if unsupported
 pub fn get_protocol_handler(tx: &TransactionConfig) -> Option<Box<dyn ProtocolHandler>> {
     match tx.protocol.to_lowercase().as_str() {
+        #[cfg(feature = "lu62")]
         "lu62" => Some(Box::new(Lu62Handler)),
+        #[cfg(feature = "mq")]
         "mq" => Some(Box::new(MqHandler)),
+        #[cfg(feature = "rest")]
         "rest" => Some(Box::new(RestHandler::new(tx.server.clone(), None))),
+        #[cfg(feature = "tcp")]
         "tcp" => Some(Box::new(TcpHandler)),
+        #[cfg(feature = "jca")]
         "jca" => Some(Box::new(JcaHandler)),
+        #[cfg(feature = "tn3270")]
         "tn3270" => Some(Box::new(Tn3270Handler)),
         _ => None,
     }

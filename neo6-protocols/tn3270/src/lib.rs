@@ -16,6 +16,10 @@ pub mod field_navigation;
 pub mod tn3270_constants;
 pub mod tn3270_sysvars;
 
+// FFI support
+mod ffi;
+pub use ffi::*;
+
 // Imports de los módulos
 pub use tn3270_screens::ScreenManager;
 use template_parser::TemplateParser;
@@ -1252,6 +1256,7 @@ impl Session {
         ];
 
         // Combinar header + datos BIND
+
         tn3270e_header.extend_from_slice(&bind_data);
         
         

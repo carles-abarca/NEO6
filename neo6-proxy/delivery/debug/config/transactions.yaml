@@ -1,0 +1,60 @@
+TX01:
+  protocol: "cics"
+  server: "cics-server-1"
+  parameters:
+    - name: "account_number"
+      type: "string"
+      required: true
+    - name: "amount"
+      type: "float"
+      required: true
+  expected_response:
+    status: "success"
+    fields:
+      - name: "balance"
+        type: "float"
+TX02:
+  protocol: "mq"
+  server: "mq-server-1"
+  parameters:
+    - name: "customer_id"
+      type: "string"
+      required: true
+  expected_response:
+    status: "ok"
+    fields:
+      - name: "result_code"
+        type: "int"
+TX03:
+  protocol: "rest"
+  server: "https://httpbin.org/post"
+  parameters:
+    - name: "customer_id"
+      type: "string"
+      required: true
+    - name: "operation"
+      type: "string"
+      required: true
+    - name: "payload"
+      type: "object"
+      required: false
+  expected_response:
+    status: "ok"
+    fields:
+      - name: "result"
+        type: "object"
+TX_TN01:
+  protocol: "tn3270"
+  server: "mainframe-tn3270"
+  parameters:
+    - name: "account"
+      type: "string"
+      required: true
+    - name: "amount"
+      type: "float"
+      required: false
+  expected_response:
+    status: "ok"
+    fields:
+      - name: "result"
+        type: "object"

@@ -3,8 +3,12 @@ name = "rest"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
 async-trait = "0.1.88"
 neo6-protocols-lib = { path = "../neo6-protocols-lib" }
 reqwest = { version = "0.12.19", features = ["blocking", "json"] }
 serde_json = "1.0"
+tokio = { version = "1", features = ["full"] }
