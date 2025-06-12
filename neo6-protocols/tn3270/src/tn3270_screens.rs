@@ -407,13 +407,25 @@ impl ScreenManager {
                             let field_length = attributes.length.unwrap_or(10);
                             let spaces = vec![0x40; field_length]; // 0x40 = espacio en EBCDIC
                             screen_data.extend_from_slice(&spaces);
-                            println!("🔍 FIELD SPACES: Added {} EBCDIC spaces (0x40) to unprotected field '{}'", 
+                            
+                            // CRITICAL FIX: Properly terminate the field with a new protected field
+                            // In TN3270, fields are terminated by starting a new field immediately after
+                            // the data area. This is the correct way to delimit field boundaries.
+                            screen_data.push(0x1D); // SF (Start Field) to terminate the input field
+                            screen_data.push(0xE0); // Protected field attribute to end the input area
+                            
+                            println!("🔍 FIELD TERMINATION: Added {} EBCDIC spaces + terminating protected field for unprotected field '{}'", 
                                      field_length, attributes.name);
                         } else if !attributes.default_value.is_empty() {
                             // Para campos protegidos, agregar el default_value si existe
                             let def = self.codec.to_host(attributes.default_value.as_bytes());
                             screen_data.extend_from_slice(&def);
-                            println!("🔍 FIELD VALUE: Added default value '{}' to protected field '{}'", 
+                            
+                            // CRITICAL FIX: Properly terminate protected fields too
+                            screen_data.push(0x1D); // SF (Start Field) to terminate 
+                            screen_data.push(0xE0); // Protected field attribute 
+                            
+                            println!("🔍 FIELD VALUE: Added default value '{}' + terminating protected field to protected field '{}'", 
                                      attributes.default_value, attributes.name);
                         }
 

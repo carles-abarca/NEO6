@@ -5,8 +5,8 @@
 [XY5,1][BLUE]|[/BLUE][XY5,7][WHITE]Bienvenido al Sistema NEO6 - Plataforma de Integracion[/WHITE][XY5,79][BLUE]|[/BLUE]
 [XY6,1][BLUE]|[/BLUE][XY6,79][BLUE]|[/BLUE]
 [XY7,1][BLUE]|[/BLUE][XY7,4][TURQUOISE]Estado del sistema:[/TURQUOISE][XY7,25][GREEN]ACTIVO[/GREEN][XY7,79][BLUE]|[/BLUE]
-[XY8,1][BLUE]|[/BLUE][XY8,4][TURQUOISE]Sesion iniciada:[/TURQUOISE][XY8,24][FIELD timestamp,protected=true]{timestamp}[/FIELD][XY8,79][BLUE]|[/BLUE]
-[XY9,1][BLUE]|[/BLUE][XY9,4][TURQUOISE]Terminal:[/TURQUOISE][XY9,24][FIELD terminal,protected=true]{terminal_type}[/FIELD][XY9,79][BLUE]|[/BLUE]
+[XY8,1][BLUE]|[/BLUE][XY8,4][TURQUOISE]Sesion iniciada:[/TURQUOISE][XY8,24][GREEN][FIELD timestamp,protected=true]{timestamp}[/FIELD][/GREEN][XY8,79][BLUE]|[/BLUE]
+[XY9,1][BLUE]|[/BLUE][XY9,4][TURQUOISE]Terminal:[/TURQUOISE][XY9,24][GREEN][FIELD terminal,protected=true]{terminal_type}[/FIELD][/GREEN][XY9,79][BLUE]|[/BLUE]
 [XY10,1][BLUE]|[/BLUE][XY10,79][BLUE]|[/BLUE]
 [XY11,1][BLUE]+=============================================================================+[/BLUE]
 
@@ -17,4 +17,4 @@
 [XY17,7][TURQUOISE]> HELP     - Mostrar ayuda del sistema[/TURQUOISE]
 [XY18,7][TURQUOISE]> EXIT     - Salir del sistema[/TURQUOISE]
 
-[XY21,1][PINK]COMANDO === [/PINK][YELLOW]>[/YELLOW] [XY21,15][FIELD command,length=20,uppercase=true][/FIELD]
+[XY21,1][PINK]COMANDO === [/PINK][YELLOW]>[/YELLOW] [XY21,15][FIELD command,length=20,uppercase][/FIELD]
