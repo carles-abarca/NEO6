@@ -13,6 +13,8 @@ mod tn3270_screens;
 pub mod template_parser;
 mod field_manager;
 pub mod field_navigation;
+pub mod tn3270_constants;
+pub mod tn3270_sysvars;
 
 // Imports de los módulos
 pub use tn3270_screens::ScreenManager;
@@ -1252,6 +1254,7 @@ impl Session {
         // Combinar header + datos BIND
         tn3270e_header.extend_from_slice(&bind_data);
         
+        
         // Agregar IAC EOR
         tn3270e_header.push(IAC);
         tn3270e_header.push(EOR);
@@ -1375,7 +1378,7 @@ impl Session {
                 // AID_PA3 (0x6B) - tecla PA3
                 println!("[tn3270][INFO] Procesando AID_PA3");
                 self.process_pa_aid("PA3").await?;
-            },
+            }
             0xF1..=0xFC => {
                 // AID_PF1 through AID_PF24 - teclas de función
                 let pf_num = match aid_byte {

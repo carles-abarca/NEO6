@@ -1,6 +1,7 @@
 use crate::{Codec, TemplateParser, FieldManager, ScreenField};
 use crate::template_parser::TemplateElement;
 use crate::template_parser::Color3270;
+use crate::tn3270_constants::*;
 use std::error::Error;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -47,24 +48,17 @@ impl FieldAttribute {
         debug!("Entering FieldAttribute::to_byte");
         // CRITICAL: All field attributes MUST include FA_PRINTABLE bits (0xC0)
         // This is required by TN3270 protocol to make the field attribute valid
-        let mut attr = 0xC0;  // FA_PRINTABLE bits are MANDATORY
+        let mut attr = FA_PRINTABLE;  // FA_PRINTABLE bits are MANDATORY
         
-        if self.protected { attr |= 0x20; }  // FA_PROTECT
-        if self.numeric { attr |= 0x10; }    // FA_NUMERIC
-        if !self.display { attr |= 0x0C; }   // FA_INT_ZERO_NSEL
+        if self.protected { attr |= FA_PROTECT; }  // FA_PROTECT
+        if self.numeric { attr |= FA_NUMERIC; }    // FA_NUMERIC
+        if !self.display { attr |= FA_INT_ZERO_NSEL; }   // FA_INT_ZERO_NSEL
         
         // CRITICAL: Add detectability bits for unprotected fields
         // This makes the field selectable and allows cursor positioning
         if !self.protected {
-            attr |= 0x04;  // Add detectability bits
+            attr |= FA_INT_NORM_SEL;  // Add detectability bits
         }
-        
-        match self.intensity {
-            1 => attr |= 0x08,  // FA_INT_HIGH_SEL - Alta intensidad
-            2 => attr |= 0x0C,  // FA_INT_ZERO_NSEL - Invisible
-            _ => {}             // FA_INT_NORM_NSEL - Normal (0x00)
-        }
-        
         attr
     }
 }

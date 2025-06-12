@@ -1,5 +1,6 @@
 // Gestor de campos de entrada para pantallas TN3270
 use crate::template_parser::FieldAttributes;
+use crate::tn3270_constants::SF;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
@@ -122,7 +123,7 @@ impl ScreenField {
         // Atributo del campo - usar el método to_byte() para generar el atributo correcto
         let attr_byte = self.attributes.to_byte();
 
-        bytes.push(0x1D); // SF (Start Field)
+        bytes.push(SF); // SF (Start Field)
         bytes.push(attr_byte);
 
         // Agregar color si no es el por defecto

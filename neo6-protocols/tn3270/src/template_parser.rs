@@ -6,6 +6,8 @@ use std::fmt;
 use chrono::{Local, DateTime};
 use regex::Regex;
 use tracing::{trace, debug};
+use crate::tn3270_constants::*;
+use crate::tn3270_sysvars::{get_timestamp, get_terminal_type, get_system_status};
 
 /// Errores específicos del parser de templates
 #[derive(Debug)]
@@ -37,14 +39,14 @@ impl Error for TemplateError {}
 /// Representa un color 3270
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Color3270 {
-    Default = 0x00,
-    Blue = 0xF1,
-    Red = 0xF2,
-    Pink = 0xF3,
-    Green = 0xF4,
-    Turquoise = 0xF5,
-    Yellow = 0xF6,
-    White = 0xF7,
+    Default = COLOR_DEFAULT as isize,
+    Blue = COLOR_BLUE as isize,
+    Red = COLOR_RED as isize,
+    Pink = COLOR_PINK as isize,
+    Green = COLOR_GREEN as isize,
+    Turquoise = COLOR_TURQUOISE as isize,
+    Yellow = COLOR_YELLOW as isize,
+    White = COLOR_WHITE as isize,
 }
 
 impl Color3270 {
@@ -134,17 +136,17 @@ impl FieldAttributes {
         debug!("Entering FieldAttributes::to_byte");
         // CRITICAL: All field attributes MUST include FA_PRINTABLE bits (0xC0)
         // This is required by TN3270 protocol to make the field attribute valid
-        let mut attr = 0xC0;  // FA_PRINTABLE bits are MANDATORY
+        let mut attr = FA_PRINTABLE;  // FA_PRINTABLE bits are MANDATORY
         
-        if self.protected { attr |= 0x20; }  // FA_PROTECT
-        if self.numeric { attr |= 0x10; }    // FA_NUMERIC
-        if self.hidden { attr |= 0x0C; }     // FA_INT_ZERO_NSEL - Invisible
+        if self.protected { attr |= FA_PROTECT; }  // FA_PROTECT
+        if self.numeric { attr |= FA_NUMERIC; }    // FA_NUMERIC
+        if self.hidden { attr |= FA_INT_ZERO_NSEL; }     // FA_INT_ZERO_NSEL - Invisible
         
         // EXPERIMENTAL: For unprotected input fields, try using FA_INT_NORM_SEL (detectable)
         // instead of FA_INT_NORM_NSEL to make them more "active" for input
         // Some TN3270 emulators like MOCHA may require this for proper input field recognition
         if !self.protected && !self.hidden {
-            attr |= 0x04; // FA_INT_NORM_SEL - make field detectable/selectable
+            attr |= FA_INT_NORM_SEL; // FA_INT_NORM_SEL - make field detectable/selectable
         }
         
         println!("🚨 FieldAttributes::to_byte RESULT: name='{}' protected={} numeric={} hidden={} -> attr=0x{:02X}", 
@@ -196,14 +198,14 @@ impl TemplateParser {
     fn advance_position(current_row: Option<u16>, current_col: Option<u16>, advance_by: u16) -> (Option<u16>, Option<u16>) {
         if let (Some(row), Some(col)) = (current_row, current_col) {
             let new_col = col + advance_by;
-            if new_col > 80 {
+            if new_col > SCREEN_COLUMNS {
                 // Handle line wrapping - advance to next line
-                let lines_to_advance = (new_col - 1) / 80;
-                let final_col = ((new_col - 1) % 80) + 1;
+                let lines_to_advance = (new_col - 1) / SCREEN_COLUMNS;
+                let final_col = ((new_col - 1) % SCREEN_COLUMNS) + 1;
                 let final_row = row + lines_to_advance;
                 
-                // Check if we're going beyond screen bounds (24 rows)
-                if final_row > 24 {
+                // Check if we're going beyond screen bounds (SCREEN_ROWS rows)
+                if final_row > SCREEN_ROWS {
                     // Don't advance beyond screen bounds
                     (Some(row), Some(col))
                 } else {
@@ -262,6 +264,15 @@ impl TemplateParser {
         self.validate_elements(&elements)?;
         
         Ok(elements)
+    }
+
+    /// Replaces system variables in the template with their corresponding values
+    pub fn replace_system_vars(&self, template: &str) -> String {
+        let mut result = template.to_string();
+        result = result.replace("{timestamp}", &get_timestamp());
+        result = result.replace("{terminal}", &get_terminal_type());
+        result = result.replace("{status}", &get_system_status());
+        result
     }
 
     /// Reemplaza las variables del sistema en el contenido
