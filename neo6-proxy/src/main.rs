@@ -1,6 +1,6 @@
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
-use tracing::{info, error};
+use tracing::{info, error, warn};
 use std::collections::HashSet;
 
 use neo6_proxy::config::ProxyConfig;
@@ -104,56 +104,33 @@ async fn main() {
 async fn start_dynamic_listener(protocol: &str, port: u16, protocol_loader: &ProtocolLoader) -> Result<(), String> {
     info!("Iniciando listener dinámico para protocolo: {}", protocol);
     
-    match protocol {
-        "tn3270" => {
-            // Para TN3270, usar el listener nativo real
-            start_tn3270_native_listener(port, protocol_loader).await
-        }
-        "rest" => {
-            // Para REST, usar directamente la interfaz Axum
-            start_rest_listener(port).await
-        }
-        _ => {
-            // Para otros protocolos, usar interfaz REST por defecto
-            println!("Protocolo '{}' se ejecuta a través de interfaz REST dinámica", protocol);
-            start_rest_listener(port).await
-        }
-    }
-}
-
-// Función para iniciar el listener TN3270 nativo usando la librería dinámica
-async fn start_tn3270_native_listener(port: u16, protocol_loader: &ProtocolLoader) -> Result<(), String> {
-    info!("Iniciando listener TN3270 nativo en puerto {}", port);
+    // Intentar cargar la librería del protocolo
+    let protocol_handler = protocol_loader.load_protocol(protocol)
+        .map_err(|e| format!("No se pudo cargar protocolo {}: {}", protocol, e))?;
     
-    // Cargar la librería TN3270
-    let protocol_handler = protocol_loader.load_protocol("tn3270")
-        .map_err(|e| format!("No se pudo cargar protocolo TN3270: {}", e))?;
-    
-    println!("Iniciando listener TN3270 nativo real en puerto {}", port);
-    
-    // Usar la función start_listener del protocolo
-    // Esto ahora debería iniciar el listener TN3270 en un hilo separado
+    // Verificar si el protocolo tiene un listener nativo
     match protocol_handler.start_listener(port) {
         Ok(result) => {
-            info!("Listener TN3270 nativo iniciado exitosamente: {:?}", result);
-            println!("Listener TN3270 nativo está corriendo en segundo plano...");
+            info!("Listener nativo {} iniciado exitosamente: {:?}", protocol, result);
+            println!("Listener {} nativo está corriendo en segundo plano...", protocol);
             
             // Mantener el programa corriendo indefinidamente
-            // El listener TN3270 se ejecuta en un hilo separado
+            // El listener se ejecuta en un hilo separado
             loop {
-                tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
-                println!("Listener TN3270 nativo sigue activo...");
+                tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
+                println!("Listener {} nativo sigue activo...", protocol);
             }
         }
         Err(e) => {
-            error!("Error iniciando listener TN3270 nativo: {}", e);
-            Err(format!("Error iniciando listener TN3270 nativo: {}", e))
+            warn!("Protocolo {} no tiene listener nativo ({}), usando interfaz REST", protocol, e);
+            println!("Protocolo '{}' se ejecuta a través de interfaz REST dinámica", protocol);
+            start_rest_fallback_listener(port).await
         }
     }
 }
 
-// Función para iniciar el listener REST/Axum
-async fn start_rest_listener(port: u16) -> Result<(), String> {
+// Función para iniciar el listener REST/Axum como fallback
+async fn start_rest_fallback_listener(port: u16) -> Result<(), String> {
     let app = create_dynamic_router();
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
     let listener = TcpListener::bind(addr).await
