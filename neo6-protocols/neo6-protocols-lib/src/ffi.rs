@@ -37,6 +37,11 @@ pub type StartListenerFn = unsafe extern "C" fn(
     port: u16,
 ) -> FfiResult;
 
+/// Function pointer type for configuring logging level
+pub type SetLogLevelFn = unsafe extern "C" fn(
+    log_level: *const c_char,
+) -> FfiResult;
+
 /// Protocol interface structure containing function pointers
 #[repr(C)]
 pub struct ProtocolInterface {
@@ -44,6 +49,7 @@ pub struct ProtocolInterface {
     pub destroy_handler: DestroyProtocolHandlerFn,
     pub invoke_transaction: InvokeTransactionFn,
     pub start_listener: Option<StartListenerFn>,
+    pub set_log_level: Option<SetLogLevelFn>,
 }
 
 /// Function pointer type for getting protocol interface from dynamic library

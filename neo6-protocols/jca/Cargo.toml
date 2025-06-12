@@ -11,3 +11,5 @@ async-trait = "0.1.88"
 neo6-protocols-lib = { path = "../neo6-protocols-lib" }
 serde_json = "1.0"
 tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

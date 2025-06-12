@@ -866,6 +866,8 @@ dependencies = [
  "neo6-protocols-lib",
  "serde_json",
  "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -965,6 +967,8 @@ dependencies = [
  "neo6-protocols-lib",
  "serde_json",
  "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -1028,6 +1032,8 @@ dependencies = [
  "neo6-protocols-lib",
  "serde_json",
  "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -1458,6 +1464,8 @@ dependencies = [
  "reqwest",
  "serde_json",
  "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -1815,6 +1823,8 @@ dependencies = [
  "neo6-protocols-lib",
  "serde_json",
  "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

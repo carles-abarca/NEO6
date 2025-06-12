@@ -4,10 +4,10 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 use libloading::{Library, Symbol};
-use tracing::{debug, error, info, warn};
+use tracing::{info};
 
 use neo6_protocols_lib::ffi::{
-    FfiResult, ProtocolHandle, ProtocolInterface, GetProtocolInterfaceFn,
+    ProtocolHandle, ProtocolInterface, GetProtocolInterfaceFn,
     free_ffi_result, create_c_string, c_str_to_string
 };
 
@@ -120,6 +120,38 @@ impl DynamicProtocolHandler {
             }
         }
     }
+
+    /// Set logging level for this protocol
+    pub fn set_log_level(&self, log_level: &str) -> Result<serde_json::Value, String> {
+        unsafe {
+            if let Some(set_log_level_fn) = (*self.interface).set_log_level {
+                let level_cstr = create_c_string(log_level);
+                let result = set_log_level_fn(level_cstr);
+                
+                // Free the C string
+                neo6_protocols_lib::ffi::free_c_string(level_cstr);
+                
+                // Process the result
+                if result.success == 0 {
+                    let data_str = c_str_to_string(result.data).unwrap_or_default();
+                    let json_result = serde_json::from_str(&data_str)
+                        .map_err(|e| format!("Failed to parse result JSON: {}", e))?;
+                    
+                    free_ffi_result(result);
+                    Ok(json_result)
+                } else {
+                    let error_str = c_str_to_string(result.error)
+                        .unwrap_or_else(|| "Unknown error".to_string());
+                    
+                    free_ffi_result(result);
+                    Err(error_str)
+                }
+            } else {
+                // If protocol doesn't support set_log_level, that's ok
+                Ok(serde_json::json!({"status": "not_supported"}))
+            }
+        }
+    }
 }
 
 impl Drop for DynamicProtocolHandler {
@@ -220,6 +252,17 @@ impl ProtocolLoader {
     pub fn list_loaded_protocols(&self) -> Vec<String> {
         let loaded = self.loaded_protocols.read().unwrap();
         loaded.keys().cloned().collect()
+    }
+
+    /// Set log level for all loaded protocols
+    pub fn set_log_level_for_all(&self, log_level: &str) {
+        let loaded = self.loaded_protocols.read().unwrap();
+        for (protocol_name, handler) in loaded.iter() {
+            match handler.set_log_level(log_level) {
+                Ok(_) => info!("Configurado nivel de log '{}' para protocolo {}", log_level, protocol_name),
+                Err(e) => info!("Protocolo {} no soporta configuración de log: {}", protocol_name, e),
+            }
+        }
     }
 }
 

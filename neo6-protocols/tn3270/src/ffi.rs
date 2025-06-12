@@ -100,7 +100,7 @@ unsafe extern "C" fn tn3270_start_listener(
             
             println!("[TN3270] Iniciando listener nativo real en puerto {}", port);
             
-            // Create transaction map with a sample TN3270 transaction
+            // Create transaction map from configuration
             let mut tx_map = HashMap::<String, TransactionConfig>::new();
             tx_map.insert("TX_TN01".to_string(), TransactionConfig {
                 protocol: "tn3270".to_string(),
@@ -114,30 +114,61 @@ unsafe extern "C" fn tn3270_start_listener(
             let exec_fn = move |tx_id: String, params: serde_json::Value| {
                 let handler_clone = handler.clone();
                 async move {
-                    println!("[TN3270] Ejecutando transacción: {} con params: {:?}", tx_id, params);
+                    println!("[TN3270] Ejecutando transacción: {}", tx_id);
                     // Use the actual handler to process the transaction
                     handler_clone.invoke_transaction(&tx_id, params).await
                 }
             };
             
             // This will run the listener indefinitely
-            println!("[TN3270] Llamando a start_tn3270_listener...");
             if let Err(e) = crate::start_tn3270_listener(port, tx_map, exec_fn).await {
                 eprintln!("[TN3270] Error en listener: {}", e);
-            } else {
-                println!("[TN3270] Listener terminó normalmente");
             }
         });
     });
     
     // Give the listener a moment to start
-    std::thread::sleep(std::time::Duration::from_millis(200));
+    std::thread::sleep(std::time::Duration::from_millis(100));
     
     create_success_result(serde_json::json!({
         "status": "listener_started", 
         "port": port,
         "address": format!("0.0.0.0:{}", port),
         "type": "native_tn3270_background"
+    }))
+}
+
+/// Set logging level for TN3270 protocol
+unsafe extern "C" fn tn3270_set_log_level(
+    log_level: *const c_char,
+) -> FfiResult {
+    let level_str = match unsafe { c_str_to_string(log_level) } {
+        Some(s) => s,
+        None => return create_error_result("Invalid log_level"),
+    };
+
+    // Configure tracing subscriber for this protocol
+    use tracing_subscriber::{EnvFilter, fmt, prelude::*};
+    
+    // Create filter based on log level
+    let filter = match level_str.to_lowercase().as_str() {
+        "trace" => EnvFilter::new("trace"),
+        "debug" => EnvFilter::new("debug"),
+        "info" => EnvFilter::new("info"),
+        "warn" => EnvFilter::new("warn"),
+        "error" => EnvFilter::new("error"),
+        _ => EnvFilter::new("info"), // default
+    };
+    
+    // Try to set global subscriber (will fail if already set, but that's ok)
+    let _ = tracing_subscriber::registry()
+        .with(fmt::layer().with_target(true).with_level(true))
+        .with(filter)
+        .try_init();
+    
+    create_success_result(serde_json::json!({
+        "status": "log_level_set",
+        "level": level_str
     }))
 }
 
@@ -149,6 +180,7 @@ pub unsafe extern "C" fn get_protocol_interface() -> *const ProtocolInterface {
         destroy_handler: tn3270_destroy_handler,
         invoke_transaction: tn3270_invoke_transaction,
         start_listener: Some(tn3270_start_listener),
+        set_log_level: Some(tn3270_set_log_level),
     };
     &INTERFACE
 }

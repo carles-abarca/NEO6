@@ -1,6 +1,6 @@
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
-use tracing::{info, error, warn};
+use tracing::{info, error};
 use std::collections::HashSet;
 
 use neo6_proxy::config::ProxyConfig;
@@ -82,6 +82,10 @@ async fn main() {
             }
         }
     }
+
+    // Configurar el nivel de log para todas las librerías dinámicas
+    info!("Configurando nivel de log '{}' para todas las librerías dinámicas", config.log_level);
+    protocol_loader.set_log_level_for_all(&config.log_level);
 
     // Lanzar el listener del protocolo específico
     match start_dynamic_listener(&protocol, port, &protocol_loader).await {

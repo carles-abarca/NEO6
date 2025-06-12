@@ -2,7 +2,6 @@
 use axum::{extract::Path, Json};
 use serde::{Deserialize, Serialize};
 use std::sync::OnceLock;
-use neo6_protocols_lib::protocol::TransactionConfig;
 use tracing::{error, info, debug};
 use crate::cics::mapping::TransactionMap;
 use crate::protocol_loader::ProtocolLoader;

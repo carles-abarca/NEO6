@@ -78,6 +78,40 @@ unsafe extern "C" fn lu62_invoke_transaction(
     }
 }
 
+/// Set logging level for LU62 protocol
+unsafe extern "C" fn lu62_set_log_level(
+    log_level: *const c_char,
+) -> FfiResult {
+    let level_str = match unsafe { c_str_to_string(log_level) } {
+        Some(s) => s,
+        None => return create_error_result("Invalid log_level"),
+    };
+
+    // Configure tracing subscriber for this protocol
+    use tracing_subscriber::{EnvFilter, fmt, prelude::*};
+    
+    // Create filter based on log level
+    let filter = match level_str.to_lowercase().as_str() {
+        "trace" => EnvFilter::new("trace"),
+        "debug" => EnvFilter::new("debug"),
+        "info" => EnvFilter::new("info"),
+        "warn" => EnvFilter::new("warn"),
+        "error" => EnvFilter::new("error"),
+        _ => EnvFilter::new("info"), // default
+    };
+    
+    // Try to set global subscriber (will fail if already set, but that's ok)
+    let _ = tracing_subscriber::registry()
+        .with(fmt::layer().with_target(true).with_level(true))
+        .with(filter)
+        .try_init();
+    
+    create_success_result(serde_json::json!({
+        "status": "log_level_set",
+        "level": level_str
+    }))
+}
+
 /// Get the protocol interface for LU62 (only exported function)
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn get_protocol_interface() -> *const ProtocolInterface {
@@ -86,6 +120,7 @@ pub unsafe extern "C" fn get_protocol_interface() -> *const ProtocolInterface {
         destroy_handler: lu62_destroy_handler,
         invoke_transaction: lu62_invoke_transaction,
         start_listener: None,
+        set_log_level: Some(lu62_set_log_level),
     };
     &INTERFACE
 }
