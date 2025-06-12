@@ -1,3 +1,4 @@
+[METADATA Pantalla de confirmación para salir del sistema NEO6]
 [XY1,1][BLUE]+=============================================================================+[/BLUE]
 [XY2,1][BLUE]|[/BLUE][XY2,30][YELLOW][BRIGHT]SALIR DEL SISTEMA[/BRIGHT][/YELLOW][XY2,79][BLUE]|[/BLUE]
 [XY3,1][BLUE]+=============================================================================+[/BLUE]

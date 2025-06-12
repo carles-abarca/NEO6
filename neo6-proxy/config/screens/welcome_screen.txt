@@ -1,3 +1,4 @@
+[METADATA Pantalla de bienvenida al sistema NEO6 con información de sesión]
 [XY1,1][BLUE]+=============================================================================+[/BLUE]
 [XY2,1][BLUE]|[/BLUE][XY2,25][YELLOW][BRIGHT]ACCESO TN3270 A ENTORNO NEO6[/BRIGHT][/YELLOW][XY2,79][BLUE]|[/BLUE]
 [XY3,1][BLUE]+=============================================================================+[/BLUE]

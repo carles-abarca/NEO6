@@ -1,3 +1,4 @@
+[METADATA Información detallada del estado actual del sistema NEO6]
 [XY1,1][BLUE]+=============================================================================+[/BLUE]
 [XY2,1][BLUE]|[/BLUE][XY2,28][YELLOW][BRIGHT]ESTADO DEL SISTEMA NEO6[/BRIGHT][/YELLOW][XY2,79][BLUE]|[/BLUE]
 [XY3,1][BLUE]+=============================================================================+[/BLUE]
