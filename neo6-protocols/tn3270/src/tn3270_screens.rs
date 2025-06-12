@@ -45,16 +45,24 @@ impl FieldAttribute {
     /// Convierte el atributo a byte 3270
     pub fn to_byte(&self) -> u8 {
         debug!("Entering FieldAttribute::to_byte");
-        let mut attr = 0x00;
+        // CRITICAL: All field attributes MUST include FA_PRINTABLE bits (0xC0)
+        // This is required by TN3270 protocol to make the field attribute valid
+        let mut attr = 0xC0;  // FA_PRINTABLE bits are MANDATORY
         
-        if self.protected { attr |= 0x20; }
-        if self.numeric { attr |= 0x10; }
-        if !self.display { attr |= 0x0C; }
+        if self.protected { attr |= 0x20; }  // FA_PROTECT
+        if self.numeric { attr |= 0x10; }    // FA_NUMERIC
+        if !self.display { attr |= 0x0C; }   // FA_INT_ZERO_NSEL
+        
+        // CRITICAL: Add detectability bits for unprotected fields
+        // This makes the field selectable and allows cursor positioning
+        if !self.protected {
+            attr |= 0x04;  // Add detectability bits
+        }
         
         match self.intensity {
-            1 => attr |= 0x08,  // Alta intensidad
-            2 => attr |= 0x0C,  // Invisible
-            _ => {}             // Normal
+            1 => attr |= 0x08,  // FA_INT_HIGH_SEL - Alta intensidad
+            2 => attr |= 0x0C,  // FA_INT_ZERO_NSEL - Invisible
+            _ => {}             // FA_INT_NORM_NSEL - Normal (0x00)
         }
         
         attr
@@ -308,10 +316,11 @@ impl ScreenManager {
         // Bit 6: 1 - Print (permite impresión si aplicable)  
         // Bit 5: 1 - Start printer (si aplicable)
         // Bit 4: 1 - Sound alarm (opcional)
-        // Bit 3: 1 - Keyboard restore (restaura teclado)
+        // Bit 3: 1 - (unused)
         // Bit 2: 1 - Reset modified data tags (resetea MDT de todos los campos)
-        // Bits 1-0: 00 - Reserved
-        screen_data.push(0xFC); // WCC con más flags de reseteo: 11111100
+        // Bit 1: 1 - Keyboard restore (restaura teclado) ← FIX CRÍTICO
+        // Bit 0: 0 - Reserved
+        screen_data.push(0xFE); // WCC con keyboard restore: 11111110
 
         // Agregar un campo protegido inicial que cubra toda la pantalla (posición 0,0)
         // Esto establece el contexto base para todos los atributos subsiguientes
@@ -381,42 +390,31 @@ impl ScreenManager {
                         screen_data.extend_from_slice(&[0x11, high, low]);
 
                         screen_data.push(0x1D); // SF
-                        // TN3270 field attribute format:
-                        // Bit 7-6: Reserved (must be 11 for valid attribute)
-                        // Bit 5: Protection (1=protected, 0=unprotected)  
-                        // Bit 4: Numeric (1=numeric only, 0=alphanumeric)
-                        // Bit 3-2: Display (00=normal, 01=invisible, 10=high intensity, 11=reserved)
-                        // Bit 1: Reserved (must be 0)
-                        // Bit 0: MDT - Modified Data Tag (1=modified, 0=not modified)
-                        let mut field_attr = 0xC0; // Start with reserved bits set (11xxxxxx)
                         
-                        if attributes.protected {
-                            field_attr |= 0x20; // Set protection bit
-                        }
-                        // For unprotected fields, leave protection bit as 0
-                        
-                        if attributes.numeric {
-                            field_attr |= 0x10; // Set numeric bit
-                        }
-                        
-                        // Set display attributes (bits 3-2)
-                        // 00 = normal display (default for input fields)
-                        // We can add intensity/visibility options later if needed
+                        // CRITICAL FIX: Use the corrected FieldAttribute::to_byte() method
+                        // which properly includes FA_PRINTABLE bits (0xC0) as required by TN3270 protocol
+                        let field_attr_byte = attributes.to_byte();
                         
                         // Debug logging for field attributes
-                        println!("🔍 FIELD DEBUG: name={} protected={} numeric={} attr=0x{:02X}", 
-                                attributes.name, attributes.protected, attributes.numeric, field_attr);
+                        println!("🔍 FIELD DEBUG: name={} protected={} numeric={} attr=0x{:02X} (includes FA_PRINTABLE)", 
+                                attributes.name, attributes.protected, attributes.numeric, field_attr_byte);
                         
-                        screen_data.push(field_attr);
+                        screen_data.push(field_attr_byte);
 
-                        if !attributes.default_value.is_empty() {
-                            let def = self.codec.to_host(attributes.default_value.as_bytes());
-                            screen_data.extend_from_slice(&def);
-                        } else if !attributes.protected && attributes.length.is_some() {
-                            // Para campos de entrada vacíos, agregar espacios para indicar el área de entrada
+                        // CRITICAL: For unprotected fields, add exactly the specified length in spaces
+                        // MOCHA may be sensitive to the exact field length and spacing
+                        if !attributes.protected {
                             let field_length = attributes.length.unwrap_or(10);
                             let spaces = vec![0x40; field_length]; // 0x40 = espacio en EBCDIC
                             screen_data.extend_from_slice(&spaces);
+                            println!("🔍 FIELD SPACES: Added {} EBCDIC spaces (0x40) to unprotected field '{}'", 
+                                     field_length, attributes.name);
+                        } else if !attributes.default_value.is_empty() {
+                            // Para campos protegidos, agregar el default_value si existe
+                            let def = self.codec.to_host(attributes.default_value.as_bytes());
+                            screen_data.extend_from_slice(&def);
+                            println!("🔍 FIELD VALUE: Added default value '{}' to protected field '{}'", 
+                                     attributes.default_value, attributes.name);
                         }
 
                         let screen_field = ScreenField::new(
@@ -441,25 +439,30 @@ impl ScreenManager {
         // Initialize field navigator with current fields
         if let Err(e) = self.field_navigator.initialize_from_field_manager(&field_manager) {
             warn!("Failed to initialize field navigator: {}", e);
-        } else {
-            // Get navigation statistics for debugging
-            let nav_stats = self.field_navigator.get_navigation_stats();
-            println!("🔍 FIELD NAVIGATOR INITIALIZED: {} input fields found", nav_stats.total_input_fields);
+        }
+
+        // Position cursor at first input field (if any exists)
+        let fields = field_manager.get_fields_by_position();
+        if let Some(first_input_field) = fields.iter().find(|f| !f.attributes.protected) {
+            // CRITICAL: Position cursor in the FIRST DATA POSITION of the input field
+            // The field attribute is at (row, col), so first data position is at (row, col+1)
+            let cursor_row = first_input_field.row - 1; // Convert to 0-based
+            let cursor_col = first_input_field.col;     // Position after field attribute (first data position)
+            let (high, low) = Self::encode_buffer_addr(cursor_row, cursor_col);
             
-            if let Some(field_name) = &nav_stats.current_field_name {
-                println!("🔍 ACTIVE FIELD: '{}' at cursor position ({},{})", 
-                         field_name, nav_stats.cursor_position.0, nav_stats.cursor_position.1);
-                
-                // Generate cursor positioning bytes using the field navigator
-                if let Ok(cursor_bytes) = self.field_navigator.generate_cursor_positioning_bytes(field_name) {
-                    screen_data.extend_from_slice(&cursor_bytes);
-                    println!("🔍 CURSOR POSITIONED: Using field navigator for field '{}'", field_name);
-                } else {
-                    warn!("Failed to generate cursor positioning bytes for field '{}'", field_name);
-                }
-            } else {
-                println!("🔍 WARNING: No input fields found - cursor not positioned");
-            }
+            screen_data.extend_from_slice(&[0x11, high, low]); // SBA to position cursor
+            screen_data.push(0x13); // IC (Insert Cursor)
+            
+            // EXPERIMENTAL: Some TN3270 terminals require an additional step to fully enable input
+            // Try adding a NUL character or space to ensure the field is ready for input
+            // This is sometimes needed to "activate" the input field for certain emulators
+            
+            println!("🔍 CURSOR POSITIONED: Field '{}' data area at TN3270 position ({},{}) -> buffer ({},{})", 
+                     first_input_field.attributes.name, 
+                     first_input_field.row, first_input_field.col + 1,
+                     cursor_row + 1, cursor_col + 1);
+        } else {
+            println!("🔍 WARNING: No input fields found - cursor not positioned");
         }
 
         self.screen_buffer = screen_data.clone();
@@ -597,7 +600,9 @@ impl ScreenManager {
 
         // Campo de entrada
         screen_data.push(0x1D); // SF (Start Field) 
-        screen_data.push(0x60); // Atributo: Desprotegido + Normal intensidad
+        // Crear atributo correcto para campo desprotegido con bits detectability
+        let field_attr = FieldAttribute::unprotected();
+        screen_data.push(field_attr.to_byte()); // Atributo: 0xC4 (FA_PRINTABLE + detectability)
         screen_data.push(0x13); // IC (Insert Cursor)
 
         self.screen_buffer = screen_data.clone();
@@ -735,7 +740,9 @@ impl ScreenManager {
 
         // Campo de entrada
         screen_data.push(0x1D); // SF (Start Field) 
-        screen_data.push(0x60); // Atributo: Desprotegido + Normal intensidad
+        // Crear atributo correcto para campo desprotegido con bits detectability
+        let field_attr = FieldAttribute::unprotected();
+        screen_data.push(field_attr.to_byte()); // Atributo: 0xC4 (FA_PRINTABLE + detectability)
         screen_data.push(0x13); // IC (Insert Cursor)
 
         self.screen_buffer = screen_data.clone();

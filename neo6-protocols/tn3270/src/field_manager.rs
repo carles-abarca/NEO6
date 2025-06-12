@@ -119,16 +119,8 @@ impl ScreenField {
     pub fn to_3270_bytes(&self, codec: &crate::Codec) -> Vec<u8> {
         let mut bytes = Vec::new();
 
-        // Atributo del campo
-        let attr_byte = if self.attributes.protected {
-            if self.attributes.hidden {
-                0x6C // Protegido + No display
-            } else {
-                0xF0 // Protegido + Normal
-            }
-        } else {
-            0x60 // Desprotegido + Normal
-        };
+        // Atributo del campo - usar el método to_byte() para generar el atributo correcto
+        let attr_byte = self.attributes.to_byte();
 
         bytes.push(0x1D); // SF (Start Field)
         bytes.push(attr_byte);

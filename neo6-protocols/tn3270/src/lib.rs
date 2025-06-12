@@ -841,6 +841,7 @@ impl Session {
                     println!("[tn3270][SEND] 3270 Data structure: {:02X?}...", &tn3270e_data_msg[7..std::cmp::min(25, tn3270e_data_msg.len())]);
                 }
                 self.stream.write_all(&tn3270e_data_msg).await?;
+                
             } else {
                 // Enviar como flujo Telnet clásico con IAC EOR
                 let mut classic_data_msg = screen_data;
@@ -889,6 +890,21 @@ impl Session {
                         break;
                     }
                 }
+                
+                // Primero verificar comandos de 2 bytes (como NOP, EOR)
+                if cmd == NOP {
+                    println!("[tn3270][DEBUG] Recibido IAC NOP (comando Telnet, no necesita respuesta)");
+                    // El comando NOP (No Operation) no requiere respuesta, solo continuar
+                    i += 2; // Consumir IAC NOP (2 bytes)
+                    continue;
+                } else if cmd == EOR_TELNET_CMD {
+                    println!("[tn3270][DEBUG] Recibido IAC EOR (comando Telnet de 2 bytes)");
+                    // Esto es una marca de fin de registro en modo Telnet clásico.
+                    // El cliente envía esto después de sus datos de entrada.
+                    i += 2; // Consumir IAC EOR (2 bytes)
+                    continue;
+                }
+                
                 // Comandos Telnet de 3 bytes (IAC CMD OPT)
                 if i + 2 >= buf.len() {
                     println!("[tn3270][WARN] Comando Telnet incompleto (IAC CMD sin OPT), esperando más datos.");
@@ -901,24 +917,8 @@ impl Session {
                     WONT => self.handle_wont(opt).await?,
                     DO => self.handle_do(opt).await?,
                     DONT => self.handle_dont(opt).await?,
-                    NOP => {
-                        println!("[tn3270][DEBUG] Recibido IAC NOP (comando Telnet, no necesita respuesta)");
-                        // El comando NOP (No Operation) no requiere respuesta, solo continuar
-                        i += 2; // Consumir IAC NOP (2 bytes)
-                        continue;
-                    },
                     _ => {
                         println!("[tn3270][WARN] Comando Telnet desconocido o no manejado: 0x{:02X}", cmd);
-                        // Podría ser un comando de 2 bytes como IAC EOR_TELNET_CMD (255 239)
-                        if cmd == EOR_TELNET_CMD && opt == IAC { // Esto es un error de parseo, EOR es IAC EOR
-                             println!("[tn3270][DEBUG] Recibido IAC EOR (comando Telnet, no opción)");
-                             // Esto es una marca de fin de registro en modo Telnet clásico.
-                             // El cliente envía esto después de sus datos de entrada.
-                             // Aquí deberíamos procesar los datos 3270 recibidos antes de este EOR.
-                             // Por ahora, solo lo registramos.
-                             i += 2; // Consumir IAC EOR
-                             continue;
-                        }
                     }
                 }
                 i += 3; // Avanzar el índice para el comando de 3 bytes
@@ -1269,13 +1269,28 @@ impl Session {
     // Esta función ya no es necesaria aquí, el flujo es más dinámico.
     // async fn send_tn3270e_device_type_request(&mut self) -> Result<(), Box<dyn Error>> { ... }
 
-    // Esta función ya no es necesaria aquí, se integra en el flujo de process_incoming_tn3270e_message
-    // async fn handle_tn3270e(...) -> Result<(), Box<dyn Error>> { ... }    // Función principal para procesar datos de entrada del cliente (AID, campo de datos, etc.)
+    // Función principal para procesar datos de entrada del cliente (AID, campo de datos, etc.)
     async fn send_3270_data(&mut self, data: &[u8]) -> Result<(), Box<dyn Error>> {
 
         if data.is_empty() {
             println!("[tn3270][DEBUG] send_3270_data: datos vacíos recibidos");
             return Ok(());
+        }
+
+        println!("[tn3270][CRITICAL] *** PROCESANDO DATOS DE USUARIO DE MOCHA ***");
+        println!("[tn3270][CRITICAL] Tamaño de datos: {} bytes", data.len());
+        println!("[tn3270][CRITICAL] Datos hex completos: {:02X?}", data);
+        println!("[tn3270][CRITICAL] Datos como string ASCII: {}", String::from_utf8_lossy(data));
+        
+        // Analizar cada byte individualmente para debug
+        for (i, &byte) in data.iter().enumerate() {
+            println!("[tn3270][CRITICAL] Byte[{}]: 0x{:02X} ({}) '{}'", 
+                i, byte, byte, 
+                if byte.is_ascii_graphic() || byte == b' ' { 
+                    char::from(byte) 
+                } else { 
+                    '.' 
+                });
         }
 
         println!("[tn3270][INFO] send_3270_data: procesando {} bytes de entrada del cliente", data.len());
@@ -1331,20 +1346,25 @@ impl Session {
         }
 
         match aid_byte {
+            0x60 => {
+                // AID_NO (0x60) - no AID generated
+                println!("[tn3270][INFO] Procesando AID_NO - confirmación sin acción específica");
+                self.process_no_aid().await?;
+            },
             0x7D => {
                 // AID_ENTER (0x7D) - tecla Enter
                 println!("[tn3270][INFO] Procesando AID_ENTER");
                 self.process_enter_aid(actual_data).await?;
             },
             0x6C => {
-                // AID_CLEAR (0x6C) - tecla Clear
-                println!("[tn3270][INFO] Procesando AID_CLEAR");
-                self.process_clear_aid().await?;
-            },
-            0x6D => {
-                // AID_PA1 (0x6D) - tecla PA1
+                // AID_PA1 (0x6C) - tecla PA1
                 println!("[tn3270][INFO] Procesando AID_PA1");
                 self.process_pa_aid("PA1").await?;
+            },
+            0x6D => {
+                // AID_CLEAR (0x6D) - tecla Clear
+                println!("[tn3270][INFO] Procesando AID_CLEAR");
+                self.process_clear_aid().await?;
             },
             0x6E => {
                 // AID_PA2 (0x6E) - tecla PA2
@@ -1446,6 +1466,20 @@ impl Session {
     async fn process_pa_aid(&mut self, pa_name: &str) -> Result<(), Box<dyn Error>> {
         println!("[tn3270][INFO] {} recibido, sin acción específica", pa_name);
         // Las teclas PA normalmente no requieren respuesta especial
+        Ok(())
+    }
+
+    // Procesa AID_NO - confirmación del terminal sin acción específica del usuario
+    async fn process_no_aid(&mut self) -> Result<(), Box<dyn Error>> {
+        println!("[tn3270][INFO] AID_NO recibido - confirmación del terminal recibida");
+        
+        // AID_NO indica que el terminal confirmó la recepción de la pantalla
+        // pero no hubo interacción específica del usuario
+        // Según el protocolo TN3270, esto es normal después de enviar una pantalla
+        
+        // No enviar respuesta adicional para evitar bucles
+        // El teclado ya debería estar desbloqueado desde el WCC enviado anteriormente
+        println!("[tn3270][DEBUG] AID_NO procesado - esperando interacción del usuario");
         Ok(())
     }
 
@@ -1633,6 +1667,7 @@ impl Session {
         // TODO: Implement actual logic
         Ok(())
     }
+
 }
 
 async fn handle_client(stream: TcpStream) -> Result<(), Box<dyn Error>> {
@@ -1679,16 +1714,8 @@ async fn handle_client(stream: TcpStream) -> Result<(), Box<dyn Error>> {
         // Podríamos añadir un timeout general de inactividad si fuera necesario.
         match session.stream.read_buf(&mut buf).await {
             Ok(0) => {
-                // Solo cerrar la conexión si realmente no hay más datos
-                // y no es solo que el cliente esté esperando respuesta
-                if buf.is_empty() {
-                    println!("[tn3270][INFO] Cliente desconectado (stream cerrado).");
-                    break Ok(());
-                } else {
-                    // Si hay datos en el buffer, procesarlos
-                    println!("[tn3270][DEBUG] Socket cerrado pero hay datos en buffer para procesar");
-                    continue;
-                }
+                println!("[tn3270][INFO] Cliente desconectado (stream cerrado).");
+                break Ok(());
             }
             Ok(n) => {
                 println!("[tn3270][RECV] Raw data ({} bytes): {:02X?}", n, &buf[..n]);

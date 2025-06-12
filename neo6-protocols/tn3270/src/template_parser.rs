@@ -128,6 +128,30 @@ impl FieldAttributes {
         }
         Ok(())
     }
+
+    /// Convierte el atributo a byte 3270 - CRITICAL FIX for TN3270 field attributes
+    pub fn to_byte(&self) -> u8 {
+        debug!("Entering FieldAttributes::to_byte");
+        // CRITICAL: All field attributes MUST include FA_PRINTABLE bits (0xC0)
+        // This is required by TN3270 protocol to make the field attribute valid
+        let mut attr = 0xC0;  // FA_PRINTABLE bits are MANDATORY
+        
+        if self.protected { attr |= 0x20; }  // FA_PROTECT
+        if self.numeric { attr |= 0x10; }    // FA_NUMERIC
+        if self.hidden { attr |= 0x0C; }     // FA_INT_ZERO_NSEL - Invisible
+        
+        // EXPERIMENTAL: For unprotected input fields, try using FA_INT_NORM_SEL (detectable)
+        // instead of FA_INT_NORM_NSEL to make them more "active" for input
+        // Some TN3270 emulators like MOCHA may require this for proper input field recognition
+        if !self.protected && !self.hidden {
+            attr |= 0x04; // FA_INT_NORM_SEL - make field detectable/selectable
+        }
+        
+        println!("🚨 FieldAttributes::to_byte RESULT: name='{}' protected={} numeric={} hidden={} -> attr=0x{:02X}", 
+                 self.name, self.protected, self.numeric, self.hidden, attr);
+        
+        attr
+    }
 }
 
 /// Elemento procesado de la plantilla
@@ -224,8 +248,12 @@ impl TemplateParser {
     /// Procesa una plantilla completa
     pub fn parse_template(&self, template_content: &str) -> Result<Vec<TemplateElement>, Box<dyn Error>> {
         debug!("Entering TemplateParser::parse_template");
+        
+        // Paso 0: Preprocesar el contenido para manejar saltos de línea correctamente
+        let preprocessed_content = self.preprocess_template(template_content)?;
+        
         // Paso 1: Reemplazar variables del sistema
-        let content_with_vars = self.replace_variables(template_content)?;
+        let content_with_vars = self.replace_variables(&preprocessed_content)?;
         
         // Paso 2: Procesar etiquetas de marcado
         let elements = self.parse_markup_tags(&content_with_vars)?;
@@ -244,6 +272,32 @@ impl TemplateParser {
         for (var_name, var_value) in &self.variables {
             let pattern = format!("{{{}}}", var_name);
             result = result.replace(&pattern, var_value);
+        }
+        
+        Ok(result)
+    }
+
+    /// Preprocesa el template para manejar saltos de línea correctamente
+    fn preprocess_template(&self, template_content: &str) -> Result<String, Box<dyn Error>> {
+        debug!("Entering TemplateParser::preprocess_template");
+        
+        let mut result = String::new();
+        
+        for line in template_content.lines() {
+            let trimmed_line = line.trim();
+            
+            // Saltar líneas completamente vacías
+            if trimmed_line.is_empty() {
+                continue;
+            }
+            
+            // Saltar líneas de comentario
+            if trimmed_line.starts_with("//") {
+                continue;
+            }
+            
+            // Agregar la línea sin el salto de línea
+            result.push_str(trimmed_line);
         }
         
         Ok(result)
