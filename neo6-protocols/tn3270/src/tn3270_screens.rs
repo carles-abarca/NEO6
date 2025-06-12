@@ -659,11 +659,33 @@ impl ScreenManager {
         let instruction_ebcdic = self.codec.to_host(instruction_ascii.as_bytes());
         screen_data.extend_from_slice(&instruction_ebcdic);
 
-        // Campo invisible para capturar entrada
+        // Campo de entrada visible para capturar ENTER con prompt más claro
         let (high, low) = Self::encode_buffer_addr(20, 0);
         screen_data.extend_from_slice(&[0x11, high, low]); // SBA
+        
+        screen_data.push(0x1D); // SF (Start Field)
+        screen_data.push(0xF0); // Atributo: Protegido + Normal intensidad
+        
+        let prompt_ascii = "Presione ENTER: ";
+        let prompt_ebcdic = self.codec.to_host(prompt_ascii.as_bytes());
+        screen_data.extend_from_slice(&prompt_ebcdic);
+        
+        // Campo de entrada después del prompt
         screen_data.push(0x1D); // SF (Start Field) 
-        screen_data.push(0x6C); // Atributo: Desprotegido + No display
+        let field_attr = FieldAttribute::unprotected();
+        screen_data.push(field_attr.to_byte()); // Atributo: 0xC4 (FA_PRINTABLE + detectability)
+        
+        // Agregar algunos espacios para el campo
+        let spaces = vec![0x40; 5]; // 5 espacios EBCDIC para visibilidad
+        screen_data.extend_from_slice(&spaces);
+        
+        // Terminar el campo correctamente
+        screen_data.push(0x1D); // SF (Start Field) para terminar
+        screen_data.push(0xE0); // Protected field attribute para terminación
+        
+        // Posicionar cursor al principio del campo de entrada
+        let (high, low) = Self::encode_buffer_addr(20, 16); // Justo después del prompt
+        screen_data.extend_from_slice(&[0x11, high, low]); // SBA
         screen_data.push(0x13); // IC (Insert Cursor)
 
         self.screen_buffer = screen_data.clone();

@@ -1447,10 +1447,30 @@ impl Session {
             }
         }
 
-        // Si no hay entrada válida, reenviar la pantalla actual
-        println!("[tn3270][INFO] Sin entrada válida, reenviando pantalla actual");
-        self.screen_manager.reset_screen_sent();
-        self.maybe_send_screen().await?;
+        // Si no hay entrada válida, verificar si estamos en una pantalla de error
+        // En ese caso, volver a la pantalla de bienvenida en lugar de reenviar la misma pantalla de error
+        println!("[tn3270][INFO] Sin entrada válida");
+        
+        // Comprobar si estamos en una pantalla de error (buscar indicadores típicos)
+        // Si el buffer actual contiene texto de error, volver a welcome en lugar de reenviar
+        let current_buffer = self.screen_manager.get_screen_buffer();
+        let buffer_str = String::from_utf8_lossy(&current_buffer).to_lowercase();
+        let buffer_contains_error = current_buffer.len() > 50 && 
+            (buffer_str.contains("error") || 
+             buffer_str.contains("no encontrada") ||
+             buffer_str.contains("*** error ***") ||
+             buffer_str.contains("pantalla") && buffer_str.contains("encontrada"));
+        
+        if buffer_contains_error {
+            println!("[tn3270][INFO] Detectada pantalla de error, volviendo a pantalla de bienvenida");
+            self.screen_manager.reset_screen_sent();
+            let welcome_screen = self.screen_manager.generate_welcome_screen()?;
+            self.send_screen_data(welcome_screen).await?;
+        } else {
+            println!("[tn3270][INFO] Reenviando pantalla actual");
+            self.screen_manager.reset_screen_sent();
+            self.maybe_send_screen().await?;
+        }
         Ok(())
     }
 
