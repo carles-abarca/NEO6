@@ -5,7 +5,7 @@ This directory contains a complete, self-contained NEO6 runtime environment.
 ## Directory Structure
 
 - `bin/` - Executable binaries (neo6-admin, neo6-proxy)
-- `lib/` - Protocol shared libraries (.dylib files)
+- `lib/` - Protocol shared libraries (.dylib on macOS, .so on Linux)
 - `config/` - Configuration files
   - `admin/` - NEO6 Admin configuration
   - `proxy/` - NEO6 Proxy configuration
@@ -49,5 +49,5 @@ Once started, the NEO6 Admin dashboard will be available at:
 ## Build Information
 
 - Build type: debug
-- Deployed: Thu Jun 12 18:44:17 CST 2025
-- Workspace: /Users/carlesabarca/MyProjects/NEO6
+- Deployed: dijous, 12 de juny de 2025, 22:24:30 CST
+- Workspace: /home/carlesabarca/MyProjects/NEO6

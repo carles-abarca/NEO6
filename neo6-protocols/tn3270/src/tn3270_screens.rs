@@ -137,9 +137,9 @@ impl ScreenManager {
         
         // Log específico para caracteres problemáticos
         if text.contains('+') || text.contains('|') {
-            println!("🚨 CONVERTING SPECIAL CHARS: text={:?}", text);
+            trace!("🚨 CONVERTING SPECIAL CHARS: text={:?}", text);
             for (i, &byte) in text_bytes.iter().enumerate() {
-                println!("  [{}] ASCII byte: 0x{:02X} ({})", i, byte, byte as char);
+                trace!("  [{}] ASCII byte: 0x{:02X} ({})", i, byte, byte as char);
             }
         }
         
@@ -148,9 +148,9 @@ impl ScreenManager {
         
         // Log específico para la conversión EBCDIC de caracteres problemáticos
         if text.contains('+') || text.contains('|') {
-            println!("🚨 EBCDIC CONVERSION RESULT:");
+            trace!("🚨 EBCDIC CONVERSION RESULT:");
             for (i, &byte) in text_ebcdic.iter().enumerate() {
-                println!("  [{}] EBCDIC byte: 0x{:02X}", i, byte);
+                trace!("  [{}] EBCDIC byte: 0x{:02X}", i, byte);
             }
         }
         
@@ -199,9 +199,9 @@ impl ScreenManager {
         
         // Log específico para caracteres problemáticos
         if text.contains('+') || text.contains('|') || text.contains('=') {
-            println!("🚨 CONVERTING SPECIAL CHARS: text={:?}", text);
+            trace!("🚨 CONVERTING SPECIAL CHARS: text={:?}", text);
             for (i, &byte) in text_bytes.iter().enumerate() {
-                println!("  [{}] ASCII byte: 0x{:02X} ({})", i, byte, byte as char);
+                trace!("  [{}] ASCII byte: 0x{:02X} ({})", i, byte, byte as char);
             }
         }
         
@@ -210,9 +210,9 @@ impl ScreenManager {
         
         // Log específico para la conversión EBCDIC de caracteres problemáticos
         if text.contains('+') || text.contains('|') || text.contains('=') {
-            println!("🚨 EBCDIC CONVERSION RESULT:");
+            trace!("🚨 EBCDIC CONVERSION RESULT:");
             for (i, &byte) in text_ebcdic.iter().enumerate() {
-                println!("  [{}] EBCDIC byte: 0x{:02X}", i, byte);
+                trace!("  [{}] EBCDIC byte: 0x{:02X}", i, byte);
             }
         }
         
@@ -240,30 +240,43 @@ impl ScreenManager {
     fn load_template(&self, name: &str) -> Result<String, Box<dyn Error>> {
         debug!("Entering ScreenManager::load_template");
         
-        // Buscar primero en el directorio relativo config/screens desde el directorio actual
-        let mut screens_dir = PathBuf::from("config/screens");
+        // Try to get config directory from environment variable first
+        let mut screens_dir = if let Ok(config_dir) = std::env::var("NEO6_CONFIG_DIR") {
+            debug!("Using config directory from environment variable: {}", config_dir);
+            PathBuf::from(config_dir).join("screens")
+        } else {
+            debug!("No NEO6_CONFIG_DIR environment variable found, using default config/screens");
+            PathBuf::from("config/screens")
+        };
         
-        // Si no existe, buscar en la estructura de directorios del proyecto
+        // If the configured path doesn't exist, try relative fallbacks for compatibility
         if !screens_dir.exists() {
-            // Intentar desde neo6-proxy/config/screens (caso común cuando se ejecuta desde la raíz)
-            screens_dir = PathBuf::from("neo6-proxy/config/screens");
-        }
-        
-        // Si aún no existe, intentar rutas absolutas basadas en el workspace actual
-        if !screens_dir.exists() {
-            let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-            debug!("Current directory: {:?}", current_dir);
+            debug!("Configured screens directory {:?} doesn't exist, trying fallbacks", screens_dir);
             
-            // Buscar hacia arriba en la jerarquía de directorios
-            let mut search_path = current_dir.clone();
-            for _ in 0..5 { // Buscar hasta 5 niveles hacia arriba
-                let candidate = search_path.join("neo6-proxy/config/screens");
-                debug!("Checking for screens at: {:?}", candidate);
-                if candidate.exists() {
-                    screens_dir = candidate;
-                    break;
+            // Try from current directory as relative path
+            screens_dir = PathBuf::from("config/screens");
+            
+            if !screens_dir.exists() {
+                // Try from neo6-proxy structure for backwards compatibility
+                screens_dir = PathBuf::from("neo6-proxy/config/screens");
+            }
+            
+            // If still doesn't exist, search up the directory hierarchy
+            if !screens_dir.exists() {
+                let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+                debug!("Current directory: {:?}", current_dir);
+                
+                // Buscar hacia arriba en la jerarquía de directorios
+                let mut search_path = current_dir.clone();
+                for _ in 0..5 { // Buscar hasta 5 niveles hacia arriba
+                    let candidate = search_path.join("neo6-proxy/config/screens");
+                    debug!("Checking for screens at: {:?}", candidate);
+                    if candidate.exists() {
+                        screens_dir = candidate;
+                        break;
+                    }
+                    search_path = search_path.parent().unwrap_or(Path::new(".")).to_path_buf();
                 }
-                search_path = search_path.parent().unwrap_or(Path::new(".")).to_path_buf();
             }
         }
         
@@ -356,14 +369,14 @@ impl ScreenManager {
         let elements = parser.parse_template(&template_content)?;
 
         // Debug: Print all parsed TemplateElement::Text elements
-        println!("\n🔍 DEBUG: Parsed TemplateElement::Text elements:");
+        debug!("\n🔍 DEBUG: Parsed TemplateElement::Text elements:");
         for (i, element) in elements.iter().enumerate() {
             if let TemplateElement::Text { content, row, col, color, bright, blink, underline } = element {
-                println!("  [{}] Text: {:?} at pos ({:?}, {:?}) color={:?} bright={} blink={} underline={}", 
+                debug!("  [{}] Text: {:?} at pos ({:?}, {:?}) color={:?} bright={} blink={} underline={}", 
                          i, content, row, col, color, bright, blink, underline);
             }
         }
-        println!("🔍 DEBUG: Total elements parsed: {}", elements.len());
+        debug!("🔍 DEBUG: Total elements parsed: {}", elements.len());
 
         let mut field_manager = FieldManager::new();
 
@@ -376,9 +389,9 @@ impl ScreenManager {
                     
                     // Log específico para caracteres problemáticos
                     if content.contains('+') || content.contains('|') {
-                        println!("🚨 SPECIAL CHARS DETECTED: content={:?} at pos ({:?},{:?})", content, row, col);
+                        trace!("🚨 SPECIAL CHARS DETECTED: content={:?} at pos ({:?},{:?})", content, row, col);
                         for (i, ch) in content.chars().enumerate() {
-                            println!("  [{}] char: '{}' (U+{:04X})", i, ch, ch as u32);
+                            trace!("  [{}] char: '{}' (U+{:04X})", i, ch, ch as u32);
                         }
                     }
                     
@@ -388,14 +401,14 @@ impl ScreenManager {
                                r - 1, c - 1, content, content.len());
                         self.add_positioned_colored_text(&mut screen_data, *r - 1, *c - 1, content, *color, *bright, *blink, *underline);
                         debug!("🔍 COMPLETED add_positioned_colored_text");
-                        println!("🔍 DEBUG: Added colored text: {:?} at template row {} col {} (0-indexed: {},{}) with color={:?} bright={} blink={} underline={}", 
+                        debug!("🔍 DEBUG: Added colored text: {:?} at template row {} col {} (0-indexed: {},{}) with color={:?} bright={} blink={} underline={}", 
                                 content, r, c, r-1, c-1, color, bright, blink, underline);
                     } else {
                         // If no position specified, just add colored text at current position
                         debug!("🔍 CALLING add_colored_text with: text={:?} (len={})", content, content.len());
                         self.add_colored_text(&mut screen_data, content, *color, *bright, *blink, *underline);
                         debug!("🔍 COMPLETED add_colored_text");
-                        println!("🔍 DEBUG: Added colored text at current position: {:?} with color={:?} bright={} blink={} underline={}", 
+                        debug!("🔍 DEBUG: Added colored text at current position: {:?} with color={:?} bright={} blink={} underline={}", 
                                 content, color, bright, blink, underline);
                     }
                 }
@@ -411,7 +424,7 @@ impl ScreenManager {
                         let field_attr_byte = attributes.to_byte();
                         
                         // Debug logging for field attributes
-                        println!("🔍 FIELD DEBUG: name={} protected={} numeric={} attr=0x{:02X} (includes FA_PRINTABLE)", 
+                        debug!("🔍 FIELD DEBUG: name={} protected={} numeric={} attr=0x{:02X} (includes FA_PRINTABLE)", 
                                 attributes.name, attributes.protected, attributes.numeric, field_attr_byte);
                         
                         screen_data.push(field_attr_byte);
@@ -429,7 +442,7 @@ impl ScreenManager {
                             screen_data.push(0x1D); // SF (Start Field) to terminate the input field
                             screen_data.push(0xE0); // Protected field attribute to end the input area
                             
-                            println!("🔍 FIELD TERMINATION: Added {} EBCDIC spaces + terminating protected field for unprotected field '{}'", 
+                            debug!("🔍 FIELD TERMINATION: Added {} EBCDIC spaces + terminating protected field for unprotected field '{}'", 
                                      field_length, attributes.name);
                         } else if !attributes.default_value.is_empty() {
                             // Para campos protegidos, agregar el default_value si existe
@@ -440,7 +453,7 @@ impl ScreenManager {
                             screen_data.push(0x1D); // SF (Start Field) to terminate 
                             screen_data.push(0xE0); // Protected field attribute 
                             
-                            println!("🔍 FIELD VALUE: Added default value '{}' + terminating protected field to protected field '{}'", 
+                            debug!("🔍 FIELD VALUE: Added default value '{}' + terminating protected field to protected field '{}'", 
                                      attributes.default_value, attributes.name);
                         }
 
@@ -484,12 +497,12 @@ impl ScreenManager {
             // Try adding a NUL character or space to ensure the field is ready for input
             // This is sometimes needed to "activate" the input field for certain emulators
             
-            println!("🔍 CURSOR POSITIONED: Field '{}' data area at TN3270 position ({},{}) -> buffer ({},{})", 
+            debug!("🔍 CURSOR POSITIONED: Field '{}' data area at TN3270 position ({},{}) -> buffer ({},{})", 
                      first_input_field.attributes.name, 
                      first_input_field.row, first_input_field.col + 1,
                      cursor_row + 1, cursor_col + 1);
         } else {
-            println!("🔍 WARNING: No input fields found - cursor not positioned");
+            warn!("🔍 WARNING: No input fields found - cursor not positioned");
         }
 
         self.screen_buffer = screen_data.clone();
@@ -918,8 +931,14 @@ impl ScreenManager {
     pub fn generate_screen_list(&self) -> Result<String, Box<dyn Error>> {
         debug!("Entering ScreenManager::generate_screen_list");
         
-        // Buscar archivos de pantalla en el directorio de screens
-        let mut screens_dir = PathBuf::from("config/screens");
+        // Try to get config directory from environment variable first
+        let mut screens_dir = if let Ok(config_dir) = std::env::var("NEO6_CONFIG_DIR") {
+            debug!("Using config directory from environment variable for screen list: {}", config_dir);
+            PathBuf::from(config_dir).join("screens")
+        } else {
+            debug!("No NEO6_CONFIG_DIR environment variable found, using default config/screens");
+            PathBuf::from("config/screens")
+        };
         
         // Si no existe, buscar en la estructura de directorios del proyecto
         if !screens_dir.exists() {

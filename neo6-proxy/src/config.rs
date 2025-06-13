@@ -13,6 +13,7 @@ pub struct ProxyConfig {
     pub log_level: String,
     pub protocol: Option<String>, // Protocolo a escuchar (rest, lu62, mq, tcp, jca, tn3270)
     pub port: Option<u16>,        // Puerto a escuchar
+    pub library_path: Option<String>, // Ruta de las librerías de protocolos
 }
 
 impl Default for ProxyConfig {
@@ -21,6 +22,7 @@ impl Default for ProxyConfig {
             log_level: "info".to_string(),
             protocol: None,
             port: None,
+            library_path: None,
         }
     }
 }
@@ -33,7 +35,8 @@ impl ProxyConfig {
         let log_level = settings.get_string("log_level").unwrap_or_else(|_| "info".to_string());
         let protocol = settings.get_string("protocol").ok();
         let port = settings.get_int("port").ok().map(|v| v as u16);
-        ProxyConfig { log_level, protocol, port }
+        let library_path = settings.get_string("library_path").ok();
+        ProxyConfig { log_level, protocol, port, library_path }
     }
 
     pub fn load_from_dir(&mut self, config_dir: &str) {
@@ -50,6 +53,9 @@ impl ProxyConfig {
                 }
                 if let Ok(port) = settings.get_int("port") {
                     self.port = Some(port as u16);
+                }
+                if let Ok(library_path) = settings.get_string("library_path") {
+                    self.library_path = Some(library_path);
                 }
             }
         }

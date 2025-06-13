@@ -58,6 +58,8 @@ impl DynamicProtocolHandler {
         })
     }
 
+
+
     /// Invoke a transaction on the protocol
     pub fn invoke_transaction(&self, transaction_id: &str, parameters: serde_json::Value) -> Result<serde_json::Value, String> {
         let tx_id_cstr = create_c_string(transaction_id);
@@ -171,8 +173,13 @@ pub struct ProtocolLoader {
 }
 
 impl ProtocolLoader {
-    /// Create a new protocol loader
+    /// Create a new protocol loader with default paths
     pub fn new() -> Self {
+        Self::with_library_path(None)
+    }
+
+    /// Create a new protocol loader with custom library path
+    pub fn with_library_path(base_path: Option<&str>) -> Self {
         let mut library_paths = HashMap::new();
         
         // Default library paths for each protocol
@@ -187,14 +194,22 @@ impl ProtocolLoader {
                 format!("lib{}.so", protocol)
             };
             
-            // Look in the target directory first, then in the library directory
-            let mut path = PathBuf::from("../neo6-protocols/target/debug");
-            path.push(&lib_name);
-            
-            if !path.exists() {
-                path = PathBuf::from("./lib");
+            let path = if let Some(base) = base_path {
+                // Usar el path base personalizado
+                let mut path = PathBuf::from(base);
                 path.push(&lib_name);
-            }
+                path
+            } else {
+                // Lógica de fallback original
+                let mut path = PathBuf::from("../neo6-protocols/target/debug");
+                path.push(&lib_name);
+                
+                if !path.exists() {
+                    path = PathBuf::from("./lib");
+                    path.push(&lib_name);
+                }
+                path
+            };
             
             library_paths.insert(protocol.to_string(), path);
         }
@@ -235,6 +250,8 @@ impl ProtocolLoader {
         info!("Successfully loaded protocol {}", protocol_name);
         Ok(handler)
     }
+
+
 
     /// Get a loaded protocol handler
     pub fn get_protocol(&self, protocol_name: &str) -> Option<Arc<DynamicProtocolHandler>> {

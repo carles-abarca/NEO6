@@ -22,9 +22,12 @@ start_neo6() {
     # Change to runtime directory
     cd "$SCRIPT_DIR"
     
-    # Set library path for dynamic loading
-    export DYLD_LIBRARY_PATH="$SCRIPT_DIR/lib:$DYLD_LIBRARY_PATH"
-    export LD_LIBRARY_PATH="$SCRIPT_DIR/lib:$LD_LIBRARY_PATH"
+    # Set library path for dynamic loading (cross-platform)
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        export DYLD_LIBRARY_PATH="$SCRIPT_DIR/lib:$DYLD_LIBRARY_PATH"
+    else
+        export LD_LIBRARY_PATH="$SCRIPT_DIR/lib:$LD_LIBRARY_PATH"
+    fi
     
     # Start NEO6 Admin in background
     echo "Starting NEO6 Admin server..."

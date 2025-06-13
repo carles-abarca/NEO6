@@ -72,12 +72,20 @@ cp "$WORKSPACE_ROOT/neo6-proxy/target/$BUILD_TYPE/neo6-proxy" "$RUNTIME_DIR/bin/
 # Copy protocol libraries
 echo "Copying protocol libraries..."
 PROTOCOLS_TARGET="$WORKSPACE_ROOT/neo6-protocols/target/$BUILD_TYPE"
+
+# Determine the correct library extension based on OS
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    LIB_EXT="dylib"
+else
+    LIB_EXT="so"
+fi
+
 for protocol in tn3270 lu62 mq rest tcp jca; do
-    if [ -f "$PROTOCOLS_TARGET/lib${protocol}.dylib" ]; then
-        cp "$PROTOCOLS_TARGET/lib${protocol}.dylib" "$RUNTIME_DIR/lib/"
-        echo "  Copied lib${protocol}.dylib"
+    if [ -f "$PROTOCOLS_TARGET/lib${protocol}.${LIB_EXT}" ]; then
+        cp "$PROTOCOLS_TARGET/lib${protocol}.${LIB_EXT}" "$RUNTIME_DIR/lib/"
+        echo "  Copied lib${protocol}.${LIB_EXT}"
     else
-        echo "  Warning: lib${protocol}.dylib not found"
+        echo "  Warning: lib${protocol}.${LIB_EXT} not found"
     fi
 done
 
@@ -124,6 +132,9 @@ admin:
   bind_address: "$admin_bind"
   log_level: "$admin_log_level"
 
+# Library path for protocol libraries
+library_path: "./lib"
+
 # Proxy instances to manage
 proxy_instances:
   - name: "tn3270-primary"
@@ -138,6 +149,8 @@ proxy_instances:
     args:
       - "--config-dir"
       - "./config/proxy"
+      - "--library-path"
+      - "./lib"
     
   - name: "rest-api"
     protocol: "rest"
@@ -151,6 +164,8 @@ proxy_instances:
     args:
       - "--config-dir"
       - "./config/proxy"
+      - "--library-path"
+      - "./lib"
     
   - name: "mq-gateway"
     protocol: "mq"
@@ -164,6 +179,8 @@ proxy_instances:
     args:
       - "--config-dir"
       - "./config/proxy"
+      - "--library-path"
+      - "./lib"
 EOF
 
     echo "Runtime admin configuration created: $target_config"
@@ -199,9 +216,12 @@ start_neo6() {
     # Change to runtime directory
     cd "$SCRIPT_DIR"
     
-    # Set library path for dynamic loading
-    export DYLD_LIBRARY_PATH="$SCRIPT_DIR/lib:$DYLD_LIBRARY_PATH"
-    export LD_LIBRARY_PATH="$SCRIPT_DIR/lib:$LD_LIBRARY_PATH"
+    # Set library path for dynamic loading (cross-platform)
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        export DYLD_LIBRARY_PATH="$SCRIPT_DIR/lib:$DYLD_LIBRARY_PATH"
+    else
+        export LD_LIBRARY_PATH="$SCRIPT_DIR/lib:$LD_LIBRARY_PATH"
+    fi
     
     # Start NEO6 Admin in background
     echo "Starting NEO6 Admin server..."
@@ -337,7 +357,7 @@ This directory contains a complete, self-contained NEO6 runtime environment.
 ## Directory Structure
 
 - \`bin/\` - Executable binaries (neo6-admin, neo6-proxy)
-- \`lib/\` - Protocol shared libraries (.dylib files)
+- \`lib/\` - Protocol shared libraries (.dylib on macOS, .so on Linux)
 - \`config/\` - Configuration files
   - \`admin/\` - NEO6 Admin configuration
   - \`proxy/\` - NEO6 Proxy configuration
@@ -417,9 +437,16 @@ else
 fi
 
 # Check if libraries exist
-LIB_COUNT=$(ls lib/*.dylib 2>/dev/null | wc -l)
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    LIB_COUNT=$(ls lib/*.dylib 2>/dev/null | wc -l)
+    LIB_EXT="dylib"
+else
+    LIB_COUNT=$(ls lib/*.so 2>/dev/null | wc -l)
+    LIB_EXT="so"
+fi
+
 if [ "$LIB_COUNT" -gt 0 ]; then
-    echo "✓ Found $LIB_COUNT protocol libraries"
+    echo "✓ Found $LIB_COUNT protocol libraries (.$LIB_EXT)"
 else
     echo "✗ No protocol libraries found"
     exit 1

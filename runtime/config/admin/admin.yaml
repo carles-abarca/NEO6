@@ -6,6 +6,9 @@ admin:
   bind_address: "0.0.0.0"
   log_level: "info"
 
+# Library path for protocol libraries
+library_path: "./lib"
+
 # Proxy instances to manage
 proxy_instances:
   - name: "tn3270-primary"
@@ -20,6 +23,8 @@ proxy_instances:
     args:
       - "--config-dir"
       - "./config/proxy"
+      - "--library-path"
+      - "./lib"
     
   - name: "rest-api"
     protocol: "rest"
@@ -33,6 +38,8 @@ proxy_instances:
     args:
       - "--config-dir"
       - "./config/proxy"
+      - "--library-path"
+      - "./lib"
     
   - name: "mq-gateway"
     protocol: "mq"
@@ -46,3 +53,5 @@ proxy_instances:
     args:
       - "--config-dir"
       - "./config/proxy"
+      - "--library-path"
+      - "./lib"

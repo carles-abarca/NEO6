@@ -24,6 +24,7 @@ extern "C" fn tn3270_create_handler() -> ProtocolHandle {
     match Runtime::new() {
         Ok(runtime) => {
             let handler = Arc::new(Tn3270Handler);
+            
             let ffi_handler = Box::new(Tn3270FFIHandler {
                 handler,
                 runtime: Arc::new(runtime),
@@ -121,8 +122,10 @@ unsafe extern "C" fn tn3270_start_listener(
                 }
             };
             
-            // This will run the listener indefinitely
-            if let Err(e) = crate::start_tn3270_listener(port, tx_map, exec_fn).await {
+            // Use the config directory if available, otherwise use default
+            let result = crate::start_tn3270_listener(port, tx_map, exec_fn).await;
+            
+            if let Err(e) = result {
                 error!("Error en listener: {}", e);
             }
         });

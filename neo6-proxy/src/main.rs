@@ -14,7 +14,7 @@ use neo6_proxy::admin_control::{AdminControlServer, ProxyInfo, ControlMessage};
 async fn main() {
     // Mostrar ayuda si se invoca con --help
     if std::env::args().any(|a| a == "--help" || a == "-h") {
-        println!("neo6-proxy [--protocol=PROTO] [--port=PUERTO] [--log-level=LEVEL] [--config-dir=DIR]\n\n\t--protocol=PROTO\tProtocolo a escuchar (rest, lu62, mq, tcp, jca, tn3270)\n\t--port=PUERTO\tPuerto a escuchar (por defecto según protocolo)\n\t--log-level=LEVEL\tNivel de log (info, debug, trace, ...)\n\t--config-dir=DIR\tDirectorio base para configuraciones (por defecto: config)\n\t--help\t\tMuestra esta ayuda\n\nNota: neo6-proxy siempre usa carga dinámica de protocolos");
+        println!("neo6-proxy [--protocol=PROTO] [--port=PUERTO] [--log-level=LEVEL] [--config-dir=DIR] [--library-path=PATH]\n\n\t--protocol=PROTO\tProtocolo a escuchar (rest, lu62, mq, tcp, jca, tn3270)\n\t--port=PUERTO\tPuerto a escuchar (por defecto según protocolo)\n\t--log-level=LEVEL\tNivel de log (info, debug, trace, ...)\n\t--config-dir=DIR\tDirectorio base para configuraciones (por defecto: config)\n\t--library-path=PATH\tRuta base para las librerías de protocolos (por defecto: ./lib)\n\t--help\t\tMuestra esta ayuda\n\nNota: neo6-proxy siempre usa carga dinámica de protocolos");
         return;
     }
 
@@ -26,6 +26,7 @@ async fn main() {
     let mut cmd_protocol: Option<String> = None;
     let mut cmd_port: Option<u16> = None;
     let mut cmd_log_level: Option<String> = None;
+    let mut cmd_library_path: Option<String> = None;
     
     // Permitir override por CLI
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -66,6 +67,13 @@ async fn main() {
             config_dir = args[i + 1].clone();
             println!("  -> config_dir: {}", config_dir);
             i += 1; // skip next argument
+        } else if arg.starts_with("--library-path=") {
+            cmd_library_path = Some(arg.replace("--library-path=", ""));
+            println!("  -> cmd_library_path: {:?}", cmd_library_path);
+        } else if arg == "--library-path" && i + 1 < args.len() {
+            cmd_library_path = Some(args[i + 1].clone());
+            println!("  -> cmd_library_path: {:?}", cmd_library_path);
+            i += 1; // skip next argument
         }
         i += 1;
     }
@@ -82,6 +90,9 @@ async fn main() {
     }
     if let Some(log_level) = cmd_log_level {
         config.log_level = log_level;
+    }
+    if let Some(library_path) = cmd_library_path {
+        config.library_path = Some(library_path);
     }
     
     // Inicializar logging con el nivel configurado
@@ -128,8 +139,19 @@ async fn main() {
     
     info!("Protocolos requeridos: {:?}", protocols_needed);
 
-    // Inicializar el cargador de protocolos
-    let protocol_loader = std::sync::Arc::new(ProtocolLoader::new());
+    // Establecer variable de entorno para el directorio de configuración
+    // Esto permite que los protocolos accedan al config directory sin lógica especial en el proxy
+    std::env::set_var("NEO6_CONFIG_DIR", &config_dir);
+    info!("Variable de entorno NEO6_CONFIG_DIR establecida a: {}", config_dir);
+
+    // Inicializar el cargador de protocolos con el path personalizado si se especificó
+    let protocol_loader = if let Some(lib_path) = &config.library_path {
+        info!("Usando ruta personalizada para librerías: {}", lib_path);
+        std::sync::Arc::new(ProtocolLoader::with_library_path(Some(lib_path)))
+    } else {
+        info!("Usando rutas por defecto para librerías");
+        std::sync::Arc::new(ProtocolLoader::new())
+    };
     
     // Pre-cargar todos los protocolos necesarios
     for proto in &protocols_needed {
