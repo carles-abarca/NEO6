@@ -54,7 +54,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Loaded configuration from {:?}", args.config);
     
     // Create proxy manager
-    let mut proxy_manager = ProxyManager::new(config.proxy_instances.clone());
+    let mut proxy_manager = ProxyManager::new(config.proxy_instances.clone(), config.proxy_defaults.clone());
     
     // Handle stop-all command
     if args.stop_all {

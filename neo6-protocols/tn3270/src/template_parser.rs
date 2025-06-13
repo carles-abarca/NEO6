@@ -7,7 +7,7 @@ use chrono::{Local, DateTime};
 use regex::Regex;
 use tracing::{trace, debug};
 use crate::tn3270_constants::*;
-use crate::tn3270_sysvars::{get_timestamp, get_terminal_type, get_system_status};
+use crate::tn3270_sysvars::{get_timestamp, get_terminal_type_with_context, get_system_status};
 
 /// Errores específicos del parser de templates
 #[derive(Debug)]
@@ -268,9 +268,14 @@ impl TemplateParser {
 
     /// Replaces system variables in the template with their corresponding values
     pub fn replace_system_vars(&self, template: &str) -> String {
+        self.replace_system_vars_with_context(template, None)
+    }
+
+    /// Replaces system variables with optional system context
+    pub fn replace_system_vars_with_context(&self, template: &str, context: Option<&crate::tn3270_sysvars::SystemContext>) -> String {
         let mut result = template.to_string();
         result = result.replace("{timestamp}", &get_timestamp());
-        result = result.replace("{terminal}", &get_terminal_type());
+        result = result.replace("{terminal}", &get_terminal_type_with_context(context));
         result = result.replace("{status}", &get_system_status());
         result
     }

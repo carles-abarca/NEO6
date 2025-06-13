@@ -70,6 +70,14 @@ pub struct ScreenManager {
     pub screen_sent: bool,
     pub codec: Codec,
     pub field_navigator: crate::field_navigation::FieldNavigator,
+    pub session_context: Option<SessionContext>,
+}
+
+/// Context information from the current TN3270 session
+#[derive(Debug, Clone)]
+pub struct SessionContext {
+    pub terminal_type: String,
+    pub logical_unit: String,
 }
 
 impl ScreenManager {
@@ -80,7 +88,32 @@ impl ScreenManager {
             screen_sent: false,
             codec: Codec::new(),
             field_navigator: crate::field_navigation::FieldNavigator::new(),
+            session_context: None, // Will be set when session is established
         }
+    }
+
+    /// Create a new ScreenManager with session context
+    pub fn with_session_context(terminal_type: String, logical_unit: String) -> Self {
+        debug!("Entering ScreenManager::with_session_context");
+        ScreenManager {
+            screen_buffer: vec![0x00; 1920], // 80x24 por defecto
+            screen_sent: false,
+            codec: Codec::new(),
+            field_navigator: crate::field_navigation::FieldNavigator::new(),
+            session_context: Some(SessionContext {
+                terminal_type,
+                logical_unit,
+            }),
+        }
+    }
+
+    /// Update the session context
+    pub fn set_session_context(&mut self, terminal_type: String, logical_unit: String) {
+        debug!("Entering ScreenManager::set_session_context - terminal_type: {}", terminal_type);
+        self.session_context = Some(SessionContext {
+            terminal_type,
+            logical_unit,
+        });
     }
 
     /// Función auxiliar para calcular dirección de buffer 3270 (14-bit addressing compatible)
@@ -327,7 +360,19 @@ impl ScreenManager {
         }
         
         let parser = TemplateParser::new();
-        let elements = parser.parse_template(&template_content)?;
+        
+        // Replace system variables with session context if available
+        let processed_content = if let Some(ref context) = self.session_context {
+            let sys_context = crate::tn3270_sysvars::SystemContext::with_session(
+                context.terminal_type.clone(),
+                context.logical_unit.clone()
+            );
+            parser.replace_system_vars_with_context(&template_content, Some(&sys_context))
+        } else {
+            parser.replace_system_vars(&template_content)
+        };
+        
+        let elements = parser.parse_template(&processed_content)?;
 
         // Debug: Print all parsed TemplateElement::Text elements
         debug!("\n🔍 DEBUG: Parsed TemplateElement::Text elements:");

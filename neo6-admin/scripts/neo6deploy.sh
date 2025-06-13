@@ -132,8 +132,13 @@ admin:
   bind_address: "$admin_bind"
   log_level: "$admin_log_level"
 
-# Library path for protocol libraries
-library_path: "./lib"
+# Default settings for all proxy instances
+proxy_defaults:
+  library_path: "./lib"
+  config_path: "./config/proxy"
+  binary_path: "./bin/neo6-proxy"
+  working_directory: "."
+  log_level: "info"
 
 # Proxy instances to manage
 proxy_instances:
@@ -142,45 +147,20 @@ proxy_instances:
     port: 2323
     admin_port: 3323
     auto_start: true
-    config_path: "./config/proxy"
-    binary_path: "./bin/neo6-proxy"
-    working_directory: "."
+    # Override default log level for debugging
     log_level: "debug"
-    args:
-      - "--config-dir"
-      - "./config/proxy"
-      - "--library-path"
-      - "./lib"
     
   - name: "rest-api"
     protocol: "rest"
     port: 8080
     admin_port: 9080
     auto_start: false
-    config_path: "./config/proxy"
-    binary_path: "./bin/neo6-proxy"
-    working_directory: "."
-    log_level: "info"
-    args:
-      - "--config-dir"
-      - "./config/proxy"
-      - "--library-path"
-      - "./lib"
     
   - name: "mq-gateway"
     protocol: "mq"
     port: 5001
     admin_port: 6001
     auto_start: false
-    config_path: "./config/proxy"
-    binary_path: "./bin/neo6-proxy"
-    working_directory: "."
-    log_level: "info"
-    args:
-      - "--config-dir"
-      - "./config/proxy"
-      - "--library-path"
-      - "./lib"
 EOF
 
     echo "Runtime admin configuration created: $target_config"

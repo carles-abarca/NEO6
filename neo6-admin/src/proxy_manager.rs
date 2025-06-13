@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use tracing::{debug, error, info, warn};
 
-use crate::config::ProxyInstanceConfig;
+use crate::config::{ProxyInstanceConfig, ProxyDefaults};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ProxyStatus {
@@ -40,6 +40,7 @@ struct ManagedProxy {
 
 pub struct ProxyManager {
     proxies: HashMap<String, ManagedProxy>,
+    proxy_defaults: ProxyDefaults,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -60,7 +61,7 @@ pub enum ProxyResponse {
 }
 
 impl ProxyManager {
-    pub fn new(configs: Vec<ProxyInstanceConfig>) -> Self {
+    pub fn new(configs: Vec<ProxyInstanceConfig>, proxy_defaults: ProxyDefaults) -> Self {
         let mut proxies = HashMap::new();
         
         for config in configs {
@@ -73,7 +74,7 @@ impl ProxyManager {
             proxies.insert(config.name.clone(), proxy);
         }
         
-        Self { proxies }
+        Self { proxies, proxy_defaults }
     }
     
     pub async fn start_proxy(&mut self, name: &str) -> Result<(), Box<dyn std::error::Error>> {
@@ -107,23 +108,25 @@ impl ProxyManager {
             .open(&stderr_log_path)?;
         
         // Build command to start the proxy
-        let mut cmd = Command::new(&proxy.config.binary_path);
-        cmd.arg("--protocol").arg(&proxy.config.protocol)
-           .arg("--port").arg(proxy.config.port.to_string())
-           .arg("--log-level").arg(&proxy.config.log_level)
-           .current_dir(&proxy.config.working_directory)
+        let binary_path = proxy.config.get_binary_path(&self.proxy_defaults);
+        let working_dir = proxy.config.get_working_directory(&self.proxy_defaults);
+        
+        let mut cmd = Command::new(&binary_path);
+        cmd.current_dir(&working_dir)
            .stdout(Stdio::from(stdout_file))
            .stderr(Stdio::from(stderr_file));
         
-        // Add additional arguments from config
-        for arg in &proxy.config.args {
+        // Generate arguments automatically from config
+        let args = proxy.config.generate_args(&self.proxy_defaults);
+        for arg in &args {
             cmd.arg(arg);
         }
         
         // Set environment variables
-        cmd.env("DYLD_LIBRARY_PATH", "./lib");
+        cmd.env("DYLD_LIBRARY_PATH", &self.proxy_defaults.library_path);
         
         info!("Starting proxy '{}' with logs: {} / {}", name, stdout_log_path, stderr_log_path);
+        debug!("Proxy command: {:?}", cmd);
         
         match cmd.spawn() {
             Ok(mut child) => {

@@ -603,12 +603,22 @@ impl Session {
                         if !device_type_bytes.is_empty() {
                             self.terminal_type = String::from_utf8_lossy(device_type_bytes).to_string();
                             info!("Cliente seleccionó DEVICE-TYPE: {}", self.terminal_type);
+                            // Update ScreenManager context with new terminal type
+                            self.screen_manager.set_session_context(
+                                self.terminal_type.clone(),
+                                self.logical_unit.clone()
+                            );
                         }
                         
                         if let Some(res_name_bytes) = resource_name_bytes {
                             if !res_name_bytes.is_empty() {
                                 self.logical_unit = String::from_utf8_lossy(res_name_bytes).to_string();
                                 info!("Cliente especificó RESOURCE-NAME (LU): {}", self.logical_unit);
+                                // Update ScreenManager context with new logical unit
+                                self.screen_manager.set_session_context(
+                                    self.terminal_type.clone(),
+                                    self.logical_unit.clone()
+                                );
                             }
                         }
                         
@@ -760,7 +770,7 @@ impl Session {
                             return Err(e);
                         }
                         
-                        debug!("[tn3270][DEBUG] Sesión TN3270E bound completada, esperando entrada del usuario.");
+                        debug!(" Sesión TN3270E bound completada, esperando entrada del usuario.");
                     }
                     TN3270E_OP_REJECT => {
                         warn!("[tn3270][WARN] Cliente RECHAZÓ FUNCTIONS. Funciones rechazadas: {:02X?}", payload);
@@ -799,15 +809,15 @@ impl Session {
         // independientemente del estado actual de tn3270e_enabled (que puede cambiar después del binding)
         let tn3270e_ready_for_screen = self.tn3270e_bound;
 
-        debug!("[tn3270][DEBUG] maybe_send_screen - Estado de verificación:");
-        debug!("[tn3270][DEBUG]   screen_sent: {}", self.screen_manager.is_screen_sent());
-        debug!("[tn3270][DEBUG]   tn3270e_ready_for_screen: {}", tn3270e_ready_for_screen);
-        debug!("[tn3270][DEBUG]   classic_telnet_ready_for_screen: {}", classic_telnet_ready_for_screen);
-        debug!("[tn3270][DEBUG]   tn3270e_enabled: {}", self.telnet_state.tn3270e_enabled);
-        debug!("[tn3270][DEBUG]   tn3270e_bound: {}", self.tn3270e_bound);
+        debug!(" maybe_send_screen - Estado de verificación:");
+        debug!("   screen_sent: {}", self.screen_manager.is_screen_sent());
+        debug!("   tn3270e_ready_for_screen: {}", tn3270e_ready_for_screen);
+        debug!("   classic_telnet_ready_for_screen: {}", classic_telnet_ready_for_screen);
+        debug!("   tn3270e_enabled: {}", self.telnet_state.tn3270e_enabled);
+        debug!("   tn3270e_bound: {}", self.tn3270e_bound);
 
         if !self.screen_manager.is_screen_sent() && (tn3270e_ready_for_screen || classic_telnet_ready_for_screen) {
-            debug!("[tn3270][DEBUG] Condiciones cumplidas para enviar pantalla inicial. TN3270E: {}, Bound: {}, Classic: {}",
+            debug!(" Condiciones cumplidas para enviar pantalla inicial. TN3270E: {}, Bound: {}, Classic: {}",
                 self.telnet_state.tn3270e_enabled, self.tn3270e_bound, classic_telnet_ready_for_screen);
 
             // Generar pantalla de bienvenida usando ScreenManager
@@ -858,12 +868,12 @@ impl Session {
             
             self.stream.flush().await?;
             self.screen_manager.mark_screen_sent();
-            debug!("[tn3270][DEBUG] Pantalla inicial enviada. Manteniendo conexión abierta para entrada del usuario.");
+            debug!(" Pantalla inicial enviada. Manteniendo conexión abierta para entrada del usuario.");
         } else {
-            debug!("[tn3270][DEBUG] NO se enviará pantalla. Razones:");
-            debug!("[tn3270][DEBUG]   screen_sent: {}", self.screen_manager.is_screen_sent());
-            debug!("[tn3270][DEBUG]   tn3270e_ready: {}", tn3270e_ready_for_screen);
-            debug!("[tn3270][DEBUG]   classic_ready: {}", classic_telnet_ready_for_screen);
+            debug!(" NO se enviará pantalla. Razones:");
+            debug!("   screen_sent: {}", self.screen_manager.is_screen_sent());
+            debug!("   tn3270e_ready: {}", tn3270e_ready_for_screen);
+            debug!("   classic_ready: {}", classic_telnet_ready_for_screen);
         }
         Ok(())
     }
@@ -886,12 +896,12 @@ impl Session {
                     if let Some(se_idx) = buf[i+2..].windows(2).position(|w| w == [IAC, SE]) {
                         let sub_end_idx = i + 2 + se_idx; // Índice del IAC en IAC SE
                         let sub_data_payload = &buf[i+2..sub_end_idx]; // Datos entre SB y IAC SE
-                        debug!("[tn3270][DEBUG] Subnegociación detectada: Opt=0x{:02X}, Payload: {:02X?}", sub_data_payload[0], &sub_data_payload[1..]);
+                        debug!(" Subnegociación detectada: Opt=0x{:02X}, Payload: {:02X?}", sub_data_payload[0], &sub_data_payload[1..]);
                         self.handle_subnegotiation(sub_data_payload).await?;
                         i = sub_end_idx + 2; // Avanzar el índice más allá de IAC SE
                         continue;
                     } else {
-                        debug!("[tn3270][DEBUG] Subnegociación incompleta (sin IAC SE), esperando más datos.");
+                        debug!(" Subnegociación incompleta (sin IAC SE), esperando más datos.");
                         // Almacenar datos parciales o simplemente esperar más.
                         break;
                     }
@@ -899,12 +909,12 @@ impl Session {
                 
                 // Primero verificar comandos de 2 bytes (como NOP, EOR)
                 if cmd == NOP {
-                    debug!("[tn3270][DEBUG] Recibido IAC NOP (comando Telnet, no necesita respuesta)");
+                    debug!(" Recibido IAC NOP (comando Telnet, no necesita respuesta)");
                     // El comando NOP (No Operation) no requiere respuesta, solo continuar
                     i += 2; // Consumir IAC NOP (2 bytes)
                     continue;
                 } else if cmd == EOR_TELNET_CMD {
-                    debug!("[tn3270][DEBUG] Recibido IAC EOR (comando Telnet de 2 bytes)");
+                    debug!(" Recibido IAC EOR (comando Telnet de 2 bytes)");
                     // Esto es una marca de fin de registro en modo Telnet clásico.
                     // El cliente envía esto después de sus datos de entrada.
                     i += 2; // Consumir IAC EOR (2 bytes)
@@ -917,7 +927,7 @@ impl Session {
                     break;
                 }
                 let opt = buf[i+2];
-                debug!("[tn3270][DEBUG] Telnet cmd: 0x{:02X} opt: 0x{:02X}", cmd, opt);
+                debug!(" Telnet cmd: 0x{:02X} opt: 0x{:02X}", cmd, opt);
                 match cmd {
                     WILL => self.handle_will(opt).await?,
                     WONT => self.handle_wont(opt).await?,
@@ -935,13 +945,13 @@ impl Session {
                 // Si no es ninguno de los dos, son datos NVT.
                 let data_chunk = &buf[i..];
                 if self.telnet_state.tn3270e_enabled && self.tn3270e_bound {
-                    debug!("[tn3270][DEBUG] *** DATOS POSIBLEMENTE DE USUARIO *** en modo TN3270E bound");
-                    debug!("[tn3270][DEBUG] Tamaño del chunk: {} bytes", data_chunk.len());
-                    trace!("[tn3270][DEBUG] Datos hex: {:02X?}", data_chunk);
-                    debug!("[tn3270][DEBUG] Datos ASCII (ignorando EBCDIC): {}", String::from_utf8_lossy(data_chunk));
+                    debug!(" *** DATOS POSIBLEMENTE DE USUARIO *** en modo TN3270E bound");
+                    debug!(" Tamaño del chunk: {} bytes", data_chunk.len());
+                    trace!(" Datos hex: {:02X?}", data_chunk);
+                    debug!(" Datos ASCII (ignorando EBCDIC): {}", String::from_utf8_lossy(data_chunk));
                     // En lugar de tratarlos como error, procesarlos como posible entrada del usuario
                     if !data_chunk.is_empty() {
-                        debug!("[tn3270][DEBUG] Enviando datos a send_3270_data...");
+                        debug!(" Enviando datos a send_3270_data...");
                         self.send_3270_data(data_chunk).await?;
                     }
                 } else if !self.telnet_state.tn3270e_enabled && self.telnet_state.binary_negotiated && self.telnet_state.eor_negotiated {
@@ -962,7 +972,7 @@ impl Session {
         self.check_base_telnet_ready();
         
         // Mostrar el estado actual para diagnóstico
-        debug!("[tn3270][DEBUG] Estado tras procesar buffer: base_ready={}, tn3270e_enabled={}, binary_negotiated={}, eor_negotiated={}, tn3270e_negotiated={}, connect_sent={}",
+        debug!(" Estado tras procesar buffer: base_ready={}, tn3270e_enabled={}, binary_negotiated={}, eor_negotiated={}, tn3270e_negotiated={}, connect_sent={}",
                  self.telnet_state.base_telnet_ready, self.telnet_state.tn3270e_enabled,
                  self.telnet_state.binary_negotiated, self.telnet_state.eor_negotiated, 
                  self.telnet_state.tn3270e_negotiated, self.tn3270e.connect_sent);
@@ -1001,6 +1011,11 @@ impl Session {
                     self.terminal_type = String::from_utf8_lossy(term_type_bytes).to_string();
                     info!("[tn3270][INFO] Tipo de terminal recibido: {}", self.terminal_type);
                     self.telnet_state.termtype_negotiated = true; // Marcar como negociado
+                    // Update ScreenManager context with negotiated terminal type
+                    self.screen_manager.set_session_context(
+                        self.terminal_type.clone(),
+                        self.logical_unit.clone()
+                    );
                     // No necesitamos responder a TERMINAL-TYPE IS.
                 } else {
                     warn!("[tn3270][WARN] Subnegociación TERMINAL-TYPE mal formada o no es 'IS': {:02X?}", params);
@@ -1009,7 +1024,7 @@ impl Session {
             OPT_TN3270E => {
                 // Cliente envía un mensaje TN3270E.
                 // params = <tn3270e_cmd_or_response> <data...>
-                debug!("[tn3270][DEBUG] Recibida subnegociación TN3270E. Payload: {:02X?}", params);
+                debug!(" Recibida subnegociación TN3270E. Payload: {:02X?}", params);
                 self.process_incoming_tn3270e_message(params).await?;
             }
             _ => {
@@ -1072,7 +1087,7 @@ impl Session {
         self.check_base_telnet_ready();
         
         // Debug para entender el estado actual de la negociación
-        debug!("[tn3270][DEBUG] Estado tras DO 0x{:02X}: base_ready={}, tn3270e_enabled={}, connect_sent={}, device_type_received={}", 
+        debug!(" Estado tras DO 0x{:02X}: base_ready={}, tn3270e_enabled={}, connect_sent={}, device_type_received={}", 
                  opt, self.telnet_state.base_telnet_ready, self.telnet_state.tn3270e_enabled, 
                  self.tn3270e.connect_sent, self.tn3270e.client_device_type_is_received);
         
@@ -1265,7 +1280,7 @@ impl Session {
         tn3270e_header.push(EOR);
 
         info!("[tn3270][INFO] Enviando TN3270E BIND-IMAGE comando ({} bytes)", tn3270e_header.len());
-        debug!("[tn3270][DEBUG] BIND-IMAGE data: {:02X?}", tn3270e_header);
+        debug!(" BIND-IMAGE data: {:02X?}", tn3270e_header);
 
         self.stream.write_all(&tn3270e_header).await?;
         self.stream.flush().await?;
@@ -1281,7 +1296,7 @@ impl Session {
     async fn send_3270_data(&mut self, data: &[u8]) -> Result<(), Box<dyn Error>> {
 
         if data.is_empty() {
-            debug!("[tn3270][DEBUG] send_3270_data: datos vacíos recibidos");
+            debug!(" send_3270_data: datos vacíos recibidos");
             return Ok(());
         }
 
@@ -1302,21 +1317,21 @@ impl Session {
         }
 
         info!("[tn3270][INFO] send_3270_data: procesando {} bytes de entrada del cliente", data.len());
-        debug!("[tn3270][DEBUG] Datos completos recibidos: {:02X?}", data);
+        debug!(" Datos completos recibidos: {:02X?}", data);
         
         // Para TN3270E, los datos incluyen un header de 5 bytes seguido del stream 3270 real
         // Header TN3270E: [00, 00, 00, 00, 00] seguido de AID y datos
         let actual_data = if data.len() >= 6 && data[0] == 0x00 && data[1] == 0x00 && 
                             data[2] == 0x00 && data[3] == 0x00 && data[4] == 0x00 {
-            debug!("[tn3270][DEBUG] Detectado header TN3270E, saltando 5 bytes");
+            debug!(" Detectado header TN3270E, saltando 5 bytes");
             &data[5..] // Saltar el header TN3270E
         } else {
-            debug!("[tn3270][DEBUG] Datos 3270 sin header TN3270E");
+            debug!(" Datos 3270 sin header TN3270E");
             data // Usar datos tal como están
         };
 
         if actual_data.is_empty() {
-            debug!("[tn3270][DEBUG] send_3270_data: datos 3270 vacíos después de procesar header");
+            debug!(" send_3270_data: datos 3270 vacíos después de procesar header");
             return Ok(());
         }
         
@@ -1329,12 +1344,12 @@ impl Session {
         
         // Analizar el primer byte del stream 3270 para identificar el AID (Attention Identifier)
         let aid_byte = actual_data[0];
-        debug!("[tn3270][DEBUG] AID recibido: 0x{:02X}", aid_byte);
+        debug!(" AID recibido: 0x{:02X}", aid_byte);
         
         // Si el AID es 0x00, puede indicar datos sin AID válido o problemas de parsing
         if aid_byte == 0x00 {
             warn!("[tn3270][WARN] AID 0x00 recibido - posible problema de formato o entrada inválida");
-            debug!("[tn3270][DEBUG] Intentando interpretar datos como texto plano...");
+            debug!(" Intentando interpretar datos como texto plano...");
             
             // Intentar extraer texto directamente de los datos
             if actual_data.len() > 1 {
@@ -1408,7 +1423,7 @@ impl Session {
 
     // Procesa la tecla Enter - extrae datos de campos y navega según el input
     async fn process_enter_aid(&mut self, data: &[u8]) -> Result<(), Box<dyn Error>> {
-        debug!("[tn3270][DEBUG] process_enter_aid: analizando datos de campo");
+        debug!(" process_enter_aid: analizando datos de campo");
         
         if data.len() < 3 {
             warn!("[tn3270][WARN] Datos insuficientes para procesar Enter");
@@ -1419,11 +1434,11 @@ impl Session {
         let cursor_high = data[1];
         let cursor_low = data[2];
         let cursor_addr = ((cursor_high & 0x3F) << 6) | (cursor_low & 0x3F);
-        debug!("[tn3270][DEBUG] Posición del cursor: {}", cursor_addr);
+        debug!(" Posición del cursor: {}", cursor_addr);
 
         // Extraer datos de campo del stream TN3270
         let field_data = self.extract_field_data(&data[3..]).await?;
-        debug!("[tn3270][DEBUG] Datos de campo extraídos: {:?}", field_data);
+        debug!(" Datos de campo extraídos: {:?}", field_data);
 
         // Si tenemos datos de campo, usar el primer valor como nombre de pantalla
         if let Some(first_value) = field_data.first() {
@@ -1507,7 +1522,7 @@ impl Session {
         
         // No enviar respuesta adicional para evitar bucles
         // El teclado ya debería estar desbloqueado desde el WCC enviado anteriormente
-        debug!("[tn3270][DEBUG] AID_NO procesado - esperando interacción del usuario");
+        debug!(" AID_NO procesado - esperando interacción del usuario");
         Ok(())
     }
 
@@ -1593,7 +1608,7 @@ impl Session {
                     .collect::<String>();
                 
                 if !cleaned_field.is_empty() {
-                    debug!("[tn3270][DEBUG] Campo extraído: '{}' (limpiado de: '{}')", cleaned_field, field_string);
+                    debug!(" Campo extraído: '{}' (limpiado de: '{}')", cleaned_field, field_string);
                     field_data.push(cleaned_field);
                 }
             }
@@ -1661,7 +1676,7 @@ impl Session {
         self.stream.write_all(&tn3270e_data).await?;
         self.stream.flush().await?;
         
-        debug!("[tn3270][DEBUG] Enviados {} bytes vía TN3270E", tn3270e_data.len());
+        debug!(" Enviados {} bytes vía TN3270E", tn3270e_data.len());
         Ok(())
     }
 
@@ -1679,7 +1694,7 @@ impl Session {
         self.stream.write_all(&telnet_data).await?;
         self.stream.flush().await?;
         
-        debug!("[tn3270][DEBUG] Enviados {} bytes vía Telnet clásico", telnet_data.len());
+        debug!(" Enviados {} bytes vía Telnet clásico", telnet_data.len());
         Ok(())
     }
 }
@@ -1699,7 +1714,7 @@ impl Session {
 }
 
 async fn handle_client(stream: TcpStream) -> Result<(), Box<dyn Error>> {
-    debug!("[tn3270][DEBUG] handle_client: nueva conexión");
+    debug!(" handle_client: nueva conexión");
     let mut session = Session::new(stream).await;
     let mut buf = BytesMut::with_capacity(4096); // Aumentar capacidad del buffer
 
@@ -1727,11 +1742,11 @@ async fn handle_client(stream: TcpStream) -> Result<(), Box<dyn Error>> {
         // El cliente puede ofrecerlos (WILL SGA, WILL ECHO), y responderemos DONT.
     ]).await?;
     session.stream.flush().await?; // Asegurar que el handshake se envíe inmediatamente.
-    debug!("[tn3270][DEBUG] Handshake Telnet inicial enviado.");
+    debug!(" Handshake Telnet inicial enviado.");
 
     // No es necesario enviar IAC NOP aquí generalmente.
     // session.stream.write_all(&[IAC, NOP]).await?;
-    // debug!("[tn3270][DEBUG] Enviado IAC NOP tras handshake");
+    // debug!(" Enviado IAC NOP tras handshake");
 
     // El timeout para el REQUEST DEVICE-TYPE proactivo se elimina.
     // La negociación se conducirá por el estado y las respuestas del cliente.

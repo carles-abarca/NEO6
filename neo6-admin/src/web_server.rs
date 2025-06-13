@@ -18,18 +18,23 @@ use tracing::{info, error};
 use crate::config::AdminServerConfig;
 use crate::proxy_manager::{ProxyManager, ProxyCommand};
 
-pub struct WebServer {
-    config: AdminServerConfig,
-    proxy_manager: Arc<Mutex<ProxyManager>>,
+#[derive(Clone)]
+pub struct AppState {
+    pub proxy_manager: Arc<Mutex<ProxyManager>>,
 }
 
-type AppState = Arc<Mutex<ProxyManager>>;
+pub struct WebServer {
+    config: AdminServerConfig,
+    app_state: AppState,
+}
 
 impl WebServer {
     pub fn new(config: AdminServerConfig, proxy_manager: ProxyManager) -> Self {
         Self {
             config,
-            proxy_manager: Arc::new(Mutex::new(proxy_manager)),
+            app_state: AppState {
+                proxy_manager: Arc::new(Mutex::new(proxy_manager)),
+            },
         }
     }
     
@@ -67,7 +72,7 @@ impl WebServer {
                 ServiceBuilder::new()
                     .layer(TraceLayer::new_for_http())
             )
-            .with_state(self.proxy_manager)
+            .with_state(self.app_state)
     }
 }
 
@@ -143,17 +148,17 @@ async fn api_status_handler(State(_manager): State<AppState>) -> Json<Value> {
     }))
 }
 
-async fn api_list_proxies_handler(State(manager): State<AppState>) -> Json<Value> {
-    let mut manager = manager.lock().await;
+async fn api_list_proxies_handler(State(app_state): State<AppState>) -> Json<Value> {
+    let mut manager = app_state.proxy_manager.lock().await;
     let proxies = manager.get_all_status();
     Json(json!({ "proxies": proxies }))
 }
 
 async fn api_proxy_status_handler(
     Path(name): Path<String>,
-    State(manager): State<AppState>
+    State(app_state): State<AppState>
 ) -> Result<Json<Value>, StatusCode> {
-    let mut manager = manager.lock().await;
+    let mut manager = app_state.proxy_manager.lock().await;
     
     match manager.get_proxy_status(&name) {
         Some(status) => Ok(Json(json!(status))),
@@ -163,9 +168,9 @@ async fn api_proxy_status_handler(
 
 async fn api_start_proxy_handler(
     Path(name): Path<String>,
-    State(manager): State<AppState>
+    State(app_state): State<AppState>
 ) -> Result<Json<Value>, StatusCode> {
-    let mut manager = manager.lock().await;
+    let mut manager = app_state.proxy_manager.lock().await;
     
     match manager.start_proxy(&name).await {
         Ok(_) => Ok(Json(json!({"message": format!("Proxy '{}' started", name)}))),
@@ -178,9 +183,9 @@ async fn api_start_proxy_handler(
 
 async fn api_stop_proxy_handler(
     Path(name): Path<String>,
-    State(manager): State<AppState>
+    State(app_state): State<AppState>
 ) -> Result<Json<Value>, StatusCode> {
-    let mut manager = manager.lock().await;
+    let mut manager = app_state.proxy_manager.lock().await;
     
     match manager.stop_proxy(&name).await {
         Ok(_) => Ok(Json(json!({"message": format!("Proxy '{}' stopped", name)}))),
@@ -193,10 +198,10 @@ async fn api_stop_proxy_handler(
 
 async fn api_send_command_handler(
     Path(name): Path<String>,
-    State(manager): State<AppState>,
+    State(app_state): State<AppState>,
     Json(command): Json<ProxyCommand>
 ) -> Result<Json<Value>, StatusCode> {
-    let manager = manager.lock().await;
+    let manager = app_state.proxy_manager.lock().await;
     
     match manager.send_command_to_proxy(&name, command).await {
         Ok(response) => Ok(Json(json!(response))),
@@ -207,8 +212,8 @@ async fn api_send_command_handler(
     }
 }
 
-async fn api_start_all_handler(State(manager): State<AppState>) -> Result<Json<Value>, StatusCode> {
-    let mut manager = manager.lock().await;
+async fn api_start_all_handler(State(app_state): State<AppState>) -> Result<Json<Value>, StatusCode> {
+    let mut manager = app_state.proxy_manager.lock().await;
     
     match manager.start_auto_start_instances().await {
         Ok(_) => Ok(Json(json!({"message": "Auto-start instances started"}))),
@@ -219,8 +224,8 @@ async fn api_start_all_handler(State(manager): State<AppState>) -> Result<Json<V
     }
 }
 
-async fn api_stop_all_handler(State(manager): State<AppState>) -> Result<Json<Value>, StatusCode> {
-    let mut manager = manager.lock().await;
+async fn api_stop_all_handler(State(app_state): State<AppState>) -> Result<Json<Value>, StatusCode> {
+    let mut manager = app_state.proxy_manager.lock().await;
     
     match manager.stop_all().await {
         Ok(_) => Ok(Json(json!({"message": "All proxies stopped"}))),
