@@ -254,30 +254,7 @@ impl ScreenManager {
             debug!("Configured screens directory {:?} doesn't exist, trying fallbacks", screens_dir);
             
             // Try from current directory as relative path
-            screens_dir = PathBuf::from("config/screens");
-            
-            if !screens_dir.exists() {
-                // Try from neo6-proxy structure for backwards compatibility
-                screens_dir = PathBuf::from("neo6-proxy/config/screens");
-            }
-            
-            // If still doesn't exist, search up the directory hierarchy
-            if !screens_dir.exists() {
-                let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-                debug!("Current directory: {:?}", current_dir);
-                
-                // Buscar hacia arriba en la jerarquía de directorios
-                let mut search_path = current_dir.clone();
-                for _ in 0..5 { // Buscar hasta 5 niveles hacia arriba
-                    let candidate = search_path.join("neo6-proxy/config/screens");
-                    debug!("Checking for screens at: {:?}", candidate);
-                    if candidate.exists() {
-                        screens_dir = candidate;
-                        break;
-                    }
-                    search_path = search_path.parent().unwrap_or(Path::new(".")).to_path_buf();
-                }
-            }
+            screens_dir = PathBuf::from("config/screens");            
         }
         
         debug!("Using screens directory: {:?}", screens_dir);
@@ -290,22 +267,6 @@ impl ScreenManager {
             return Ok(fs::read_to_string(screen_path)?);
         }
         
-        // Fallback to v1.0 markup files (legacy support)
-        let markup_path = screens_dir.join(format!("{}_markup.txt", name));
-        debug!("Looking for v1.0 template at: {:?}", markup_path);
-        if markup_path.exists() {
-            debug!("Found v1.0 markup template, reading file");
-            return Ok(fs::read_to_string(markup_path)?);
-        }
-
-        // Last fallback to plain files
-        let plain_path = screens_dir.join(format!("{}.txt", name));
-        debug!("Looking for plain template at: {:?}", plain_path);
-        if plain_path.exists() {
-            debug!("Found plain template, reading file");
-            return Ok(fs::read_to_string(plain_path)?);
-        }
-
         Err(format!("Template '{}' not found in {:?}", name, screens_dir).into())
     }
 

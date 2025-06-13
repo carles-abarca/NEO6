@@ -38,3 +38,10 @@ neo6-protocols/target/
 **/examples/
 **/tmp/
 neo6-proxy/target/.rustc_info.json
+
+# Ignore binaries in Runtime directory
+runtime/bin/
+runtime/lib/
+
+# Ignore logs
+runtime/logs/
