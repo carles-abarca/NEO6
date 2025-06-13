@@ -1,0 +1,22 @@
+# Configuration for NEO6 Admin Server
+# This file defines all the proxy instances to manage
+
+admin:
+  # Admin web server configuration
+  port: 8090
+  bind_address: "0.0.0.0"
+  log_level: "info"
+
+# Proxy instances to manage
+proxy_instances:
+  - name: "tn3270-primary"
+    protocol: "tn3270"
+    port: 2323
+    admin_port: 3323
+    auto_start: true
+    config_path: "../neo6-proxy/config"
+    binary_path: "../neo6-proxy/target/debug/neo6-proxy"
+    working_directory: "../neo6-proxy/delivery/debug"
+    log_level: "debug"
+    
+  

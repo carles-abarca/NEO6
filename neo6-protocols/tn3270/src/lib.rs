@@ -608,7 +608,7 @@ impl Session {
                         if let Some(res_name_bytes) = resource_name_bytes {
                             if !res_name_bytes.is_empty() {
                                 self.logical_unit = String::from_utf8_lossy(res_name_bytes).to_string();
-                                println!("[tn3270][INFO] Cliente especificó RESOURCE-NAME (LU): {}", self.logical_unit);
+                                info!("Cliente especificó RESOURCE-NAME (LU): {}", self.logical_unit);
                             }
                         }
                         
@@ -616,7 +616,7 @@ impl Session {
 
                         // Paso 3: Enviar S2C_FUNCTIONS_REQUEST si no se ha enviado
                         if !self.tn3270e.functions_request_sent {
-                            println!("[tn3270][INFO] Negociación TN3270E: Paso 3 - Enviando S2C_FUNCTIONS_REQUEST.");
+                            info!("Negociación TN3270E: Paso 3 - Enviando S2C_FUNCTIONS_REQUEST.");
                             
                             // Para c3270, empecemos con un conjunto mínimo de funciones
                             self.tn3270e.requested_functions_by_server = vec![
@@ -627,37 +627,37 @@ impl Session {
                             func_req_msg.extend_from_slice(&self.tn3270e.requested_functions_by_server);
                             func_req_msg.extend_from_slice(&[IAC, SE]);
                             
-                            println!("[tn3270][SEND] TN3270E S2C_FUNCTIONS_REQUEST ({:02X?})", func_req_msg);
+                            trace!("TN3270E S2C_FUNCTIONS_REQUEST ({:02X?})", func_req_msg);
                             self.stream.write_all(&func_req_msg).await?;
                             self.stream.flush().await?;
                             self.tn3270e.functions_request_sent = true;
                             
-                            println!("[tn3270][DEBUG] FUNCTIONS-REQUEST enviado correctamente");
+                            debug!("FUNCTIONS-REQUEST enviado correctamente");
                         }
                     }
                     TN3270E_OP_REQUEST => {
                         // Cliente envía DEVICE-TYPE REQUEST (poco común, normalmente el servidor envía esto)
-                        println!("[tn3270][INFO] Recibido DEVICE-TYPE REQUEST del cliente (poco común)");
+                        info!("Recibido DEVICE-TYPE REQUEST del cliente (poco común)");
                         // Responder con IS si es necesario
                     }
                     TN3270E_OP_REJECT => {
-                        println!("[tn3270][WARN] Cliente RECHAZÓ DEVICE-TYPE. Payload: {:02X?}", payload);
+                        warn!("Cliente RECHAZÓ DEVICE-TYPE. Payload: {:02X?}", payload);
                         // Manejar rechazo
                     }
                     _ => {
-                        println!("[tn3270][WARN] Sub-operación DEVICE-TYPE desconocida: 0x{:02X}", sub_operation);
+                        warn!("Sub-operación DEVICE-TYPE desconocida: 0x{:02X}", sub_operation);
                     }
                 }
             }
             TN3270E_OP_FUNCTIONS => { // Cliente envía sus funciones aceptadas (0x03)
                 if data.is_empty() {
-                    println!("[tn3270][WARN] TN3270E_OP_FUNCTIONS sin datos de sub-operación.");
+                    warn!("TN3270E_OP_FUNCTIONS sin datos de sub-operación.");
                     return Ok(());
                 }
                 let sub_operation = data[0];
                 let payload = &data[1..];
                 
-                println!("[tn3270][DEBUG] FUNCTIONS sub-operation: 0x{:02X} ({}) - Payload: {:02X?}", 
+                debug!("FUNCTIONS sub-operation: 0x{:02X} ({}) - Payload: {:02X?}", 
                          sub_operation, 
                          match sub_operation {
                              TN3270E_OP_IS => "IS",
@@ -670,8 +670,8 @@ impl Session {
                 match sub_operation {
                     TN3270E_OP_REQUEST => {
                         // Cliente envía FUNCTIONS REQUEST con lista de funciones que quiere
-                        println!("[tn3270][INFO] Negociación TN3270E: Recibido FUNCTIONS REQUEST del cliente.");
-                        println!("[tn3270][INFO] Cliente solicita funciones: {:02X?}", payload);
+                        info!("Negociación TN3270E: Recibido FUNCTIONS REQUEST del cliente.");
+                        info!("Cliente solicita funciones: {:02X?}", payload);
                         
                         // Mostrar las funciones específicas solicitadas para mejor diagnóstico
                         let mut functions_names = Vec::new();
@@ -685,7 +685,7 @@ impl Session {
                                 _ => functions_names.push("UNKNOWN"),
                             }
                         }
-                        println!("[tn3270][INFO] Cliente solicita funciones: {:?} (códigos: {:02X?})", 
+                        info!("Cliente solicita funciones: {:?} (códigos: {:02X?})", 
                                  functions_names, payload);
                         
                         // Responder con FUNCTIONS IS indicando qué funciones aceptamos
@@ -696,7 +696,7 @@ impl Session {
                         func_is_msg.extend_from_slice(&accepted_functions);
                         func_is_msg.extend_from_slice(&[IAC, SE]);
                         
-                        println!("[tn3270][SEND] TN3270E FUNCTIONS IS ({:02X?})", func_is_msg);
+                        trace!("TN3270E FUNCTIONS IS ({:02X?})", func_is_msg);
                         self.stream.write_all(&func_is_msg).await?;
                         self.stream.flush().await?;
                         
@@ -709,29 +709,29 @@ impl Session {
 
                         // Enviar BIND-IMAGE si el cliente negoció esta función
                         if client_wants_bind_image {
-                            println!("[tn3270][INFO] Cliente negoció BIND-IMAGE, enviando comando BIND.");
+                            info!("Cliente negoció BIND-IMAGE, enviando comando BIND.");
                             if let Err(e) = self.send_bind_image().await {
-                                println!("[tn3270][ERROR] Error enviando BIND-IMAGE: {}", e);
+                                warn!("Error enviando BIND-IMAGE: {}", e);
                                 return Err(e);
                             }
                         }
                         
                         // Marcar la sesión como BOUND después de intercambiar funciones
-                        println!("[tn3270][INFO] Negociación TN3270E completada. Sesión BOUND.");
+                        info!("Negociación TN3270E completada. Sesión BOUND.");
                         self.tn3270e_bound = true;
                         self.tn3270e.bind_image_sent = true;
                         
                         // Enviar pantalla inicial inmediatamente después de que la sesión esté bound
                         if let Err(e) = self.maybe_send_screen().await {
-                            println!("[tn3270][ERROR] Error enviando pantalla inicial: {}", e);
+                            warn!("Error enviando pantalla inicial: {}", e);
                             return Err(e);
                         }
                         
-                        println!("[tn3270][DEBUG] Sesión TN3270E bound completada, esperando entrada del usuario.");
+                        debug!("Sesión TN3270E bound completada, esperando entrada del usuario.");
                     }
                     TN3270E_OP_IS => {
                         // Cliente envía FUNCTIONS IS (respuesta a nuestro FUNCTIONS REQUEST)
-                        println!("[tn3270][INFO] Negociación TN3270E: Recibido FUNCTIONS IS del cliente.");
+                        info!("Negociación TN3270E: Recibido FUNCTIONS IS del cliente.");
                         self.tn3270e.accepted_functions_by_client = payload.to_vec();
                         
                         let mut functions_names = Vec::new();
@@ -745,12 +745,12 @@ impl Session {
                                 _ => functions_names.push("UNKNOWN"),
                             }
                         }
-                        println!("[tn3270][INFO] Cliente aceptó funciones: {:?} (códigos: {:02X?})", 
+                        info!("Cliente aceptó funciones: {:?} (códigos: {:02X?})", 
                                  functions_names, self.tn3270e.accepted_functions_by_client);
                         self.tn3270e.client_functions_is_received = true;
 
                         // Marcar la sesión como BOUND
-                        println!("[tn3270][INFO] Negociación TN3270E completada. Sesión BOUND.");
+                        info!("Negociación TN3270E completada. Sesión BOUND.");
                         self.tn3270e_bound = true;
                         self.tn3270e.bind_image_sent = true;
                         

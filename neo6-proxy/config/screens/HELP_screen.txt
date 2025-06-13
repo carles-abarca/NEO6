@@ -1,4 +1,4 @@
-[METADATA Sistema de ayuda con comandos disponibles y teclas de función]
+[METADATA Ayuda con comandos disponibles y teclas de funcion]
 [XY1,1][BLUE]+=============================================================================+[/BLUE]
 [XY2,1][BLUE]|[/BLUE][XY2,30][YELLOW][BRIGHT]AYUDA DEL SISTEMA[/BRIGHT][/YELLOW][XY2,79][BLUE]|[/BLUE]
 [XY3,1][BLUE]+=============================================================================+[/BLUE]

@@ -4,6 +4,7 @@ use std::os::raw::c_char;
 use std::ptr;
 use std::sync::Arc;
 use tokio::runtime::Runtime;
+use tracing::{debug, info, error};
 
 use neo6_protocols_lib::ffi::{
     FfiResult, ProtocolHandle, ProtocolInterface,
@@ -98,7 +99,7 @@ unsafe extern "C" fn tn3270_start_listener(
             use std::collections::HashMap;
             use neo6_protocols_lib::protocol::TransactionConfig;
             
-            println!("[TN3270] Iniciando listener nativo real en puerto {}", port);
+            info!("Iniciando listener nativo real en puerto {}", port);
             
             // Create transaction map from configuration
             let mut tx_map = HashMap::<String, TransactionConfig>::new();
@@ -114,7 +115,7 @@ unsafe extern "C" fn tn3270_start_listener(
             let exec_fn = move |tx_id: String, params: serde_json::Value| {
                 let handler_clone = handler.clone();
                 async move {
-                    println!("[TN3270] Ejecutando transacción: {}", tx_id);
+                    debug!("Ejecutando transacción: {}", tx_id);
                     // Use the actual handler to process the transaction
                     handler_clone.invoke_transaction(&tx_id, params).await
                 }
@@ -122,7 +123,7 @@ unsafe extern "C" fn tn3270_start_listener(
             
             // This will run the listener indefinitely
             if let Err(e) = crate::start_tn3270_listener(port, tx_map, exec_fn).await {
-                eprintln!("[TN3270] Error en listener: {}", e);
+                error!("Error en listener: {}", e);
             }
         });
     });

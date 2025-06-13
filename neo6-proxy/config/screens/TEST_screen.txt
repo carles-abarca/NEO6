@@ -1,4 +1,4 @@
-[METADATA Pantalla de prueba para diferentes tipos de campos de entrada]
+[METADATA Pantalla de prueba para tipos de campos de entrada]
 [XY1,1][BLUE]+=============================================================================+[/BLUE]
 [XY2,1][BLUE]|[/BLUE][XY2,25][YELLOW][BRIGHT]PRUEBA DE CAMPOS TN3270[/BRIGHT][/YELLOW][XY2,79][BLUE]|[/BLUE]
 [XY3,1][BLUE]+=============================================================================+[/BLUE]

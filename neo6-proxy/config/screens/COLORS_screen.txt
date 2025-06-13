@@ -1,4 +1,4 @@
-[METADATA Demostración de colores y efectos especiales disponibles en TN3270]
+[METADATA Demostracion de colores y efectos disponibles en TN3270]
 [XY1,1][BLUE]+=============================================================================+[/BLUE]
 [XY2,1][BLUE]|[/BLUE][XY2,25][YELLOW][BRIGHT]PRUEBA DE COLORES TN3270[/BRIGHT][/YELLOW][XY2,79][BLUE]|[/BLUE]
 [XY3,1][BLUE]+=============================================================================+[/BLUE]

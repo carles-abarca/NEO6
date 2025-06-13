@@ -149,7 +149,7 @@ impl FieldAttributes {
             attr |= FA_INT_NORM_SEL; // FA_INT_NORM_SEL - make field detectable/selectable
         }
         
-        println!("🚨 FieldAttributes::to_byte RESULT: name='{}' protected={} numeric={} hidden={} -> attr=0x{:02X}", 
+        trace!("FieldAttributes::to_byte RESULT: name='{}' protected={} numeric={} hidden={} -> attr=0x{:02X}", 
                  self.name, self.protected, self.numeric, self.hidden, attr);
         
         attr
