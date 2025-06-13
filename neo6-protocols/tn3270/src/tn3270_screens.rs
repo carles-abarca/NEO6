@@ -130,7 +130,7 @@ impl ScreenManager {
     /// Agrega texto con color al stream de datos usando Set Attribute
     fn add_colored_text(&self, screen_data: &mut Vec<u8>, text: &str, color: Color3270, bright: bool, blink: bool, underline: bool) {
         debug!("Entering ScreenManager::add_colored_text");
-        debug!("🔍 add_colored_text ENTRY: text={:?} (len={}) color={:?} bright={} blink={} underline={}", 
+        trace!("add_colored_text ENTRY: text={:?} (len={}) color={:?} bright={} blink={} underline={}", 
                text, text.len(), color, bright, blink, underline);
         
         // Aplicar atributos de color/formato si es necesario
@@ -164,31 +164,31 @@ impl ScreenManager {
         }
         
         // Convertir texto a EBCDIC y agregar
-        debug!("🔍 BEFORE EBCDIC CONVERSION: text={:?} (len={})", text, text.len());
+        trace!("BEFORE EBCDIC CONVERSION: text={:?} (len={})", text, text.len());
         let text_bytes = text.as_bytes();
-        debug!("🔍 TEXT AS BYTES: {:?} (len={})", text_bytes, text_bytes.len());
+        trace!("TEXT AS BYTES: {:?} (len={})", text_bytes, text_bytes.len());
         
         // Log específico para caracteres problemáticos
         if text.contains('+') || text.contains('|') {
-            trace!("🚨 CONVERTING SPECIAL CHARS: text={:?}", text);
+            trace!("CONVERTING SPECIAL CHARS: text={:?}", text);
             for (i, &byte) in text_bytes.iter().enumerate() {
                 trace!("  [{}] ASCII byte: 0x{:02X} ({})", i, byte, byte as char);
             }
         }
         
         let text_ebcdic = self.codec.to_host(text_bytes);
-        debug!("🔍 AFTER EBCDIC CONVERSION: {} bytes", text_ebcdic.len());
+        trace!("AFTER EBCDIC CONVERSION: {} bytes", text_ebcdic.len());
         
         // Log específico para la conversión EBCDIC de caracteres problemáticos
         if text.contains('+') || text.contains('|') {
-            trace!("🚨 EBCDIC CONVERSION RESULT:");
+            trace!("EBCDIC CONVERSION RESULT:");
             for (i, &byte) in text_ebcdic.iter().enumerate() {
                 trace!("  [{}] EBCDIC byte: 0x{:02X}", i, byte);
             }
         }
         
         screen_data.extend_from_slice(&text_ebcdic);
-        debug!("🔍 SCREEN DATA AFTER ADDING TEXT: {} total bytes", screen_data.len());
+        trace!("SCREEN DATA AFTER ADDING TEXT: {} total bytes", screen_data.len());
         
         // NO resetear atributos inmediatamente después del texto
         // Los atributos se mantendrán hasta el próximo SFE/SF
@@ -198,12 +198,12 @@ impl ScreenManager {
     /// Posiciona el cursor y agrega texto con color usando solo SBA y atributos simples
     fn add_positioned_colored_text(&self, screen_data: &mut Vec<u8>, row: u16, col: u16, text: &str, color: Color3270, bright: bool, blink: bool, underline: bool) {
         debug!("Entering ScreenManager::add_positioned_colored_text");
-        debug!("🔍 add_positioned_colored_text ENTRY: row={} col={} text={:?} (len={})", row, col, text, text.len());
+        trace!("add_positioned_colored_text ENTRY: row={} col={} text={:?} (len={})", row, col, text, text.len());
         
         // SBA para posicionar
         let (high, low) = Self::encode_buffer_addr(row, col);
         screen_data.extend_from_slice(&[0x11, high, low]); // SBA
-        debug!("🔍 SBA added: [0x11, 0x{:02X}, 0x{:02X}]", high, low);
+        trace!("SBA added: [0x11, 0x{:02X}, 0x{:02X}]", high, low);
         
         // Aplicar atributos usando Set Attribute (SA) si es necesario
         if !matches!(color, Color3270::Default) {
@@ -227,31 +227,31 @@ impl ScreenManager {
         }
         
         // Convertir texto a EBCDIC y agregar directamente sin crear campos
-        debug!("🔍 BEFORE EBCDIC CONVERSION: text={:?} (len={})", text, text.len());
+        trace!("BEFORE EBCDIC CONVERSION: text={:?} (len={})", text, text.len());
         let text_bytes = text.as_bytes();
         
         // Log específico para caracteres problemáticos
         if text.contains('+') || text.contains('|') || text.contains('=') {
-            trace!("🚨 CONVERTING SPECIAL CHARS: text={:?}", text);
+            trace!("CONVERTING SPECIAL CHARS: text={:?}", text);
             for (i, &byte) in text_bytes.iter().enumerate() {
                 trace!("  [{}] ASCII byte: 0x{:02X} ({})", i, byte, byte as char);
             }
         }
         
         let text_ebcdic = self.codec.to_host(text_bytes);
-        debug!("🔍 AFTER EBCDIC CONVERSION: {} bytes", text_ebcdic.len());
+        trace!("AFTER EBCDIC CONVERSION: {} bytes", text_ebcdic.len());
         
         // Log específico para la conversión EBCDIC de caracteres problemáticos
         if text.contains('+') || text.contains('|') || text.contains('=') {
-            trace!("🚨 EBCDIC CONVERSION RESULT:");
+            trace!("EBCDIC CONVERSION RESULT:");
             for (i, &byte) in text_ebcdic.iter().enumerate() {
                 trace!("  [{}] EBCDIC byte: 0x{:02X}", i, byte);
             }
         }
         
         screen_data.extend_from_slice(&text_ebcdic);
-        debug!("🔍 SCREEN DATA AFTER ADDING TEXT: {} total bytes", screen_data.len());
-        debug!("🔍 add_positioned_colored_text COMPLETE");
+        trace!("SCREEN DATA AFTER ADDING TEXT: {} total bytes", screen_data.len());
+        trace!("add_positioned_colored_text COMPLETE");
     }
     
     /// Método legacy mantenido para compatibilidad - usa add_colored_text internamente
@@ -266,10 +266,7 @@ impl ScreenManager {
         self.add_positioned_colored_text(screen_data, row, col, text, attr.color, attr.intensity == 1, false, false);
     }
 
-    /// Carga una plantilla desde la ubicación correcta de pantallas buscando en el siguiente orden:
-    /// 1. `{name}_screen.txt` (v2.0 formato con sintaxis de corchetes)
-    /// 2. `{name}_markup.txt` (v1.0 formato legacy)
-    /// 3. `{name}.txt` (archivo plano sin sufijo)
+    /// Carga una plantilla desde la ubicación correcta de pantallas 
     fn load_template(&self, name: &str) -> Result<String, Box<dyn Error>> {
         debug!("Entering ScreenManager::load_template");
         
@@ -375,14 +372,14 @@ impl ScreenManager {
         let elements = parser.parse_template(&processed_content)?;
 
         // Debug: Print all parsed TemplateElement::Text elements
-        debug!("\n🔍 DEBUG: Parsed TemplateElement::Text elements:");
+        debug!("\nDEBUG: Parsed TemplateElement::Text elements:");
         for (i, element) in elements.iter().enumerate() {
             if let TemplateElement::Text { content, row, col, color, bright, blink, underline } = element {
                 debug!("  [{}] Text: {:?} at pos ({:?}, {:?}) color={:?} bright={} blink={} underline={}", 
                          i, content, row, col, color, bright, blink, underline);
             }
         }
-        debug!("🔍 DEBUG: Total elements parsed: {}", elements.len());
+        debug!("DEBUG: Total elements parsed: {}", elements.len());
 
         let mut field_manager = FieldManager::new();
 
@@ -390,12 +387,12 @@ impl ScreenManager {
         for element in &elements {
             match element {
                 TemplateElement::Text { content, row, col, color, bright, blink, underline } => {
-                    debug!("🔍 PROCESSING TEXT ELEMENT: content={:?} (len={}) row={:?} col={:?}", 
+                    trace!("PROCESSING TEXT ELEMENT: content={:?} (len={}) row={:?} col={:?}", 
                            content, content.len(), row, col);
                     
                     // Log específico para caracteres problemáticos
                     if content.contains('+') || content.contains('|') {
-                        trace!("🚨 SPECIAL CHARS DETECTED: content={:?} at pos ({:?},{:?})", content, row, col);
+                        trace!("SPECIAL CHARS DETECTED: content={:?} at pos ({:?},{:?})", content, row, col);
                         for (i, ch) in content.chars().enumerate() {
                             trace!("  [{}] char: '{}' (U+{:04X})", i, ch, ch as u32);
                         }
@@ -403,18 +400,18 @@ impl ScreenManager {
                     
                     if let (Some(r), Some(c)) = (row, col) {
                         // Templates use 1-indexed coordinates, tn3270 uses 0-indexed
-                        debug!("🔍 CALLING add_positioned_colored_text with: row={} col={} text={:?} (len={})", 
+                        debug!("CALLING add_positioned_colored_text with: row={} col={} text={:?} (len={})", 
                                r - 1, c - 1, content, content.len());
                         self.add_positioned_colored_text(&mut screen_data, *r - 1, *c - 1, content, *color, *bright, *blink, *underline);
-                        debug!("🔍 COMPLETED add_positioned_colored_text");
-                        debug!("🔍 DEBUG: Added colored text: {:?} at template row {} col {} (0-indexed: {},{}) with color={:?} bright={} blink={} underline={}", 
+                        trace!("COMPLETED add_positioned_colored_text");
+                        debug!("DEBUG: Added colored text: {:?} at template row {} col {} (0-indexed: {},{}) with color={:?} bright={} blink={} underline={}", 
                                 content, r, c, r-1, c-1, color, bright, blink, underline);
                     } else {
                         // If no position specified, just add colored text at current position
-                        debug!("🔍 CALLING add_colored_text with: text={:?} (len={})", content, content.len());
+                        debug!("CALLING add_colored_text with: text={:?} (len={})", content, content.len());
                         self.add_colored_text(&mut screen_data, content, *color, *bright, *blink, *underline);
-                        debug!("🔍 COMPLETED add_colored_text");
-                        debug!("🔍 DEBUG: Added colored text at current position: {:?} with color={:?} bright={} blink={} underline={}", 
+                        trace!("COMPLETED add_colored_text");
+                        debug!("DEBUG: Added colored text at current position: {:?} with color={:?} bright={} blink={} underline={}", 
                                 content, color, bright, blink, underline);
                     }
                 }
@@ -430,7 +427,7 @@ impl ScreenManager {
                         let field_attr_byte = attributes.to_byte();
                         
                         // Debug logging for field attributes
-                        debug!("🔍 FIELD DEBUG: name={} protected={} numeric={} attr=0x{:02X} (includes FA_PRINTABLE)", 
+                        trace!("FIELD DEBUG: name={} protected={} numeric={} attr=0x{:02X} (includes FA_PRINTABLE)", 
                                 attributes.name, attributes.protected, attributes.numeric, field_attr_byte);
                         
                         screen_data.push(field_attr_byte);
@@ -448,7 +445,7 @@ impl ScreenManager {
                             screen_data.push(0x1D); // SF (Start Field) to terminate the input field
                             screen_data.push(0xE0); // Protected field attribute to end the input area
                             
-                            debug!("🔍 FIELD TERMINATION: Added {} EBCDIC spaces + terminating protected field for unprotected field '{}'", 
+                            trace!("FIELD TERMINATION: Added {} EBCDIC spaces + terminating protected field for unprotected field '{}'", 
                                      field_length, attributes.name);
                         } else if !attributes.default_value.is_empty() {
                             // Para campos protegidos, agregar el default_value si existe
@@ -459,7 +456,7 @@ impl ScreenManager {
                             screen_data.push(0x1D); // SF (Start Field) to terminate 
                             screen_data.push(0xE0); // Protected field attribute 
                             
-                            debug!("🔍 FIELD VALUE: Added default value '{}' + terminating protected field to protected field '{}'", 
+                            trace!("FIELD VALUE: Added default value '{}' + terminating protected field to protected field '{}'", 
                                      attributes.default_value, attributes.name);
                         }
 
@@ -503,12 +500,12 @@ impl ScreenManager {
             // Try adding a NUL character or space to ensure the field is ready for input
             // This is sometimes needed to "activate" the input field for certain emulators
             
-            debug!("🔍 CURSOR POSITIONED: Field '{}' data area at TN3270 position ({},{}) -> buffer ({},{})", 
+            trace!("CURSOR POSITIONED: Field '{}' data area at TN3270 position ({},{}) -> buffer ({},{})", 
                      first_input_field.attributes.name, 
                      first_input_field.row, first_input_field.col + 1,
                      cursor_row + 1, cursor_col + 1);
         } else {
-            warn!("🔍 WARNING: No input fields found - cursor not positioned");
+            warn!("No input fields found - cursor not positioned");
         }
 
         self.screen_buffer = screen_data.clone();

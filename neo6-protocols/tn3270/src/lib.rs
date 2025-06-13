@@ -394,10 +394,10 @@ impl Codec {
             // Convertir ASCII a EBCDIC para enviar al host
             // Usar nuestra implementación manual para evitar el bug de truncación
             let input_text = String::from_utf8_lossy(data);
-            debug!("🔍 EBCDIC CONVERSION INPUT: {:?} (len={})", input_text, data.len());
+            trace!("EBCDIC CONVERSION INPUT: {:?} (len={})", input_text, data.len());
             let result: Vec<u8> = data.iter().map(|&byte| ascii_to_ebcdic_byte(byte)).collect();
-            debug!("🔍 EBCDIC CONVERSION OUTPUT: {} bytes", result.len());
-            debug!("🔍 EBCDIC HEX: {:02X?}", result);
+            trace!("EBCDIC CONVERSION OUTPUT: {} bytes", result.len());
+            trace!("EBCDIC HEX: {:02X?}", result);
             result
         } else {
             data.to_vec()
@@ -766,24 +766,24 @@ impl Session {
                         
                         // Enviar pantalla inicial
                         if let Err(e) = self.maybe_send_screen().await {
-                            warn!("[tn3270][ERROR] Error enviando pantalla inicial: {}", e);
+                            warn!("Error enviando pantalla inicial: {}", e);
                             return Err(e);
                         }
                         
                         debug!(" Sesión TN3270E bound completada, esperando entrada del usuario.");
                     }
                     TN3270E_OP_REJECT => {
-                        warn!("[tn3270][WARN] Cliente RECHAZÓ FUNCTIONS. Funciones rechazadas: {:02X?}", payload);
+                        warn!("Cliente RECHAZÓ FUNCTIONS. Funciones rechazadas: {:02X?}", payload);
                         // Manejar el rechazo según sea necesario
                     }
                     _ => {
-                        warn!("[tn3270][WARN] Sub-operación FUNCTIONS desconocida: 0x{:02X}", sub_operation);
+                        warn!("Sub-operación FUNCTIONS desconocida: 0x{:02X}", sub_operation);
                     }
                 }
             }
             // TODO: Manejar C2S_MESSAGE_DATA, C2S_RESPONSES_REQUEST, C2S_SCS, C2S_SYSREQ si es necesario.
             _ => {
-                warn!("[tn3270][WARN] Comando TN3270E desconocido del cliente: 0x{:02X}", tn3270e_cmd);
+                warn!("Comando TN3270E desconocido del cliente: 0x{:02X}", tn3270e_cmd);
             }
         }
         Ok(())
@@ -885,7 +885,7 @@ impl Session {
         while i < buf.len() {
             if buf[i] == IAC { // IAC
                 if i + 1 >= buf.len() {
-                    warn!("[tn3270][WARN] IAC al final del buffer, esperando más datos.");
+                    warn!("IAC al final del buffer, esperando más datos.");
                     // Podríamos necesitar almacenar este IAC y esperar el siguiente byte.
                     // Por ahora, rompemos y esperamos más datos en el buffer.
                     break; 
@@ -923,7 +923,7 @@ impl Session {
                 
                 // Comandos Telnet de 3 bytes (IAC CMD OPT)
                 if i + 2 >= buf.len() {
-                    warn!("[tn3270][WARN] Comando Telnet incompleto (IAC CMD sin OPT), esperando más datos.");
+                    warn!("Comando Telnet incompleto (IAC CMD sin OPT), esperando más datos.");
                     break;
                 }
                 let opt = buf[i+2];
@@ -934,7 +934,7 @@ impl Session {
                     DO => self.handle_do(opt).await?,
                     DONT => self.handle_dont(opt).await?,
                     _ => {
-                        warn!("[tn3270][WARN] Comando Telnet desconocido o no manejado: 0x{:02X}", cmd);
+                        warn!("Comando Telnet desconocido o no manejado: 0x{:02X}", cmd);
                     }
                 }
                 i += 3; // Avanzar el índice para el comando de 3 bytes
@@ -996,7 +996,7 @@ impl Session {
     // payload = <OPTION> <parameters...>
     async fn handle_subnegotiation(&mut self, payload: &[u8]) -> Result<(), Box<dyn Error>> {
         if payload.is_empty() {
-            warn!("[tn3270][WARN] Subnegociación con payload vacío.");
+            warn!("Subnegociación con payload vacío.");
             return Ok(());
         }
         let option = payload[0];
@@ -1018,7 +1018,7 @@ impl Session {
                     );
                     // No necesitamos responder a TERMINAL-TYPE IS.
                 } else {
-                    warn!("[tn3270][WARN] Subnegociación TERMINAL-TYPE mal formada o no es 'IS': {:02X?}", params);
+                    warn!("Subnegociación TERMINAL-TYPE mal formada o no es 'IS': {:02X?}", params);
                 }
             }
             OPT_TN3270E => {
@@ -1028,7 +1028,7 @@ impl Session {
                 self.process_incoming_tn3270e_message(params).await?;
             }
             _ => {
-                warn!("[tn3270][WARN] Subnegociación para opción desconocida o no manejada: 0x{:02X}", option);
+                warn!("Subnegociación para opción desconocida o no manejada: 0x{:02X}", option);
             }
         }
         Ok(())
@@ -1104,14 +1104,14 @@ impl Session {
         debug!("[tn3270][RECV] WONT 0x{:02X}", opt);
         match opt {
             OPT_BINARY => {
-                warn!("[tn3270][WARN] Cliente WONT BINARY. Esto puede causar problemas.");
+                warn!("Cliente WONT BINARY. Esto puede causar problemas.");
                 self.telnet_state.binary_mode = false;
                 self.telnet_state.binary_negotiated = true; // La negociación (fallida) ha terminado.
                 // Respondemos DONT para confirmar que no lo usaremos.
                 self.stream.write_all(&[IAC, DONT, OPT_BINARY]).await?;
             }
             OPT_EOR => {
-                warn!("[tn3270][WARN] Cliente WONT EOR. Necesario para modo Telnet clásico.");
+                warn!("Cliente WONT EOR. Necesario para modo Telnet clásico.");
                 self.telnet_state.eor_negotiated = true; // Negociación terminada.
                 self.stream.write_all(&[IAC, DONT, OPT_EOR]).await?;
             }
@@ -1300,14 +1300,14 @@ impl Session {
             return Ok(());
         }
 
-        warn!("[tn3270][CRITICAL] *** PROCESANDO DATOS DE USUARIO DE MOCHA ***");
-        warn!("[tn3270][CRITICAL] Tamaño de datos: {} bytes", data.len());
-        warn!("[tn3270][CRITICAL] Datos hex completos: {:02X?}", data);
-        warn!("[tn3270][CRITICAL] Datos como string ASCII: {}", String::from_utf8_lossy(data));
+        warn!("*** PROCESANDO DATOS DE USUARIO DE MOCHA ***");
+        warn!("Tamaño de datos: {} bytes", data.len());
+        warn!("Datos hex completos: {:02X?}", data);
+        warn!("Datos como string ASCII: {}", String::from_utf8_lossy(data));
         
         // Analizar cada byte individualmente para debug
         for (i, &byte) in data.iter().enumerate() {
-            warn!("[tn3270][CRITICAL] Byte[{}]: 0x{:02X} ({}) '{}'", 
+            warn!("Byte[{}]: 0x{:02X} ({}) '{}'", 
                 i, byte, byte, 
                 if byte.is_ascii_graphic() || byte == b' ' { 
                     char::from(byte) 
@@ -1348,7 +1348,7 @@ impl Session {
         
         // Si el AID es 0x00, puede indicar datos sin AID válido o problemas de parsing
         if aid_byte == 0x00 {
-            warn!("[tn3270][WARN] AID 0x00 recibido - posible problema de formato o entrada inválida");
+            warn!("AID 0x00 recibido - posible problema de formato o entrada inválida");
             debug!(" Intentando interpretar datos como texto plano...");
             
             // Intentar extraer texto directamente de los datos
@@ -1413,7 +1413,7 @@ impl Session {
                 self.process_pf_aid(pf_num).await?;
             },
             _ => {
-                warn!("[tn3270][WARN] AID desconocido: 0x{:02X}, procesando como entrada genérica", aid_byte);
+                warn!("AID desconocido: 0x{:02X}, procesando como entrada genérica", aid_byte);
                 self.process_unknown_aid(actual_data).await?;
             }
         }
@@ -1426,7 +1426,7 @@ impl Session {
         debug!(" process_enter_aid: analizando datos de campo");
         
         if data.len() < 3 {
-            warn!("[tn3270][WARN] Datos insuficientes para procesar Enter");
+            warn!("Datos insuficientes para procesar Enter");
             return Ok(());
         }
 
@@ -1457,7 +1457,7 @@ impl Session {
                         return Ok(());
                     },
                     Err(_) => {
-                        warn!("[tn3270][WARN] Error generando pantalla '{}'", screen_name);
+                        warn!("Error generando pantalla '{}'", screen_name);
                         // Resetear estado también para pantalla de error
                         self.screen_manager.reset_screen_sent();
                         // Enviar pantalla de error
@@ -1570,7 +1570,7 @@ impl Session {
 
     // Procesa AIDs desconocidos
     async fn process_unknown_aid(&mut self, data: &[u8]) -> Result<(), Box<dyn Error>> {
-        warn!("[tn3270][WARN] AID desconocido, datos: {:02X?}", data);
+        warn!("AID desconocido, datos: {:02X?}", data);
         let error_msg = format!("Comando no reconocido (AID: 0x{:02X})", data[0]);
         let error_screen = self.screen_manager.generate_error_screen(&error_msg)?;
         self.send_screen_data(error_screen).await?;
@@ -1820,7 +1820,7 @@ where
     debug!("start_tn3270_listener() - Iniciando listener TN3270 en puerto {}", port);
     let addr = format!("0.0.0.0:{}", port);
     let listener = TcpListener::bind(&addr).await?;
-    info!("[tn3270] Listening on {} (async)", addr);
+    info!("Listening on {} (async)", addr);
     
     loop {
         let (stream, _) = listener.accept().await?;

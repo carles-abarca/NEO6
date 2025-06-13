@@ -33,46 +33,35 @@ async fn main() {
     let mut i = 0;
     while i < args.len() {
         let arg = &args[i];
-        println!("Procesando argumento {}: {}", i, arg);
         
         if arg.starts_with("--log-level=") {
             cmd_log_level = Some(arg.replace("--log-level=", ""));
-            println!("  -> cmd_log_level: {:?}", cmd_log_level);
         } else if arg == "--log-level" && i + 1 < args.len() {
             cmd_log_level = Some(args[i + 1].clone());
-            println!("  -> cmd_log_level: {:?}", cmd_log_level);
             i += 1; // skip next argument
         } else if arg.starts_with("--protocol=") {
             cmd_protocol = Some(arg.replace("--protocol=", ""));
-            println!("  -> cmd_protocol: {:?}", cmd_protocol);
         } else if arg == "--protocol" && i + 1 < args.len() {
             cmd_protocol = Some(args[i + 1].clone());
-            println!("  -> cmd_protocol: {:?}", cmd_protocol);
             i += 1; // skip next argument
         } else if arg.starts_with("--port=") {
             if let Ok(p) = arg.replace("--port=", "").parse::<u16>() {
                 cmd_port = Some(p);
-                println!("  -> cmd_port: {:?}", cmd_port);
             }
         } else if arg == "--port" && i + 1 < args.len() {
             if let Ok(p) = args[i + 1].parse::<u16>() {
                 cmd_port = Some(p);
-                println!("  -> cmd_port: {:?}", cmd_port);
             }
             i += 1; // skip next argument
         } else if arg.starts_with("--config-dir=") {
             config_dir = arg.replace("--config-dir=", "");
-            println!("  -> config_dir: {}", config_dir);
         } else if arg == "--config-dir" && i + 1 < args.len() {
             config_dir = args[i + 1].clone();
-            println!("  -> config_dir: {}", config_dir);
             i += 1; // skip next argument
         } else if arg.starts_with("--library-path=") {
             cmd_library_path = Some(arg.replace("--library-path=", ""));
-            println!("  -> cmd_library_path: {:?}", cmd_library_path);
         } else if arg == "--library-path" && i + 1 < args.len() {
             cmd_library_path = Some(args[i + 1].clone());
-            println!("  -> cmd_library_path: {:?}", cmd_library_path);
             i += 1; // skip next argument
         }
         i += 1;

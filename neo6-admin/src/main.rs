@@ -23,7 +23,7 @@ struct Args {
     #[arg(short, long, default_value = "info")]
     log_level: String,
     
-    /// Start all auto-start proxy instances
+    /// Force start all auto-start proxy instances (auto-start proxies start by default)
     #[arg(long)]
     start_proxies: bool,
     
@@ -64,8 +64,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
     
-    // Start auto-start proxy instances if requested
-    if args.start_proxies {
+    // Always start auto-start proxy instances unless we're stopping all
+    if !args.stop_all {
         info!("Starting auto-start proxy instances...");
         proxy_manager.start_auto_start_instances().await?;
     }
