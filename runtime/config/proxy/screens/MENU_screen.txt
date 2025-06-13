@@ -1,4 +1,4 @@
-[METADATA Menú principal con todas las opciones disponibles del sistema]
+[METADATA Menu principal con todas las opciones disponibles]
 [XY1,1][BLUE]+=============================================================================+[/BLUE]
 [XY2,1][BLUE]|[/BLUE][XY2,30][YELLOW][BRIGHT]MENU PRINCIPAL NEO6[/BRIGHT][/YELLOW][XY2,79][BLUE]|[/BLUE]
 [XY3,1][BLUE]+=============================================================================+[/BLUE]

@@ -49,5 +49,5 @@ Once started, the NEO6 Admin dashboard will be available at:
 ## Build Information
 
 - Build type: debug
-- Deployed: Thu Jun 12 18:05:46 CST 2025
+- Deployed: Thu Jun 12 18:44:17 CST 2025
 - Workspace: /Users/carlesabarca/MyProjects/NEO6

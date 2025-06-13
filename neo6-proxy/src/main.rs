@@ -22,27 +22,73 @@ async fn main() {
     let mut config_dir = "config".to_string();
     let mut config = ProxyConfig::default();
     
+    // Almacenar argumentos de CLI para aplicar después
+    let mut cmd_protocol: Option<String> = None;
+    let mut cmd_port: Option<u16> = None;
+    let mut cmd_log_level: Option<String> = None;
+    
     // Permitir override por CLI
-    for arg in std::env::args().skip(1) {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let mut i = 0;
+    while i < args.len() {
+        let arg = &args[i];
+        println!("Procesando argumento {}: {}", i, arg);
+        
         if arg.starts_with("--log-level=") {
-            config.log_level = arg.replace("--log-level=", "");
+            cmd_log_level = Some(arg.replace("--log-level=", ""));
+            println!("  -> cmd_log_level: {:?}", cmd_log_level);
+        } else if arg == "--log-level" && i + 1 < args.len() {
+            cmd_log_level = Some(args[i + 1].clone());
+            println!("  -> cmd_log_level: {:?}", cmd_log_level);
+            i += 1; // skip next argument
         } else if arg.starts_with("--protocol=") {
-            config.protocol = Some(arg.replace("--protocol=", ""));
+            cmd_protocol = Some(arg.replace("--protocol=", ""));
+            println!("  -> cmd_protocol: {:?}", cmd_protocol);
+        } else if arg == "--protocol" && i + 1 < args.len() {
+            cmd_protocol = Some(args[i + 1].clone());
+            println!("  -> cmd_protocol: {:?}", cmd_protocol);
+            i += 1; // skip next argument
         } else if arg.starts_with("--port=") {
             if let Ok(p) = arg.replace("--port=", "").parse::<u16>() {
-                config.port = Some(p);
+                cmd_port = Some(p);
+                println!("  -> cmd_port: {:?}", cmd_port);
             }
+        } else if arg == "--port" && i + 1 < args.len() {
+            if let Ok(p) = args[i + 1].parse::<u16>() {
+                cmd_port = Some(p);
+                println!("  -> cmd_port: {:?}", cmd_port);
+            }
+            i += 1; // skip next argument
         } else if arg.starts_with("--config-dir=") {
             config_dir = arg.replace("--config-dir=", "");
+            println!("  -> config_dir: {}", config_dir);
+        } else if arg == "--config-dir" && i + 1 < args.len() {
+            config_dir = args[i + 1].clone();
+            println!("  -> config_dir: {}", config_dir);
+            i += 1; // skip next argument
         }
+        i += 1;
     }
     
     // Cargar configuración desde el directorio especificado
     config.load_from_dir(&config_dir);
     
+    // Aplicar argumentos CLI (tienen precedencia sobre el archivo)
+    if let Some(protocol) = cmd_protocol {
+        config.protocol = Some(protocol);
+    }
+    if let Some(port) = cmd_port {
+        config.port = Some(port);
+    }
+    if let Some(log_level) = cmd_log_level {
+        config.log_level = log_level;
+    }
+    
     // Inicializar logging con el nivel configurado
     init_logging_with_level(&config.log_level);
     info!(level = %config.log_level, "Inicializando neo6-proxy con carga dinámica de protocolos");
+    info!("Configuración después de procesamiento: protocol={:?}, port={:?}, log_level={}", 
+          config.protocol, config.port, config.log_level);
 
     // Determinar protocolo y puerto
     let protocol = config.protocol.clone().unwrap_or_else(|| "rest".to_string());
@@ -65,6 +111,7 @@ async fn main() {
 
     // Cargar mapa de transacciones desde el directorio de configuración
     let transactions_path = format!("{}/transactions.yaml", config_dir);
+    info!("Intentando cargar transactions.yaml desde: {}", transactions_path);
     let tx_map = load_transaction_map(&transactions_path).expect("No se pudo cargar transactions.yaml");
     info!("Transacciones disponibles:");
     for (txid, tx) in tx_map.iter() {

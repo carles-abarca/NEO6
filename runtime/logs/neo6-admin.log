@@ -1,0 +1,8 @@
+2025-06-13T00:44:58.724674Z  INFO neo6_admin: Starting NEO6 Admin Server
+2025-06-13T00:44:58.725049Z  INFO neo6_admin: Loaded configuration from "/Users/carlesabarca/MyProjects/NEO6/runtime/config/admin/admin.yaml"
+2025-06-13T00:44:58.725088Z  INFO neo6_admin: Starting admin web server on 0.0.0.0:8090
+2025-06-13T00:44:58.725385Z  INFO neo6_admin::web_server: NEO6 Admin web server listening on 0.0.0.0:8090
+2025-06-13T00:45:24.234578Z  INFO neo6_admin::proxy_manager: Starting proxy instance: tn3270-primary
+2025-06-13T00:45:24.235297Z  INFO neo6_admin::proxy_manager: Starting proxy 'tn3270-primary' with logs: logs/tn3270-primary.log / logs/tn3270-primary.error.log
+2025-06-13T00:45:24.238041Z  INFO neo6_admin::proxy_manager: Proxy 'tn3270-primary' started successfully
+2025-06-13T00:45:26.240394Z  INFO neo6_admin::proxy_manager: Proxy 'tn3270-primary' is running and responsive

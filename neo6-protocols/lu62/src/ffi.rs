@@ -102,7 +102,7 @@ unsafe extern "C" fn lu62_set_log_level(
     
     // Try to set global subscriber (will fail if already set, but that's ok)
     let _ = tracing_subscriber::registry()
-        .with(fmt::layer().with_target(true).with_level(true))
+        .with(fmt::layer().with_target(true).with_level(true).with_ansi(false))
         .with(filter)
         .try_init();
     

@@ -14,3 +14,4 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tower = "0.5"
 tower-http = { version = "0.6", features = ["fs", "trace"] }
 clap = { version = "4.0", features = ["derive"] }
+atty = "0.2"

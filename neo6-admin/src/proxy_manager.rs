@@ -87,14 +87,33 @@ impl ProxyManager {
         info!("Starting proxy instance: {}", name);
         proxy.status = ProxyState::Starting;
         
+        // Create log file paths
+        let log_dir = std::path::Path::new("logs");
+        if !log_dir.exists() {
+            std::fs::create_dir_all(log_dir)?;
+        }
+        
+        let stdout_log_path = format!("logs/{}.log", name);
+        let stderr_log_path = format!("logs/{}.error.log", name);
+        
+        // Create log files
+        let stdout_file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&stdout_log_path)?;
+        let stderr_file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&stderr_log_path)?;
+        
         // Build command to start the proxy
         let mut cmd = Command::new(&proxy.config.binary_path);
         cmd.arg("--protocol").arg(&proxy.config.protocol)
            .arg("--port").arg(proxy.config.port.to_string())
            .arg("--log-level").arg(&proxy.config.log_level)
            .current_dir(&proxy.config.working_directory)
-           .stdout(Stdio::piped())
-           .stderr(Stdio::piped());
+           .stdout(Stdio::from(stdout_file))
+           .stderr(Stdio::from(stderr_file));
         
         // Add additional arguments from config
         for arg in &proxy.config.args {
@@ -104,9 +123,10 @@ impl ProxyManager {
         // Set environment variables
         cmd.env("DYLD_LIBRARY_PATH", "./lib");
         
+        info!("Starting proxy '{}' with logs: {} / {}", name, stdout_log_path, stderr_log_path);
+        
         match cmd.spawn() {
-            Ok(child) => {
-                proxy.process = Some(child);
+            Ok(mut child) => {
                 proxy.start_time = Some(std::time::SystemTime::now());
                 proxy.status = ProxyState::Running;
                 info!("Proxy '{}' started successfully", name);
@@ -114,7 +134,30 @@ impl ProxyManager {
                 // Give it a moment to start up
                 tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                 
-                Ok(())
+                // Check if the process is still running
+                match child.try_wait() {
+                    Ok(Some(exit_status)) => {
+                        let error_msg = format!("Proxy '{}' exited unexpectedly with status: {}", name, exit_status);
+                        error!("{}", error_msg);
+                        error!("Check logs at: {} / {}", stdout_log_path, stderr_log_path);
+                        proxy.status = ProxyState::Error(error_msg.clone());
+                        proxy.process = None;
+                        Err(error_msg.into())
+                    }
+                    Ok(None) => {
+                        // Process is still running
+                        proxy.process = Some(child);
+                        info!("Proxy '{}' is running and responsive", name);
+                        Ok(())
+                    }
+                    Err(e) => {
+                        let error_msg = format!("Failed to check proxy '{}' status: {}", name, e);
+                        error!("{}", error_msg);
+                        proxy.status = ProxyState::Error(error_msg.clone());
+                        proxy.process = Some(child); // Keep the process reference just in case
+                        Err(error_msg.into())
+                    }
+                }
             }
             Err(e) => {
                 let error_msg = format!("Failed to start proxy '{}': {}", name, e);

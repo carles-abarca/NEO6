@@ -36,9 +36,15 @@ struct Args {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     
-    // Initialize logging
+    // Initialize logging with appropriate formatting
+    let is_terminal = atty::is(atty::Stream::Stdout);
+    
     tracing_subscriber::fmt()
         .with_env_filter(&args.log_level)
+        .with_ansi(is_terminal)  // Only use colors when connected to a terminal
+        .with_target(true)       // Include the target (module name)
+        .with_thread_ids(false)  // Don't include thread IDs for cleaner logs
+        .with_thread_names(false) // Don't include thread names
         .init();
     
     info!("Starting NEO6 Admin Server");

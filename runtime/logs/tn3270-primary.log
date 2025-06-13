@@ -1,0 +1,2063 @@
+Procesando argumento 0: --protocol
+  -> cmd_protocol: Some("tn3270")
+Procesando argumento 2: --port
+  -> cmd_port: Some(2323)
+Procesando argumento 4: --log-level
+  -> cmd_log_level: Some("debug")
+Procesando argumento 6: --config-dir
+  -> config_dir: ./config/proxy
+2025-06-13T00:45:24.543164Z  INFO neo6_proxy: Inicializando neo6-proxy con carga dinámica de protocolos level=debug
+2025-06-13T00:45:24.543281Z  INFO neo6_proxy: Configuración después de procesamiento: protocol=Some("tn3270"), port=Some(2323), log_level=debug
+2025-06-13T00:45:24.543320Z  INFO neo6_proxy: neo6-proxy escuchando protocolo: tn3270 en puerto: 2323 (modo dinámico)
+2025-06-13T00:45:24.543355Z  INFO neo6_proxy: Control administrativo disponible en puerto: 3323
+2025-06-13T00:45:24.543389Z  INFO neo6_proxy: Intentando cargar transactions.yaml desde: ./config/proxy/transactions.yaml
+2025-06-13T00:45:24.544337Z  INFO neo6_proxy: Transacciones disponibles:
+2025-06-13T00:45:24.544375Z  INFO neo6_proxy:   TX_TN01  [tn3270] -> mainframe-tn3270
+2025-06-13T00:45:24.544386Z  INFO neo6_proxy:   TX02  [mq] -> mq-server-1
+2025-06-13T00:45:24.544396Z  INFO neo6_proxy:   TX03  [rest] -> https://httpbin.org/post
+2025-06-13T00:45:24.544405Z  INFO neo6_proxy:   TX01  [cics] -> cics-server-1
+2025-06-13T00:45:24.544584Z  INFO neo6_proxy: Protocolos requeridos: {"tn3270", "rest", "cics", "mq"}
+2025-06-13T00:45:24.544707Z  INFO neo6_proxy::protocol_loader: Loading protocol tn3270 from "../neo6-protocols/target/debug/libtn3270.dylib"
+2025-06-13T00:45:24.736846Z  INFO neo6_proxy::protocol_loader: Successfully loaded protocol tn3270
+2025-06-13T00:45:24.736909Z  INFO neo6_proxy: Protocolo tn3270 cargado exitosamente
+2025-06-13T00:45:24.736939Z  INFO neo6_proxy::protocol_loader: Loading protocol rest from "../neo6-protocols/target/debug/librest.dylib"
+2025-06-13T00:45:24.959942Z  INFO neo6_proxy::protocol_loader: Successfully loaded protocol rest
+2025-06-13T00:45:24.959972Z  INFO neo6_proxy: Protocolo rest cargado exitosamente
+2025-06-13T00:45:24.959992Z ERROR neo6_proxy: Error cargando protocolo cics: Unknown protocol: cics
+2025-06-13T00:45:24.960000Z  WARN neo6_proxy: No se pudo cargar el protocolo cics: Unknown protocol: cics
+2025-06-13T00:45:24.960007Z  INFO neo6_proxy::protocol_loader: Loading protocol mq from "../neo6-protocols/target/debug/libmq.dylib"
+2025-06-13T00:45:25.153152Z  INFO neo6_proxy::protocol_loader: Successfully loaded protocol mq
+2025-06-13T00:45:25.153212Z  INFO neo6_proxy: Protocolo mq cargado exitosamente
+2025-06-13T00:45:25.153242Z  INFO neo6_proxy: Configurando nivel de log 'debug' para todas las librerías dinámicas
+2025-06-13T00:45:25.169029Z  INFO neo6_proxy::protocol_loader: Configurado nivel de log 'debug' para protocolo tn3270
+2025-06-13T00:45:25.180418Z  INFO neo6_proxy::protocol_loader: Configurado nivel de log 'debug' para protocolo rest
+2025-06-13T00:45:25.188754Z  INFO neo6_proxy::protocol_loader: Configurado nivel de log 'debug' para protocolo mq
+2025-06-13T00:45:25.188890Z  INFO neo6_proxy: neo6-proxy iniciado completamente, escuchando comandos de control...
+2025-06-13T00:45:25.189036Z  INFO neo6_proxy: Iniciando listener dinámico para protocolo: tn3270
+2025-06-13T00:45:25.189124Z  INFO neo6_proxy::admin_control: Admin control server listening on 127.0.0.1:3323
+2025-06-13T00:45:25.189152Z  INFO tn3270::ffi: Iniciando listener nativo real en puerto 2323
+2025-06-13T00:45:25.189344Z DEBUG tn3270: start_tn3270_listener() - Iniciando listener TN3270 en puerto 2323
+[tn3270] Listening on 0.0.0.0:2323 (async)
+2025-06-13T00:45:25.294228Z  INFO neo6_proxy: Listener nativo tn3270 iniciado exitosamente: Object {"address": String("0.0.0.0:2323"), "port": Number(2323), "status": String("listener_started"), "type": String("native_tn3270_background")}
+2025-06-13T00:45:25.294332Z  INFO neo6_proxy: Listener tn3270 nativo está corriendo en segundo plano...
+[tn3270][DEBUG] handle_client: nueva conexión
+2025-06-13T00:45:33.451811Z DEBUG tn3270: Session::new() - Iniciando nueva sesión TN3270
+2025-06-13T00:45:33.451887Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::new
+2025-06-13T00:45:33.451926Z DEBUG tn3270::field_navigation: Creating new FieldNavigator
+2025-06-13T00:45:33.451940Z DEBUG tn3270::field_navigation: Creating new FieldNavigator
+[tn3270][SEND] Iniciando handshake Telnet:
+[tn3270][DEBUG] Handshake Telnet inicial enviado.
+[tn3270][RECV] Raw data (21 bytes): [FF, FB, 18, FF, FB, 00, FF, FB, 19, FF, FB, 28, FF, FD, 00, FF, FD, 19, FF, FE, 28]
+[tn3270][RECV] handle_negotiation: buffer size=21, data=[FF, FB, 18, FF, FB, 00, FF, FB, 19, FF, FB, 28, FF, FD, 00, FF, FD, 19, FF, FE, 28]
+[tn3270][DEBUG] Telnet cmd: 0xFB opt: 0x18
+[tn3270][RECV] WILL 0x18
+[tn3270][INFO] Cliente WILL TERMINAL-TYPE. Esperando subnegociación con el tipo.
+2025-06-13T00:45:33.470899Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras DO 0x18: base_ready=false, tn3270e_enabled=false, connect_sent=false, device_type_received=false
+[tn3270][DEBUG] Telnet cmd: 0xFB opt: 0x00
+[tn3270][RECV] WILL 0x00
+[tn3270][SEND] DO OPT_BINARY
+2025-06-13T00:45:33.470993Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras DO 0x00: base_ready=false, tn3270e_enabled=false, connect_sent=false, device_type_received=false
+[tn3270][DEBUG] Telnet cmd: 0xFB opt: 0x19
+[tn3270][RECV] WILL 0x19
+[tn3270][SEND] DO OPT_EOR
+2025-06-13T00:45:33.471039Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras DO 0x19: base_ready=false, tn3270e_enabled=false, connect_sent=false, device_type_received=false
+[tn3270][DEBUG] Telnet cmd: 0xFB opt: 0x28
+[tn3270][RECV] WILL 0x28
+[tn3270][SEND] DO OPT_TN3270E
+2025-06-13T00:45:33.471080Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+2025-06-13T00:45:33.471097Z DEBUG tn3270: Negociaciones Telnet básicas para TN3270E completadas
+2025-06-13T00:45:33.471108Z DEBUG tn3270: Estado actual: BINARY=true, EOR=true, TN3270E=true, TERMINAL-TYPE=false
+[tn3270][DEBUG] Estado tras DO 0x28: base_ready=true, tn3270e_enabled=true, connect_sent=false, device_type_received=false
+[tn3270][INFO] Iniciando negociación TN3270E después de recibir DO 0x28
+2025-06-13T00:45:33.471131Z DEBUG tn3270: Session::initiate_tn3270e_server_negotiation() - Iniciando negociación TN3270E del servidor
+2025-06-13T00:45:33.471143Z  INFO tn3270: Iniciando negociación TN3270E: Paso 1 - Enviando DEVICE-TYPE IS
+2025-06-13T00:45:33.471169Z DEBUG tn3270: DEVICE-TYPE IS with CONNECT enviado correctamente, esperando respuesta del cliente
+2025-06-13T00:45:33.471182Z  INFO tn3270: Negociación TN3270E: Paso 2 - Enviando S2C_DEVICE_TYPE_REQUEST
+2025-06-13T00:45:33.471204Z DEBUG tn3270: DEVICE-TYPE-REQUEST enviado correctamente
+[tn3270][DEBUG] Telnet cmd: 0xFD opt: 0x00
+[tn3270][RECV] DO 0x00
+2025-06-13T00:45:33.471225Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Telnet cmd: 0xFD opt: 0x19
+[tn3270][RECV] DO 0x19
+2025-06-13T00:45:33.471265Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Telnet cmd: 0xFE opt: 0x28
+[tn3270][RECV] DONT 0x28
+[tn3270][INFO] Cliente DONT 0x28. Confirmando con WONT.
+2025-06-13T00:45:33.471297Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+2025-06-13T00:45:33.471308Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras procesar buffer: base_ready=true, tn3270e_enabled=false, binary_negotiated=true, eor_negotiated=true, tn3270e_negotiated=true, connect_sent=true
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T00:45:33.471349Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: false
+[tn3270][DEBUG]   tn3270e_ready_for_screen: false
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: false
+2025-06-13T00:45:33.471402Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] NO se enviará pantalla. Razones:
+2025-06-13T00:45:33.471416Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: false
+[tn3270][DEBUG]   tn3270e_ready: false
+[tn3270][DEBUG]   classic_ready: false
+2025-06-13T00:45:33.471439Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T00:45:33.471452Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: false
+[tn3270][DEBUG]   tn3270e_ready_for_screen: false
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: false
+2025-06-13T00:45:33.471483Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] NO se enviará pantalla. Razones:
+2025-06-13T00:45:33.471496Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: false
+[tn3270][DEBUG]   tn3270e_ready: false
+[tn3270][DEBUG]   classic_ready: false
+[tn3270][RECV] Raw data (3 bytes): [FF, FB, 28]
+[tn3270][RECV] handle_negotiation: buffer size=3, data=[FF, FB, 28]
+[tn3270][DEBUG] Telnet cmd: 0xFB opt: 0x28
+[tn3270][RECV] WILL 0x28
+2025-06-13T00:45:33.471762Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras DO 0x28: base_ready=true, tn3270e_enabled=false, connect_sent=true, device_type_received=false
+2025-06-13T00:45:33.471778Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras procesar buffer: base_ready=true, tn3270e_enabled=false, binary_negotiated=true, eor_negotiated=true, tn3270e_negotiated=true, connect_sent=true
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T00:45:33.471797Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: false
+[tn3270][DEBUG]   tn3270e_ready_for_screen: false
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: false
+2025-06-13T00:45:33.471827Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] NO se enviará pantalla. Razones:
+2025-06-13T00:45:33.471840Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: false
+[tn3270][DEBUG]   tn3270e_ready: false
+[tn3270][DEBUG]   classic_ready: false
+2025-06-13T00:45:33.471862Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T00:45:33.471875Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: false
+[tn3270][DEBUG]   tn3270e_ready_for_screen: false
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: false
+2025-06-13T00:45:33.471904Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] NO se enviará pantalla. Razones:
+2025-06-13T00:45:33.471917Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: false
+[tn3270][DEBUG]   tn3270e_ready: false
+[tn3270][DEBUG]   classic_ready: false
+[tn3270][RECV] Raw data (10 bytes): [FF, FA, 28, 03, 07, 00, 02, 04, FF, F0]
+[tn3270][RECV] handle_negotiation: buffer size=10, data=[FF, FA, 28, 03, 07, 00, 02, 04, FF, F0]
+[tn3270][DEBUG] Subnegociación detectada: Opt=0x28, Payload: [03, 07, 00, 02, 04]
+[tn3270][DEBUG] Recibida subnegociación TN3270E. Payload: [03, 07, 00, 02, 04]
+2025-06-13T00:45:33.472394Z DEBUG tn3270: Session::process_incoming_tn3270e_message() - Procesando mensaje TN3270E del cliente (payload size: 5)
+2025-06-13T00:45:33.472438Z DEBUG tn3270: TN3270E Mensaje del Cliente: cmd=0x03, data=[07, 00, 02, 04]
+2025-06-13T00:45:33.472469Z DEBUG tn3270: TN3270E cmd interpretado: FUNCTIONS
+2025-06-13T00:45:33.472502Z DEBUG tn3270: FUNCTIONS sub-operation: 0x07 (REQUEST) - Payload: [00, 02, 04]
+2025-06-13T00:45:33.472515Z  INFO tn3270: Negociación TN3270E: Recibido FUNCTIONS REQUEST del cliente.
+2025-06-13T00:45:33.472526Z  INFO tn3270: Cliente solicita funciones: [00, 02, 04]
+2025-06-13T00:45:33.472540Z  INFO tn3270: Cliente solicita funciones: ["BIND-IMAGE", "RESPONSES", "SYSREQ"] (códigos: [00, 02, 04])
+2025-06-13T00:45:33.472634Z  INFO tn3270: Cliente negoció BIND-IMAGE, enviando comando BIND.
+[tn3270][INFO] Enviando TN3270E BIND-IMAGE comando (34 bytes)
+[tn3270][DEBUG] BIND-IMAGE data: [03, 00, 00, 00, 00, 31, 00, 02, 88, 00, 10, 02, 85, 00, 00, 00, 07, 85, 00, 01, 02, 00, 00, 02, 81, 87, 02, 00, 02, 00, 18, 50, FF, EF]
+[tn3270][INFO] TN3270E BIND-IMAGE comando enviado exitosamente
+2025-06-13T00:45:33.472692Z  INFO tn3270: Negociación TN3270E completada. Sesión BOUND.
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T00:45:33.472708Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: false
+[tn3270][DEBUG]   tn3270e_ready_for_screen: true
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: true
+2025-06-13T00:45:33.472739Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] Condiciones cumplidas para enviar pantalla inicial. TN3270E: false, Bound: true, Classic: false
+2025-06-13T00:45:33.472775Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::generate_welcome_screen
+2025-06-13T00:45:33.472809Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::generate_tn3270_screen
+2025-06-13T00:45:33.472821Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::clear_screen
+2025-06-13T00:45:33.472832Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.472862Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::load_template
+2025-06-13T00:45:33.473005Z DEBUG tn3270::tn3270_screens: Current directory: "/Users/carlesabarca/MyProjects/NEO6/runtime"
+2025-06-13T00:45:33.473079Z DEBUG tn3270::tn3270_screens: Checking for screens at: "/Users/carlesabarca/MyProjects/NEO6/runtime/neo6-proxy/config/screens"
+2025-06-13T00:45:33.473099Z DEBUG tn3270::tn3270_screens: Checking for screens at: "/Users/carlesabarca/MyProjects/NEO6/neo6-proxy/config/screens"
+2025-06-13T00:45:33.473121Z DEBUG tn3270::tn3270_screens: Using screens directory: "/Users/carlesabarca/MyProjects/NEO6/neo6-proxy/config/screens"
+2025-06-13T00:45:33.473136Z DEBUG tn3270::tn3270_screens: Looking for v2.0 template at: "/Users/carlesabarca/MyProjects/NEO6/neo6-proxy/config/screens/welcome_screen.txt"
+2025-06-13T00:45:33.473157Z DEBUG tn3270::tn3270_screens: Found v2.0 screen template, reading file
+2025-06-13T00:45:33.473490Z DEBUG tn3270::template_parser: Entering TemplateParser::new
+2025-06-13T00:45:33.473504Z DEBUG tn3270::template_parser: Entering TemplateParser::init_system_variables
+2025-06-13T00:45:33.473757Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_template
+2025-06-13T00:45:33.473783Z DEBUG tn3270::template_parser: Entering TemplateParser::preprocess_template
+2025-06-13T00:45:33.473816Z DEBUG tn3270::template_parser: Entering TemplateParser::replace_variables
+2025-06-13T00:45:33.473899Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_markup_tags v2.0
+2025-06-13T00:45:33.473909Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.488974Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.489012Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.496667Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.496689Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.503444Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.503477Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.508850Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.516217Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.516228Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.521927Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.521937Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.527717Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.527726Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.533448Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.533456Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.538847Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.538855Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.544092Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.544101Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.549098Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.549105Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.553905Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.553912Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.558533Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.558540Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.563113Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.563119Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.567576Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.567583Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.571906Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.571913Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.576222Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.576229Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.580538Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.580546Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.584985Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.584992Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.589401Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_field_v2
+2025-06-13T00:45:33.589411Z DEBUG tn3270::template_parser: Entering FieldAttributes::new
+2025-06-13T00:45:33.589414Z DEBUG tn3270::template_parser: Entering FieldAttributes::parse_attributes
+2025-06-13T00:45:33.589426Z DEBUG tn3270::template_parser: Entering FieldAttributes::apply_attributes
+2025-06-13T00:45:33.589437Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.589442Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.593857Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.593864Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.598328Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.598343Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.602712Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_field_v2
+2025-06-13T00:45:33.602720Z DEBUG tn3270::template_parser: Entering FieldAttributes::new
+2025-06-13T00:45:33.602724Z DEBUG tn3270::template_parser: Entering FieldAttributes::parse_attributes
+2025-06-13T00:45:33.602731Z DEBUG tn3270::template_parser: Entering FieldAttributes::apply_attributes
+2025-06-13T00:45:33.602742Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.602746Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.607089Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.607095Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.611398Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.611404Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.615753Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.615760Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.620174Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.620183Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.623797Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.629150Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.629156Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.633375Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.633382Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.637599Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.637605Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.641824Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.641831Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.646035Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.646041Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.650256Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.650262Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.654472Z DEBUG tn3270::template_parser: Entering Color3270::from_str
+2025-06-13T00:45:33.654478Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_bracket_markup v2.0
+2025-06-13T00:45:33.658687Z DEBUG tn3270::template_parser: Entering TemplateParser::parse_field_v2
+2025-06-13T00:45:33.658694Z DEBUG tn3270::template_parser: Entering FieldAttributes::new
+2025-06-13T00:45:33.658697Z DEBUG tn3270::template_parser: Entering FieldAttributes::parse_attributes
+2025-06-13T00:45:33.658706Z DEBUG tn3270::template_parser: Entering FieldAttributes::apply_attributes
+2025-06-13T00:45:33.658755Z DEBUG tn3270::template_parser: Entering TemplateParser::validate_elements
+
+🔍 DEBUG: Parsed TemplateElement::Text elements:
+  [0] Text: "METADATA Pantalla de bienvenida al sistema NEO6]" at pos (None, None) color=Default bright=false blink=false underline=false
+  [1] Text: "+=============================================================================+" at pos (Some(1), Some(1)) color=Blue bright=false blink=false underline=false
+  [2] Text: "|" at pos (Some(2), Some(1)) color=Blue bright=false blink=false underline=false
+  [3] Text: "ACCESO TN3270 A ENTORNO NEO6" at pos (Some(2), Some(25)) color=Yellow bright=true blink=false underline=false
+  [4] Text: "|" at pos (Some(2), Some(79)) color=Blue bright=false blink=false underline=false
+  [5] Text: "+=============================================================================+" at pos (Some(3), Some(1)) color=Blue bright=false blink=false underline=false
+  [6] Text: "|" at pos (Some(4), Some(1)) color=Blue bright=false blink=false underline=false
+  [7] Text: "|" at pos (Some(4), Some(79)) color=Blue bright=false blink=false underline=false
+  [8] Text: "|" at pos (Some(5), Some(1)) color=Blue bright=false blink=false underline=false
+  [9] Text: "Bienvenido al Sistema NEO6 - Plataforma de Integracion" at pos (Some(5), Some(7)) color=White bright=false blink=false underline=false
+  [10] Text: "|" at pos (Some(5), Some(79)) color=Blue bright=false blink=false underline=false
+  [11] Text: "|" at pos (Some(6), Some(1)) color=Blue bright=false blink=false underline=false
+  [12] Text: "|" at pos (Some(6), Some(79)) color=Blue bright=false blink=false underline=false
+  [13] Text: "|" at pos (Some(7), Some(1)) color=Blue bright=false blink=false underline=false
+  [14] Text: "Estado del sistema:" at pos (Some(7), Some(4)) color=Turquoise bright=false blink=false underline=false
+  [15] Text: "ACTIVO" at pos (Some(7), Some(25)) color=Green bright=false blink=false underline=false
+  [16] Text: "|" at pos (Some(7), Some(79)) color=Blue bright=false blink=false underline=false
+  [17] Text: "|" at pos (Some(8), Some(1)) color=Blue bright=false blink=false underline=false
+  [18] Text: "Sesion iniciada:" at pos (Some(8), Some(4)) color=Turquoise bright=false blink=false underline=false
+  [20] Text: "|" at pos (Some(8), Some(79)) color=Blue bright=false blink=false underline=false
+  [21] Text: "|" at pos (Some(9), Some(1)) color=Blue bright=false blink=false underline=false
+  [22] Text: "Terminal:" at pos (Some(9), Some(4)) color=Turquoise bright=false blink=false underline=false
+  [24] Text: "|" at pos (Some(9), Some(79)) color=Blue bright=false blink=false underline=false
+  [25] Text: "|" at pos (Some(10), Some(1)) color=Blue bright=false blink=false underline=false
+  [26] Text: "|" at pos (Some(10), Some(79)) color=Blue bright=false blink=false underline=false
+  [27] Text: "+=============================================================================+" at pos (Some(11), Some(1)) color=Blue bright=false blink=false underline=false
+  [28] Text: "Comandos disponibles:" at pos (Some(13), Some(4)) color=White bright=true blink=false underline=false
+  [29] Text: "> MENU     - Mostrar menu principal de opciones" at pos (Some(14), Some(7)) color=Turquoise bright=false blink=false underline=false
+  [30] Text: "> STATUS   - Ver estado detallado del sistema" at pos (Some(15), Some(7)) color=Turquoise bright=false blink=false underline=false
+  [31] Text: "> TRANS    - Ejecutar transaccion CICS" at pos (Some(16), Some(7)) color=Turquoise bright=false blink=false underline=false
+  [32] Text: "> HELP     - Mostrar ayuda del sistema" at pos (Some(17), Some(7)) color=Turquoise bright=false blink=false underline=false
+  [33] Text: "> EXIT     - Salir del sistema" at pos (Some(18), Some(7)) color=Turquoise bright=false blink=false underline=false
+  [34] Text: "COMANDO === " at pos (Some(21), Some(1)) color=Pink bright=false blink=false underline=false
+  [35] Text: ">" at pos (Some(21), Some(13)) color=Yellow bright=false blink=false underline=false
+  [36] Text: " " at pos (Some(21), Some(14)) color=Default bright=false blink=false underline=false
+🔍 DEBUG: Total elements parsed: 38
+2025-06-13T00:45:33.658831Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="METADATA Pantalla de bienvenida al sistema NEO6]" (len=48) row=None col=None
+2025-06-13T00:45:33.658836Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_colored_text with: text="METADATA Pantalla de bienvenida al sistema NEO6]" (len=48)
+2025-06-13T00:45:33.658840Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_colored_text
+2025-06-13T00:45:33.658843Z DEBUG tn3270::tn3270_screens: 🔍 add_colored_text ENTRY: text="METADATA Pantalla de bienvenida al sistema NEO6]" (len=48) color=Default bright=false blink=false underline=false
+2025-06-13T00:45:33.658850Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="METADATA Pantalla de bienvenida al sistema NEO6]" (len=48)
+2025-06-13T00:45:33.658853Z DEBUG tn3270::tn3270_screens: 🔍 TEXT AS BYTES: [77, 69, 84, 65, 68, 65, 84, 65, 32, 80, 97, 110, 116, 97, 108, 108, 97, 32, 100, 101, 32, 98, 105, 101, 110, 118, 101, 110, 105, 100, 97, 32, 97, 108, 32, 115, 105, 115, 116, 101, 109, 97, 32, 78, 69, 79, 54, 93] (len=48)
+2025-06-13T00:45:33.658860Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "METADATA Pantalla de bienvenida al sistema NEO6]" (len=48)
+2025-06-13T00:45:33.658866Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 48 bytes
+2025-06-13T00:45:33.658870Z DEBUG tn3270: 🔍 EBCDIC HEX: [D4, C5, E3, C1, C4, C1, E3, C1, 40, D7, 81, 95, A3, 81, 93, 93, 81, 40, 84, 85, 40, 82, 89, 85, 95, A5, 85, 95, 89, 84, 81, 40, 81, 93, 40, A2, 89, A2, A3, 85, 94, 81, 40, D5, C5, D6, F6, BD]
+2025-06-13T00:45:33.658875Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 48 bytes
+2025-06-13T00:45:33.658878Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 55 total bytes
+2025-06-13T00:45:33.658882Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_colored_text
+🔍 DEBUG: Added colored text at current position: "METADATA Pantalla de bienvenida al sistema NEO6]" with color=Default bright=false blink=false underline=false
+2025-06-13T00:45:33.658886Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="+=============================================================================+" (len=79) row=Some(1) col=Some(1)
+🚨 SPECIAL CHARS DETECTED: content="+=============================================================================+" at pos (Some(1),Some(1))
+  [0] char: '+' (U+002B)
+  [1] char: '=' (U+003D)
+  [2] char: '=' (U+003D)
+  [3] char: '=' (U+003D)
+  [4] char: '=' (U+003D)
+  [5] char: '=' (U+003D)
+  [6] char: '=' (U+003D)
+  [7] char: '=' (U+003D)
+  [8] char: '=' (U+003D)
+  [9] char: '=' (U+003D)
+  [10] char: '=' (U+003D)
+  [11] char: '=' (U+003D)
+  [12] char: '=' (U+003D)
+  [13] char: '=' (U+003D)
+  [14] char: '=' (U+003D)
+  [15] char: '=' (U+003D)
+  [16] char: '=' (U+003D)
+  [17] char: '=' (U+003D)
+  [18] char: '=' (U+003D)
+  [19] char: '=' (U+003D)
+  [20] char: '=' (U+003D)
+  [21] char: '=' (U+003D)
+  [22] char: '=' (U+003D)
+  [23] char: '=' (U+003D)
+  [24] char: '=' (U+003D)
+  [25] char: '=' (U+003D)
+  [26] char: '=' (U+003D)
+  [27] char: '=' (U+003D)
+  [28] char: '=' (U+003D)
+  [29] char: '=' (U+003D)
+  [30] char: '=' (U+003D)
+  [31] char: '=' (U+003D)
+  [32] char: '=' (U+003D)
+  [33] char: '=' (U+003D)
+  [34] char: '=' (U+003D)
+  [35] char: '=' (U+003D)
+  [36] char: '=' (U+003D)
+  [37] char: '=' (U+003D)
+  [38] char: '=' (U+003D)
+  [39] char: '=' (U+003D)
+  [40] char: '=' (U+003D)
+  [41] char: '=' (U+003D)
+  [42] char: '=' (U+003D)
+  [43] char: '=' (U+003D)
+  [44] char: '=' (U+003D)
+  [45] char: '=' (U+003D)
+  [46] char: '=' (U+003D)
+  [47] char: '=' (U+003D)
+  [48] char: '=' (U+003D)
+  [49] char: '=' (U+003D)
+  [50] char: '=' (U+003D)
+  [51] char: '=' (U+003D)
+  [52] char: '=' (U+003D)
+  [53] char: '=' (U+003D)
+  [54] char: '=' (U+003D)
+  [55] char: '=' (U+003D)
+  [56] char: '=' (U+003D)
+  [57] char: '=' (U+003D)
+  [58] char: '=' (U+003D)
+  [59] char: '=' (U+003D)
+  [60] char: '=' (U+003D)
+  [61] char: '=' (U+003D)
+  [62] char: '=' (U+003D)
+  [63] char: '=' (U+003D)
+  [64] char: '=' (U+003D)
+  [65] char: '=' (U+003D)
+  [66] char: '=' (U+003D)
+  [67] char: '=' (U+003D)
+  [68] char: '=' (U+003D)
+  [69] char: '=' (U+003D)
+  [70] char: '=' (U+003D)
+  [71] char: '=' (U+003D)
+  [72] char: '=' (U+003D)
+  [73] char: '=' (U+003D)
+  [74] char: '=' (U+003D)
+  [75] char: '=' (U+003D)
+  [76] char: '=' (U+003D)
+  [77] char: '=' (U+003D)
+  [78] char: '+' (U+002B)
+2025-06-13T00:45:33.658999Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=0 col=0 text="+=============================================================================+" (len=79)
+2025-06-13T00:45:33.659003Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.659011Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=0 col=0 text="+=============================================================================+" (len=79)
+2025-06-13T00:45:33.659014Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.659018Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x40, 0x40]
+2025-06-13T00:45:33.659021Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="+=============================================================================+" (len=79)
+🚨 CONVERTING SPECIAL CHARS: text="+=============================================================================+"
+  [0] ASCII byte: 0x2B (+)
+  [1] ASCII byte: 0x3D (=)
+  [2] ASCII byte: 0x3D (=)
+  [3] ASCII byte: 0x3D (=)
+  [4] ASCII byte: 0x3D (=)
+  [5] ASCII byte: 0x3D (=)
+  [6] ASCII byte: 0x3D (=)
+  [7] ASCII byte: 0x3D (=)
+  [8] ASCII byte: 0x3D (=)
+  [9] ASCII byte: 0x3D (=)
+  [10] ASCII byte: 0x3D (=)
+  [11] ASCII byte: 0x3D (=)
+  [12] ASCII byte: 0x3D (=)
+  [13] ASCII byte: 0x3D (=)
+  [14] ASCII byte: 0x3D (=)
+  [15] ASCII byte: 0x3D (=)
+  [16] ASCII byte: 0x3D (=)
+  [17] ASCII byte: 0x3D (=)
+  [18] ASCII byte: 0x3D (=)
+  [19] ASCII byte: 0x3D (=)
+  [20] ASCII byte: 0x3D (=)
+  [21] ASCII byte: 0x3D (=)
+  [22] ASCII byte: 0x3D (=)
+  [23] ASCII byte: 0x3D (=)
+  [24] ASCII byte: 0x3D (=)
+  [25] ASCII byte: 0x3D (=)
+  [26] ASCII byte: 0x3D (=)
+  [27] ASCII byte: 0x3D (=)
+  [28] ASCII byte: 0x3D (=)
+  [29] ASCII byte: 0x3D (=)
+  [30] ASCII byte: 0x3D (=)
+  [31] ASCII byte: 0x3D (=)
+  [32] ASCII byte: 0x3D (=)
+  [33] ASCII byte: 0x3D (=)
+  [34] ASCII byte: 0x3D (=)
+  [35] ASCII byte: 0x3D (=)
+  [36] ASCII byte: 0x3D (=)
+  [37] ASCII byte: 0x3D (=)
+  [38] ASCII byte: 0x3D (=)
+  [39] ASCII byte: 0x3D (=)
+  [40] ASCII byte: 0x3D (=)
+  [41] ASCII byte: 0x3D (=)
+  [42] ASCII byte: 0x3D (=)
+  [43] ASCII byte: 0x3D (=)
+  [44] ASCII byte: 0x3D (=)
+  [45] ASCII byte: 0x3D (=)
+  [46] ASCII byte: 0x3D (=)
+  [47] ASCII byte: 0x3D (=)
+  [48] ASCII byte: 0x3D (=)
+  [49] ASCII byte: 0x3D (=)
+  [50] ASCII byte: 0x3D (=)
+  [51] ASCII byte: 0x3D (=)
+  [52] ASCII byte: 0x3D (=)
+  [53] ASCII byte: 0x3D (=)
+  [54] ASCII byte: 0x3D (=)
+  [55] ASCII byte: 0x3D (=)
+  [56] ASCII byte: 0x3D (=)
+  [57] ASCII byte: 0x3D (=)
+  [58] ASCII byte: 0x3D (=)
+  [59] ASCII byte: 0x3D (=)
+  [60] ASCII byte: 0x3D (=)
+  [61] ASCII byte: 0x3D (=)
+  [62] ASCII byte: 0x3D (=)
+  [63] ASCII byte: 0x3D (=)
+  [64] ASCII byte: 0x3D (=)
+  [65] ASCII byte: 0x3D (=)
+  [66] ASCII byte: 0x3D (=)
+  [67] ASCII byte: 0x3D (=)
+  [68] ASCII byte: 0x3D (=)
+  [69] ASCII byte: 0x3D (=)
+  [70] ASCII byte: 0x3D (=)
+  [71] ASCII byte: 0x3D (=)
+  [72] ASCII byte: 0x3D (=)
+  [73] ASCII byte: 0x3D (=)
+  [74] ASCII byte: 0x3D (=)
+  [75] ASCII byte: 0x3D (=)
+  [76] ASCII byte: 0x3D (=)
+  [77] ASCII byte: 0x3D (=)
+  [78] ASCII byte: 0x2B (+)
+2025-06-13T00:45:33.659146Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "+=============================================================================+" (len=79)
+2025-06-13T00:45:33.659150Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 79 bytes
+2025-06-13T00:45:33.659153Z DEBUG tn3270: 🔍 EBCDIC HEX: [4E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 4E]
+2025-06-13T00:45:33.659157Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 79 bytes
+🚨 EBCDIC CONVERSION RESULT:
+  [0] EBCDIC byte: 0x4E
+  [1] EBCDIC byte: 0x7E
+  [2] EBCDIC byte: 0x7E
+  [3] EBCDIC byte: 0x7E
+  [4] EBCDIC byte: 0x7E
+  [5] EBCDIC byte: 0x7E
+  [6] EBCDIC byte: 0x7E
+  [7] EBCDIC byte: 0x7E
+  [8] EBCDIC byte: 0x7E
+  [9] EBCDIC byte: 0x7E
+  [10] EBCDIC byte: 0x7E
+  [11] EBCDIC byte: 0x7E
+  [12] EBCDIC byte: 0x7E
+  [13] EBCDIC byte: 0x7E
+  [14] EBCDIC byte: 0x7E
+  [15] EBCDIC byte: 0x7E
+  [16] EBCDIC byte: 0x7E
+  [17] EBCDIC byte: 0x7E
+  [18] EBCDIC byte: 0x7E
+  [19] EBCDIC byte: 0x7E
+  [20] EBCDIC byte: 0x7E
+  [21] EBCDIC byte: 0x7E
+  [22] EBCDIC byte: 0x7E
+  [23] EBCDIC byte: 0x7E
+  [24] EBCDIC byte: 0x7E
+  [25] EBCDIC byte: 0x7E
+  [26] EBCDIC byte: 0x7E
+  [27] EBCDIC byte: 0x7E
+  [28] EBCDIC byte: 0x7E
+  [29] EBCDIC byte: 0x7E
+  [30] EBCDIC byte: 0x7E
+  [31] EBCDIC byte: 0x7E
+  [32] EBCDIC byte: 0x7E
+  [33] EBCDIC byte: 0x7E
+  [34] EBCDIC byte: 0x7E
+  [35] EBCDIC byte: 0x7E
+  [36] EBCDIC byte: 0x7E
+  [37] EBCDIC byte: 0x7E
+  [38] EBCDIC byte: 0x7E
+  [39] EBCDIC byte: 0x7E
+  [40] EBCDIC byte: 0x7E
+  [41] EBCDIC byte: 0x7E
+  [42] EBCDIC byte: 0x7E
+  [43] EBCDIC byte: 0x7E
+  [44] EBCDIC byte: 0x7E
+  [45] EBCDIC byte: 0x7E
+  [46] EBCDIC byte: 0x7E
+  [47] EBCDIC byte: 0x7E
+  [48] EBCDIC byte: 0x7E
+  [49] EBCDIC byte: 0x7E
+  [50] EBCDIC byte: 0x7E
+  [51] EBCDIC byte: 0x7E
+  [52] EBCDIC byte: 0x7E
+  [53] EBCDIC byte: 0x7E
+  [54] EBCDIC byte: 0x7E
+  [55] EBCDIC byte: 0x7E
+  [56] EBCDIC byte: 0x7E
+  [57] EBCDIC byte: 0x7E
+  [58] EBCDIC byte: 0x7E
+  [59] EBCDIC byte: 0x7E
+  [60] EBCDIC byte: 0x7E
+  [61] EBCDIC byte: 0x7E
+  [62] EBCDIC byte: 0x7E
+  [63] EBCDIC byte: 0x7E
+  [64] EBCDIC byte: 0x7E
+  [65] EBCDIC byte: 0x7E
+  [66] EBCDIC byte: 0x7E
+  [67] EBCDIC byte: 0x7E
+  [68] EBCDIC byte: 0x7E
+  [69] EBCDIC byte: 0x7E
+  [70] EBCDIC byte: 0x7E
+  [71] EBCDIC byte: 0x7E
+  [72] EBCDIC byte: 0x7E
+  [73] EBCDIC byte: 0x7E
+  [74] EBCDIC byte: 0x7E
+  [75] EBCDIC byte: 0x7E
+  [76] EBCDIC byte: 0x7E
+  [77] EBCDIC byte: 0x7E
+  [78] EBCDIC byte: 0x4E
+2025-06-13T00:45:33.659269Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 140 total bytes
+2025-06-13T00:45:33.659273Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.659276Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "+=============================================================================+" at template row 1 col 1 (0-indexed: 0,0) with color=Blue bright=false blink=false underline=false
+2025-06-13T00:45:33.659281Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="|" (len=1) row=Some(2) col=Some(1)
+🚨 SPECIAL CHARS DETECTED: content="|" at pos (Some(2),Some(1))
+  [0] char: '|' (U+007C)
+2025-06-13T00:45:33.659287Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=1 col=0 text="|" (len=1)
+2025-06-13T00:45:33.659290Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.659292Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=1 col=0 text="|" (len=1)
+2025-06-13T00:45:33.659295Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.659298Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x41, 0x50]
+2025-06-13T00:45:33.659300Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="|" (len=1)
+🚨 CONVERTING SPECIAL CHARS: text="|"
+  [0] ASCII byte: 0x7C (|)
+2025-06-13T00:45:33.659306Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "|" (len=1)
+2025-06-13T00:45:33.659309Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 1 bytes
+2025-06-13T00:45:33.659311Z DEBUG tn3270: 🔍 EBCDIC HEX: [4F]
+2025-06-13T00:45:33.659314Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 1 bytes
+🚨 EBCDIC CONVERSION RESULT:
+  [0] EBCDIC byte: 0x4F
+2025-06-13T00:45:33.659320Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 147 total bytes
+2025-06-13T00:45:33.659322Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.659325Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "|" at template row 2 col 1 (0-indexed: 1,0) with color=Blue bright=false blink=false underline=false
+2025-06-13T00:45:33.659329Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="ACCESO TN3270 A ENTORNO NEO6" (len=28) row=Some(2) col=Some(25)
+2025-06-13T00:45:33.659332Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=1 col=24 text="ACCESO TN3270 A ENTORNO NEO6" (len=28)
+2025-06-13T00:45:33.659337Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.659340Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=1 col=24 text="ACCESO TN3270 A ENTORNO NEO6" (len=28)
+2025-06-13T00:45:33.659343Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.659345Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x41, 0x68]
+2025-06-13T00:45:33.659348Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="ACCESO TN3270 A ENTORNO NEO6" (len=28)
+2025-06-13T00:45:33.659350Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "ACCESO TN3270 A ENTORNO NEO6" (len=28)
+2025-06-13T00:45:33.659354Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 28 bytes
+2025-06-13T00:45:33.659356Z DEBUG tn3270: 🔍 EBCDIC HEX: [C1, C3, C3, C5, E2, D6, 40, E3, D5, F3, F2, F7, F0, 40, C1, 40, C5, D5, E3, D6, D9, D5, D6, 40, D5, C5, D6, F6]
+2025-06-13T00:45:33.659359Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 28 bytes
+2025-06-13T00:45:33.659362Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 184 total bytes
+2025-06-13T00:45:33.659364Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.659367Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "ACCESO TN3270 A ENTORNO NEO6" at template row 2 col 25 (0-indexed: 1,24) with color=Yellow bright=true blink=false underline=false
+2025-06-13T00:45:33.659371Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="|" (len=1) row=Some(2) col=Some(79)
+🚨 SPECIAL CHARS DETECTED: content="|" at pos (Some(2),Some(79))
+  [0] char: '|' (U+007C)
+2025-06-13T00:45:33.659377Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=1 col=78 text="|" (len=1)
+2025-06-13T00:45:33.659380Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.659382Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=1 col=78 text="|" (len=1)
+2025-06-13T00:45:33.659385Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.659387Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x42, 0x5E]
+2025-06-13T00:45:33.659390Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="|" (len=1)
+🚨 CONVERTING SPECIAL CHARS: text="|"
+  [0] ASCII byte: 0x7C (|)
+2025-06-13T00:45:33.659395Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "|" (len=1)
+2025-06-13T00:45:33.659398Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 1 bytes
+2025-06-13T00:45:33.659400Z DEBUG tn3270: 🔍 EBCDIC HEX: [4F]
+2025-06-13T00:45:33.659403Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 1 bytes
+🚨 EBCDIC CONVERSION RESULT:
+  [0] EBCDIC byte: 0x4F
+2025-06-13T00:45:33.659408Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 191 total bytes
+2025-06-13T00:45:33.659411Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.659413Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "|" at template row 2 col 79 (0-indexed: 1,78) with color=Blue bright=false blink=false underline=false
+2025-06-13T00:45:33.659417Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="+=============================================================================+" (len=79) row=Some(3) col=Some(1)
+🚨 SPECIAL CHARS DETECTED: content="+=============================================================================+" at pos (Some(3),Some(1))
+  [0] char: '+' (U+002B)
+  [1] char: '=' (U+003D)
+  [2] char: '=' (U+003D)
+  [3] char: '=' (U+003D)
+  [4] char: '=' (U+003D)
+  [5] char: '=' (U+003D)
+  [6] char: '=' (U+003D)
+  [7] char: '=' (U+003D)
+  [8] char: '=' (U+003D)
+  [9] char: '=' (U+003D)
+  [10] char: '=' (U+003D)
+  [11] char: '=' (U+003D)
+  [12] char: '=' (U+003D)
+  [13] char: '=' (U+003D)
+  [14] char: '=' (U+003D)
+  [15] char: '=' (U+003D)
+  [16] char: '=' (U+003D)
+  [17] char: '=' (U+003D)
+  [18] char: '=' (U+003D)
+  [19] char: '=' (U+003D)
+  [20] char: '=' (U+003D)
+  [21] char: '=' (U+003D)
+  [22] char: '=' (U+003D)
+  [23] char: '=' (U+003D)
+  [24] char: '=' (U+003D)
+  [25] char: '=' (U+003D)
+  [26] char: '=' (U+003D)
+  [27] char: '=' (U+003D)
+  [28] char: '=' (U+003D)
+  [29] char: '=' (U+003D)
+  [30] char: '=' (U+003D)
+  [31] char: '=' (U+003D)
+  [32] char: '=' (U+003D)
+  [33] char: '=' (U+003D)
+  [34] char: '=' (U+003D)
+  [35] char: '=' (U+003D)
+  [36] char: '=' (U+003D)
+  [37] char: '=' (U+003D)
+  [38] char: '=' (U+003D)
+  [39] char: '=' (U+003D)
+  [40] char: '=' (U+003D)
+  [41] char: '=' (U+003D)
+  [42] char: '=' (U+003D)
+  [43] char: '=' (U+003D)
+  [44] char: '=' (U+003D)
+  [45] char: '=' (U+003D)
+  [46] char: '=' (U+003D)
+  [47] char: '=' (U+003D)
+  [48] char: '=' (U+003D)
+  [49] char: '=' (U+003D)
+  [50] char: '=' (U+003D)
+  [51] char: '=' (U+003D)
+  [52] char: '=' (U+003D)
+  [53] char: '=' (U+003D)
+  [54] char: '=' (U+003D)
+  [55] char: '=' (U+003D)
+  [56] char: '=' (U+003D)
+  [57] char: '=' (U+003D)
+  [58] char: '=' (U+003D)
+  [59] char: '=' (U+003D)
+  [60] char: '=' (U+003D)
+  [61] char: '=' (U+003D)
+  [62] char: '=' (U+003D)
+  [63] char: '=' (U+003D)
+  [64] char: '=' (U+003D)
+  [65] char: '=' (U+003D)
+  [66] char: '=' (U+003D)
+  [67] char: '=' (U+003D)
+  [68] char: '=' (U+003D)
+  [69] char: '=' (U+003D)
+  [70] char: '=' (U+003D)
+  [71] char: '=' (U+003D)
+  [72] char: '=' (U+003D)
+  [73] char: '=' (U+003D)
+  [74] char: '=' (U+003D)
+  [75] char: '=' (U+003D)
+  [76] char: '=' (U+003D)
+  [77] char: '=' (U+003D)
+  [78] char: '+' (U+002B)
+2025-06-13T00:45:33.659545Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=2 col=0 text="+=============================================================================+" (len=79)
+2025-06-13T00:45:33.659548Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.659551Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=2 col=0 text="+=============================================================================+" (len=79)
+2025-06-13T00:45:33.659554Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.659557Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x42, 0x60]
+2025-06-13T00:45:33.659559Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="+=============================================================================+" (len=79)
+🚨 CONVERTING SPECIAL CHARS: text="+=============================================================================+"
+  [0] ASCII byte: 0x2B (+)
+  [1] ASCII byte: 0x3D (=)
+  [2] ASCII byte: 0x3D (=)
+  [3] ASCII byte: 0x3D (=)
+  [4] ASCII byte: 0x3D (=)
+  [5] ASCII byte: 0x3D (=)
+  [6] ASCII byte: 0x3D (=)
+  [7] ASCII byte: 0x3D (=)
+  [8] ASCII byte: 0x3D (=)
+  [9] ASCII byte: 0x3D (=)
+  [10] ASCII byte: 0x3D (=)
+  [11] ASCII byte: 0x3D (=)
+  [12] ASCII byte: 0x3D (=)
+  [13] ASCII byte: 0x3D (=)
+  [14] ASCII byte: 0x3D (=)
+  [15] ASCII byte: 0x3D (=)
+  [16] ASCII byte: 0x3D (=)
+  [17] ASCII byte: 0x3D (=)
+  [18] ASCII byte: 0x3D (=)
+  [19] ASCII byte: 0x3D (=)
+  [20] ASCII byte: 0x3D (=)
+  [21] ASCII byte: 0x3D (=)
+  [22] ASCII byte: 0x3D (=)
+  [23] ASCII byte: 0x3D (=)
+  [24] ASCII byte: 0x3D (=)
+  [25] ASCII byte: 0x3D (=)
+  [26] ASCII byte: 0x3D (=)
+  [27] ASCII byte: 0x3D (=)
+  [28] ASCII byte: 0x3D (=)
+  [29] ASCII byte: 0x3D (=)
+  [30] ASCII byte: 0x3D (=)
+  [31] ASCII byte: 0x3D (=)
+  [32] ASCII byte: 0x3D (=)
+  [33] ASCII byte: 0x3D (=)
+  [34] ASCII byte: 0x3D (=)
+  [35] ASCII byte: 0x3D (=)
+  [36] ASCII byte: 0x3D (=)
+  [37] ASCII byte: 0x3D (=)
+  [38] ASCII byte: 0x3D (=)
+  [39] ASCII byte: 0x3D (=)
+  [40] ASCII byte: 0x3D (=)
+  [41] ASCII byte: 0x3D (=)
+  [42] ASCII byte: 0x3D (=)
+  [43] ASCII byte: 0x3D (=)
+  [44] ASCII byte: 0x3D (=)
+  [45] ASCII byte: 0x3D (=)
+  [46] ASCII byte: 0x3D (=)
+  [47] ASCII byte: 0x3D (=)
+  [48] ASCII byte: 0x3D (=)
+  [49] ASCII byte: 0x3D (=)
+  [50] ASCII byte: 0x3D (=)
+  [51] ASCII byte: 0x3D (=)
+  [52] ASCII byte: 0x3D (=)
+  [53] ASCII byte: 0x3D (=)
+  [54] ASCII byte: 0x3D (=)
+  [55] ASCII byte: 0x3D (=)
+  [56] ASCII byte: 0x3D (=)
+  [57] ASCII byte: 0x3D (=)
+  [58] ASCII byte: 0x3D (=)
+  [59] ASCII byte: 0x3D (=)
+  [60] ASCII byte: 0x3D (=)
+  [61] ASCII byte: 0x3D (=)
+  [62] ASCII byte: 0x3D (=)
+  [63] ASCII byte: 0x3D (=)
+  [64] ASCII byte: 0x3D (=)
+  [65] ASCII byte: 0x3D (=)
+  [66] ASCII byte: 0x3D (=)
+  [67] ASCII byte: 0x3D (=)
+  [68] ASCII byte: 0x3D (=)
+  [69] ASCII byte: 0x3D (=)
+  [70] ASCII byte: 0x3D (=)
+  [71] ASCII byte: 0x3D (=)
+  [72] ASCII byte: 0x3D (=)
+  [73] ASCII byte: 0x3D (=)
+  [74] ASCII byte: 0x3D (=)
+  [75] ASCII byte: 0x3D (=)
+  [76] ASCII byte: 0x3D (=)
+  [77] ASCII byte: 0x3D (=)
+  [78] ASCII byte: 0x2B (+)
+2025-06-13T00:45:33.659675Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "+=============================================================================+" (len=79)
+2025-06-13T00:45:33.659678Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 79 bytes
+2025-06-13T00:45:33.659681Z DEBUG tn3270: 🔍 EBCDIC HEX: [4E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 4E]
+2025-06-13T00:45:33.659685Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 79 bytes
+🚨 EBCDIC CONVERSION RESULT:
+  [0] EBCDIC byte: 0x4E
+  [1] EBCDIC byte: 0x7E
+  [2] EBCDIC byte: 0x7E
+  [3] EBCDIC byte: 0x7E
+  [4] EBCDIC byte: 0x7E
+  [5] EBCDIC byte: 0x7E
+  [6] EBCDIC byte: 0x7E
+  [7] EBCDIC byte: 0x7E
+  [8] EBCDIC byte: 0x7E
+  [9] EBCDIC byte: 0x7E
+  [10] EBCDIC byte: 0x7E
+  [11] EBCDIC byte: 0x7E
+  [12] EBCDIC byte: 0x7E
+  [13] EBCDIC byte: 0x7E
+  [14] EBCDIC byte: 0x7E
+  [15] EBCDIC byte: 0x7E
+  [16] EBCDIC byte: 0x7E
+  [17] EBCDIC byte: 0x7E
+  [18] EBCDIC byte: 0x7E
+  [19] EBCDIC byte: 0x7E
+  [20] EBCDIC byte: 0x7E
+  [21] EBCDIC byte: 0x7E
+  [22] EBCDIC byte: 0x7E
+  [23] EBCDIC byte: 0x7E
+  [24] EBCDIC byte: 0x7E
+  [25] EBCDIC byte: 0x7E
+  [26] EBCDIC byte: 0x7E
+  [27] EBCDIC byte: 0x7E
+  [28] EBCDIC byte: 0x7E
+  [29] EBCDIC byte: 0x7E
+  [30] EBCDIC byte: 0x7E
+  [31] EBCDIC byte: 0x7E
+  [32] EBCDIC byte: 0x7E
+  [33] EBCDIC byte: 0x7E
+  [34] EBCDIC byte: 0x7E
+  [35] EBCDIC byte: 0x7E
+  [36] EBCDIC byte: 0x7E
+  [37] EBCDIC byte: 0x7E
+  [38] EBCDIC byte: 0x7E
+  [39] EBCDIC byte: 0x7E
+  [40] EBCDIC byte: 0x7E
+  [41] EBCDIC byte: 0x7E
+  [42] EBCDIC byte: 0x7E
+  [43] EBCDIC byte: 0x7E
+  [44] EBCDIC byte: 0x7E
+  [45] EBCDIC byte: 0x7E
+  [46] EBCDIC byte: 0x7E
+  [47] EBCDIC byte: 0x7E
+  [48] EBCDIC byte: 0x7E
+  [49] EBCDIC byte: 0x7E
+  [50] EBCDIC byte: 0x7E
+  [51] EBCDIC byte: 0x7E
+  [52] EBCDIC byte: 0x7E
+  [53] EBCDIC byte: 0x7E
+  [54] EBCDIC byte: 0x7E
+  [55] EBCDIC byte: 0x7E
+  [56] EBCDIC byte: 0x7E
+  [57] EBCDIC byte: 0x7E
+  [58] EBCDIC byte: 0x7E
+  [59] EBCDIC byte: 0x7E
+  [60] EBCDIC byte: 0x7E
+  [61] EBCDIC byte: 0x7E
+  [62] EBCDIC byte: 0x7E
+  [63] EBCDIC byte: 0x7E
+  [64] EBCDIC byte: 0x7E
+  [65] EBCDIC byte: 0x7E
+  [66] EBCDIC byte: 0x7E
+  [67] EBCDIC byte: 0x7E
+  [68] EBCDIC byte: 0x7E
+  [69] EBCDIC byte: 0x7E
+  [70] EBCDIC byte: 0x7E
+  [71] EBCDIC byte: 0x7E
+  [72] EBCDIC byte: 0x7E
+  [73] EBCDIC byte: 0x7E
+  [74] EBCDIC byte: 0x7E
+  [75] EBCDIC byte: 0x7E
+  [76] EBCDIC byte: 0x7E
+  [77] EBCDIC byte: 0x7E
+  [78] EBCDIC byte: 0x4E
+2025-06-13T00:45:33.659791Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 276 total bytes
+2025-06-13T00:45:33.659794Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.659797Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "+=============================================================================+" at template row 3 col 1 (0-indexed: 2,0) with color=Blue bright=false blink=false underline=false
+2025-06-13T00:45:33.659803Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="|" (len=1) row=Some(4) col=Some(1)
+🚨 SPECIAL CHARS DETECTED: content="|" at pos (Some(4),Some(1))
+  [0] char: '|' (U+007C)
+2025-06-13T00:45:33.659809Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=3 col=0 text="|" (len=1)
+2025-06-13T00:45:33.659812Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.659815Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=3 col=0 text="|" (len=1)
+2025-06-13T00:45:33.659817Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.659820Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x43, 0x70]
+2025-06-13T00:45:33.659822Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="|" (len=1)
+🚨 CONVERTING SPECIAL CHARS: text="|"
+  [0] ASCII byte: 0x7C (|)
+2025-06-13T00:45:33.659827Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "|" (len=1)
+2025-06-13T00:45:33.659830Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 1 bytes
+2025-06-13T00:45:33.659833Z DEBUG tn3270: 🔍 EBCDIC HEX: [4F]
+2025-06-13T00:45:33.659835Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 1 bytes
+🚨 EBCDIC CONVERSION RESULT:
+  [0] EBCDIC byte: 0x4F
+2025-06-13T00:45:33.659840Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 283 total bytes
+2025-06-13T00:45:33.659843Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.659845Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "|" at template row 4 col 1 (0-indexed: 3,0) with color=Blue bright=false blink=false underline=false
+2025-06-13T00:45:33.659849Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="|" (len=1) row=Some(4) col=Some(79)
+🚨 SPECIAL CHARS DETECTED: content="|" at pos (Some(4),Some(79))
+  [0] char: '|' (U+007C)
+2025-06-13T00:45:33.659855Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=3 col=78 text="|" (len=1)
+2025-06-13T00:45:33.659858Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.659860Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=3 col=78 text="|" (len=1)
+2025-06-13T00:45:33.659863Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.659865Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x44, 0x7E]
+2025-06-13T00:45:33.659867Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="|" (len=1)
+🚨 CONVERTING SPECIAL CHARS: text="|"
+  [0] ASCII byte: 0x7C (|)
+2025-06-13T00:45:33.659873Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "|" (len=1)
+2025-06-13T00:45:33.659875Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 1 bytes
+2025-06-13T00:45:33.659878Z DEBUG tn3270: 🔍 EBCDIC HEX: [4F]
+2025-06-13T00:45:33.659880Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 1 bytes
+🚨 EBCDIC CONVERSION RESULT:
+  [0] EBCDIC byte: 0x4F
+2025-06-13T00:45:33.659886Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 290 total bytes
+2025-06-13T00:45:33.659888Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.659891Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "|" at template row 4 col 79 (0-indexed: 3,78) with color=Blue bright=false blink=false underline=false
+2025-06-13T00:45:33.659895Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="|" (len=1) row=Some(5) col=Some(1)
+🚨 SPECIAL CHARS DETECTED: content="|" at pos (Some(5),Some(1))
+  [0] char: '|' (U+007C)
+2025-06-13T00:45:33.659900Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=4 col=0 text="|" (len=1)
+2025-06-13T00:45:33.659903Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.659905Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=4 col=0 text="|" (len=1)
+2025-06-13T00:45:33.659910Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.659913Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x45, 0x40]
+2025-06-13T00:45:33.659915Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="|" (len=1)
+🚨 CONVERTING SPECIAL CHARS: text="|"
+  [0] ASCII byte: 0x7C (|)
+2025-06-13T00:45:33.659921Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "|" (len=1)
+2025-06-13T00:45:33.659924Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 1 bytes
+2025-06-13T00:45:33.659926Z DEBUG tn3270: 🔍 EBCDIC HEX: [4F]
+2025-06-13T00:45:33.659928Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 1 bytes
+🚨 EBCDIC CONVERSION RESULT:
+  [0] EBCDIC byte: 0x4F
+2025-06-13T00:45:33.659934Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 297 total bytes
+2025-06-13T00:45:33.659936Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.659939Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "|" at template row 5 col 1 (0-indexed: 4,0) with color=Blue bright=false blink=false underline=false
+2025-06-13T00:45:33.659943Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="Bienvenido al Sistema NEO6 - Plataforma de Integracion" (len=54) row=Some(5) col=Some(7)
+2025-06-13T00:45:33.659945Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=4 col=6 text="Bienvenido al Sistema NEO6 - Plataforma de Integracion" (len=54)
+2025-06-13T00:45:33.659948Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.659951Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=4 col=6 text="Bienvenido al Sistema NEO6 - Plataforma de Integracion" (len=54)
+2025-06-13T00:45:33.659953Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.659956Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x45, 0x46]
+2025-06-13T00:45:33.659958Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="Bienvenido al Sistema NEO6 - Plataforma de Integracion" (len=54)
+2025-06-13T00:45:33.659961Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "Bienvenido al Sistema NEO6 - Plataforma de Integracion" (len=54)
+2025-06-13T00:45:33.659964Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 54 bytes
+2025-06-13T00:45:33.659967Z DEBUG tn3270: 🔍 EBCDIC HEX: [C2, 89, 85, 95, A5, 85, 95, 89, 84, 96, 40, 81, 93, 40, E2, 89, A2, A3, 85, 94, 81, 40, D5, C5, D6, F6, 40, 60, 40, D7, 93, 81, A3, 81, 86, 96, 99, 94, 81, 40, 84, 85, 40, C9, 95, A3, 85, 87, 99, 81, 83, 89, 96, 95]
+2025-06-13T00:45:33.659970Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 54 bytes
+2025-06-13T00:45:33.659973Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 357 total bytes
+2025-06-13T00:45:33.659975Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.659978Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "Bienvenido al Sistema NEO6 - Plataforma de Integracion" at template row 5 col 7 (0-indexed: 4,6) with color=White bright=false blink=false underline=false
+2025-06-13T00:45:33.659982Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="|" (len=1) row=Some(5) col=Some(79)
+🚨 SPECIAL CHARS DETECTED: content="|" at pos (Some(5),Some(79))
+  [0] char: '|' (U+007C)
+2025-06-13T00:45:33.659988Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=4 col=78 text="|" (len=1)
+2025-06-13T00:45:33.659990Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.659993Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=4 col=78 text="|" (len=1)
+2025-06-13T00:45:33.659995Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.659998Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x46, 0x4E]
+2025-06-13T00:45:33.660003Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="|" (len=1)
+🚨 CONVERTING SPECIAL CHARS: text="|"
+  [0] ASCII byte: 0x7C (|)
+2025-06-13T00:45:33.660008Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "|" (len=1)
+2025-06-13T00:45:33.660011Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 1 bytes
+2025-06-13T00:45:33.660013Z DEBUG tn3270: 🔍 EBCDIC HEX: [4F]
+2025-06-13T00:45:33.660016Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 1 bytes
+🚨 EBCDIC CONVERSION RESULT:
+  [0] EBCDIC byte: 0x4F
+2025-06-13T00:45:33.660021Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 364 total bytes
+2025-06-13T00:45:33.660023Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.660026Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "|" at template row 5 col 79 (0-indexed: 4,78) with color=Blue bright=false blink=false underline=false
+2025-06-13T00:45:33.660030Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="|" (len=1) row=Some(6) col=Some(1)
+🚨 SPECIAL CHARS DETECTED: content="|" at pos (Some(6),Some(1))
+  [0] char: '|' (U+007C)
+2025-06-13T00:45:33.660036Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=5 col=0 text="|" (len=1)
+2025-06-13T00:45:33.660038Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.660041Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=5 col=0 text="|" (len=1)
+2025-06-13T00:45:33.660043Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.660046Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x46, 0x50]
+2025-06-13T00:45:33.660048Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="|" (len=1)
+🚨 CONVERTING SPECIAL CHARS: text="|"
+  [0] ASCII byte: 0x7C (|)
+2025-06-13T00:45:33.660053Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "|" (len=1)
+2025-06-13T00:45:33.660056Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 1 bytes
+2025-06-13T00:45:33.660059Z DEBUG tn3270: 🔍 EBCDIC HEX: [4F]
+2025-06-13T00:45:33.660061Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 1 bytes
+🚨 EBCDIC CONVERSION RESULT:
+  [0] EBCDIC byte: 0x4F
+2025-06-13T00:45:33.660066Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 371 total bytes
+2025-06-13T00:45:33.660069Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.660071Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "|" at template row 6 col 1 (0-indexed: 5,0) with color=Blue bright=false blink=false underline=false
+2025-06-13T00:45:33.660075Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="|" (len=1) row=Some(6) col=Some(79)
+🚨 SPECIAL CHARS DETECTED: content="|" at pos (Some(6),Some(79))
+  [0] char: '|' (U+007C)
+2025-06-13T00:45:33.660081Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=5 col=78 text="|" (len=1)
+2025-06-13T00:45:33.660083Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.660086Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=5 col=78 text="|" (len=1)
+2025-06-13T00:45:33.660088Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.660091Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x47, 0x5E]
+2025-06-13T00:45:33.660093Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="|" (len=1)
+🚨 CONVERTING SPECIAL CHARS: text="|"
+  [0] ASCII byte: 0x7C (|)
+2025-06-13T00:45:33.660098Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "|" (len=1)
+2025-06-13T00:45:33.660101Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 1 bytes
+2025-06-13T00:45:33.660103Z DEBUG tn3270: 🔍 EBCDIC HEX: [4F]
+2025-06-13T00:45:33.660106Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 1 bytes
+🚨 EBCDIC CONVERSION RESULT:
+  [0] EBCDIC byte: 0x4F
+2025-06-13T00:45:33.660115Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 378 total bytes
+2025-06-13T00:45:33.660118Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.660120Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "|" at template row 6 col 79 (0-indexed: 5,78) with color=Blue bright=false blink=false underline=false
+2025-06-13T00:45:33.660124Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="|" (len=1) row=Some(7) col=Some(1)
+🚨 SPECIAL CHARS DETECTED: content="|" at pos (Some(7),Some(1))
+  [0] char: '|' (U+007C)
+2025-06-13T00:45:33.660130Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=6 col=0 text="|" (len=1)
+2025-06-13T00:45:33.660132Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.660135Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=6 col=0 text="|" (len=1)
+2025-06-13T00:45:33.660137Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.660139Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x47, 0x60]
+2025-06-13T00:45:33.660142Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="|" (len=1)
+🚨 CONVERTING SPECIAL CHARS: text="|"
+  [0] ASCII byte: 0x7C (|)
+2025-06-13T00:45:33.660147Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "|" (len=1)
+2025-06-13T00:45:33.660150Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 1 bytes
+2025-06-13T00:45:33.660152Z DEBUG tn3270: 🔍 EBCDIC HEX: [4F]
+2025-06-13T00:45:33.660155Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 1 bytes
+🚨 EBCDIC CONVERSION RESULT:
+  [0] EBCDIC byte: 0x4F
+2025-06-13T00:45:33.660160Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 385 total bytes
+2025-06-13T00:45:33.660162Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.660165Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "|" at template row 7 col 1 (0-indexed: 6,0) with color=Blue bright=false blink=false underline=false
+2025-06-13T00:45:33.660169Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="Estado del sistema:" (len=19) row=Some(7) col=Some(4)
+2025-06-13T00:45:33.660172Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=6 col=3 text="Estado del sistema:" (len=19)
+2025-06-13T00:45:33.660174Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.660177Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=6 col=3 text="Estado del sistema:" (len=19)
+2025-06-13T00:45:33.660179Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.660181Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x47, 0x63]
+2025-06-13T00:45:33.660184Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="Estado del sistema:" (len=19)
+2025-06-13T00:45:33.660186Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "Estado del sistema:" (len=19)
+2025-06-13T00:45:33.660189Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 19 bytes
+2025-06-13T00:45:33.660192Z DEBUG tn3270: 🔍 EBCDIC HEX: [C5, A2, A3, 81, 84, 96, 40, 84, 85, 93, 40, A2, 89, A2, A3, 85, 94, 81, 7A]
+2025-06-13T00:45:33.660195Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 19 bytes
+2025-06-13T00:45:33.660197Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 410 total bytes
+2025-06-13T00:45:33.660200Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.660202Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "Estado del sistema:" at template row 7 col 4 (0-indexed: 6,3) with color=Turquoise bright=false blink=false underline=false
+2025-06-13T00:45:33.660209Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="ACTIVO" (len=6) row=Some(7) col=Some(25)
+2025-06-13T00:45:33.660212Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=6 col=24 text="ACTIVO" (len=6)
+2025-06-13T00:45:33.660214Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.660217Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=6 col=24 text="ACTIVO" (len=6)
+2025-06-13T00:45:33.660219Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.660222Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x47, 0x78]
+2025-06-13T00:45:33.660224Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="ACTIVO" (len=6)
+2025-06-13T00:45:33.660227Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "ACTIVO" (len=6)
+2025-06-13T00:45:33.660229Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 6 bytes
+2025-06-13T00:45:33.660232Z DEBUG tn3270: 🔍 EBCDIC HEX: [C1, C3, E3, C9, E5, D6]
+2025-06-13T00:45:33.660234Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 6 bytes
+2025-06-13T00:45:33.660237Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 422 total bytes
+2025-06-13T00:45:33.660239Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.660242Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "ACTIVO" at template row 7 col 25 (0-indexed: 6,24) with color=Green bright=false blink=false underline=false
+2025-06-13T00:45:33.660246Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="|" (len=1) row=Some(7) col=Some(79)
+🚨 SPECIAL CHARS DETECTED: content="|" at pos (Some(7),Some(79))
+  [0] char: '|' (U+007C)
+2025-06-13T00:45:33.660252Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=6 col=78 text="|" (len=1)
+2025-06-13T00:45:33.660254Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.660257Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=6 col=78 text="|" (len=1)
+2025-06-13T00:45:33.660259Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.660261Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x48, 0x6E]
+2025-06-13T00:45:33.660264Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="|" (len=1)
+🚨 CONVERTING SPECIAL CHARS: text="|"
+  [0] ASCII byte: 0x7C (|)
+2025-06-13T00:45:33.660269Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "|" (len=1)
+2025-06-13T00:45:33.660272Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 1 bytes
+2025-06-13T00:45:33.660274Z DEBUG tn3270: 🔍 EBCDIC HEX: [4F]
+2025-06-13T00:45:33.660277Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 1 bytes
+🚨 EBCDIC CONVERSION RESULT:
+  [0] EBCDIC byte: 0x4F
+2025-06-13T00:45:33.660282Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 429 total bytes
+2025-06-13T00:45:33.660284Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.660287Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "|" at template row 7 col 79 (0-indexed: 6,78) with color=Blue bright=false blink=false underline=false
+2025-06-13T00:45:33.660291Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="|" (len=1) row=Some(8) col=Some(1)
+🚨 SPECIAL CHARS DETECTED: content="|" at pos (Some(8),Some(1))
+  [0] char: '|' (U+007C)
+2025-06-13T00:45:33.660296Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=7 col=0 text="|" (len=1)
+2025-06-13T00:45:33.660299Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.660301Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=7 col=0 text="|" (len=1)
+2025-06-13T00:45:33.660304Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.660306Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x48, 0x70]
+2025-06-13T00:45:33.660309Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="|" (len=1)
+🚨 CONVERTING SPECIAL CHARS: text="|"
+  [0] ASCII byte: 0x7C (|)
+2025-06-13T00:45:33.660314Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "|" (len=1)
+2025-06-13T00:45:33.660317Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 1 bytes
+2025-06-13T00:45:33.660319Z DEBUG tn3270: 🔍 EBCDIC HEX: [4F]
+2025-06-13T00:45:33.660322Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 1 bytes
+🚨 EBCDIC CONVERSION RESULT:
+  [0] EBCDIC byte: 0x4F
+2025-06-13T00:45:33.660327Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 436 total bytes
+2025-06-13T00:45:33.660329Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.660332Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "|" at template row 8 col 1 (0-indexed: 7,0) with color=Blue bright=false blink=false underline=false
+2025-06-13T00:45:33.660336Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="Sesion iniciada:" (len=16) row=Some(8) col=Some(4)
+2025-06-13T00:45:33.660338Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=7 col=3 text="Sesion iniciada:" (len=16)
+2025-06-13T00:45:33.660341Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.660343Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=7 col=3 text="Sesion iniciada:" (len=16)
+2025-06-13T00:45:33.660346Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.660348Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x48, 0x73]
+2025-06-13T00:45:33.660351Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="Sesion iniciada:" (len=16)
+2025-06-13T00:45:33.660354Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "Sesion iniciada:" (len=16)
+2025-06-13T00:45:33.660357Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 16 bytes
+2025-06-13T00:45:33.660359Z DEBUG tn3270: 🔍 EBCDIC HEX: [E2, 85, A2, 89, 96, 95, 40, 89, 95, 89, 83, 89, 81, 84, 81, 7A]
+2025-06-13T00:45:33.660362Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 16 bytes
+2025-06-13T00:45:33.660365Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 458 total bytes
+2025-06-13T00:45:33.660367Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.660369Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "Sesion iniciada:" at template row 8 col 4 (0-indexed: 7,3) with color=Turquoise bright=false blink=false underline=false
+2025-06-13T00:45:33.660374Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.660377Z DEBUG tn3270::template_parser: Entering FieldAttributes::to_byte
+🔍 FIELD DEBUG: name=timestamp protected=true numeric=false attr=0xE0 (includes FA_PRINTABLE)
+2025-06-13T00:45:33.660381Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "2025-06-12 18:45:33" (len=19)
+2025-06-13T00:45:33.660384Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 19 bytes
+2025-06-13T00:45:33.660387Z DEBUG tn3270: 🔍 EBCDIC HEX: [F2, F0, F2, F5, 60, F0, F6, 60, F1, F2, 40, F1, F8, 7A, F4, F5, 7A, F3, F3]
+🔍 FIELD VALUE: Added default value '2025-06-12 18:45:33' + terminating protected field to protected field 'timestamp'
+2025-06-13T00:45:33.660395Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="|" (len=1) row=Some(8) col=Some(79)
+🚨 SPECIAL CHARS DETECTED: content="|" at pos (Some(8),Some(79))
+  [0] char: '|' (U+007C)
+2025-06-13T00:45:33.660401Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=7 col=78 text="|" (len=1)
+2025-06-13T00:45:33.660404Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.660406Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=7 col=78 text="|" (len=1)
+2025-06-13T00:45:33.660409Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.660412Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x49, 0x7E]
+2025-06-13T00:45:33.660414Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="|" (len=1)
+🚨 CONVERTING SPECIAL CHARS: text="|"
+  [0] ASCII byte: 0x7C (|)
+2025-06-13T00:45:33.660420Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "|" (len=1)
+2025-06-13T00:45:33.660422Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 1 bytes
+2025-06-13T00:45:33.660425Z DEBUG tn3270: 🔍 EBCDIC HEX: [4F]
+2025-06-13T00:45:33.660429Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 1 bytes
+🚨 EBCDIC CONVERSION RESULT:
+  [0] EBCDIC byte: 0x4F
+2025-06-13T00:45:33.660436Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 491 total bytes
+2025-06-13T00:45:33.660439Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.660442Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "|" at template row 8 col 79 (0-indexed: 7,78) with color=Blue bright=false blink=false underline=false
+2025-06-13T00:45:33.660447Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="|" (len=1) row=Some(9) col=Some(1)
+🚨 SPECIAL CHARS DETECTED: content="|" at pos (Some(9),Some(1))
+  [0] char: '|' (U+007C)
+2025-06-13T00:45:33.660452Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=8 col=0 text="|" (len=1)
+2025-06-13T00:45:33.660455Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.660458Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=8 col=0 text="|" (len=1)
+2025-06-13T00:45:33.660460Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.660463Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x4A, 0x40]
+2025-06-13T00:45:33.660465Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="|" (len=1)
+🚨 CONVERTING SPECIAL CHARS: text="|"
+  [0] ASCII byte: 0x7C (|)
+2025-06-13T00:45:33.660471Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "|" (len=1)
+2025-06-13T00:45:33.660473Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 1 bytes
+2025-06-13T00:45:33.660476Z DEBUG tn3270: 🔍 EBCDIC HEX: [4F]
+2025-06-13T00:45:33.660478Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 1 bytes
+🚨 EBCDIC CONVERSION RESULT:
+  [0] EBCDIC byte: 0x4F
+2025-06-13T00:45:33.660485Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 498 total bytes
+2025-06-13T00:45:33.660488Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.660491Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "|" at template row 9 col 1 (0-indexed: 8,0) with color=Blue bright=false blink=false underline=false
+2025-06-13T00:45:33.660496Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="Terminal:" (len=9) row=Some(9) col=Some(4)
+2025-06-13T00:45:33.660499Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=8 col=3 text="Terminal:" (len=9)
+2025-06-13T00:45:33.660501Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.660504Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=8 col=3 text="Terminal:" (len=9)
+2025-06-13T00:45:33.660507Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.660510Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x4A, 0x43]
+2025-06-13T00:45:33.660512Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="Terminal:" (len=9)
+2025-06-13T00:45:33.660515Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "Terminal:" (len=9)
+2025-06-13T00:45:33.660518Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 9 bytes
+2025-06-13T00:45:33.660521Z DEBUG tn3270: 🔍 EBCDIC HEX: [E3, 85, 99, 94, 89, 95, 81, 93, 7A]
+2025-06-13T00:45:33.660525Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 9 bytes
+2025-06-13T00:45:33.660528Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 513 total bytes
+2025-06-13T00:45:33.660530Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.660532Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "Terminal:" at template row 9 col 4 (0-indexed: 8,3) with color=Turquoise bright=false blink=false underline=false
+2025-06-13T00:45:33.660536Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.660539Z DEBUG tn3270::template_parser: Entering FieldAttributes::to_byte
+🔍 FIELD DEBUG: name=terminal protected=true numeric=false attr=0xE0 (includes FA_PRINTABLE)
+2025-06-13T00:45:33.660543Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "IBM-3278-2-E" (len=12)
+2025-06-13T00:45:33.660546Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 12 bytes
+2025-06-13T00:45:33.660548Z DEBUG tn3270: 🔍 EBCDIC HEX: [C9, C2, D4, 60, F3, F2, F7, F8, 60, F2, 60, C5]
+🔍 FIELD VALUE: Added default value 'IBM-3278-2-E' + terminating protected field to protected field 'terminal'
+2025-06-13T00:45:33.660554Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="|" (len=1) row=Some(9) col=Some(79)
+🚨 SPECIAL CHARS DETECTED: content="|" at pos (Some(9),Some(79))
+  [0] char: '|' (U+007C)
+2025-06-13T00:45:33.660560Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=8 col=78 text="|" (len=1)
+2025-06-13T00:45:33.660562Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.660565Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=8 col=78 text="|" (len=1)
+2025-06-13T00:45:33.660567Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.660570Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x4B, 0x4E]
+2025-06-13T00:45:33.660572Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="|" (len=1)
+🚨 CONVERTING SPECIAL CHARS: text="|"
+  [0] ASCII byte: 0x7C (|)
+2025-06-13T00:45:33.660577Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "|" (len=1)
+2025-06-13T00:45:33.660580Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 1 bytes
+2025-06-13T00:45:33.660583Z DEBUG tn3270: 🔍 EBCDIC HEX: [4F]
+2025-06-13T00:45:33.660585Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 1 bytes
+🚨 EBCDIC CONVERSION RESULT:
+  [0] EBCDIC byte: 0x4F
+2025-06-13T00:45:33.660590Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 539 total bytes
+2025-06-13T00:45:33.660593Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.660595Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "|" at template row 9 col 79 (0-indexed: 8,78) with color=Blue bright=false blink=false underline=false
+2025-06-13T00:45:33.660599Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="|" (len=1) row=Some(10) col=Some(1)
+🚨 SPECIAL CHARS DETECTED: content="|" at pos (Some(10),Some(1))
+  [0] char: '|' (U+007C)
+2025-06-13T00:45:33.660605Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=9 col=0 text="|" (len=1)
+2025-06-13T00:45:33.660607Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.660609Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=9 col=0 text="|" (len=1)
+2025-06-13T00:45:33.660612Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.660614Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x4B, 0x50]
+2025-06-13T00:45:33.660617Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="|" (len=1)
+🚨 CONVERTING SPECIAL CHARS: text="|"
+  [0] ASCII byte: 0x7C (|)
+2025-06-13T00:45:33.660622Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "|" (len=1)
+2025-06-13T00:45:33.660625Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 1 bytes
+2025-06-13T00:45:33.660627Z DEBUG tn3270: 🔍 EBCDIC HEX: [4F]
+2025-06-13T00:45:33.660630Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 1 bytes
+🚨 EBCDIC CONVERSION RESULT:
+  [0] EBCDIC byte: 0x4F
+2025-06-13T00:45:33.660635Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 546 total bytes
+2025-06-13T00:45:33.660637Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.660639Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "|" at template row 10 col 1 (0-indexed: 9,0) with color=Blue bright=false blink=false underline=false
+2025-06-13T00:45:33.660643Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="|" (len=1) row=Some(10) col=Some(79)
+🚨 SPECIAL CHARS DETECTED: content="|" at pos (Some(10),Some(79))
+  [0] char: '|' (U+007C)
+2025-06-13T00:45:33.660649Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=9 col=78 text="|" (len=1)
+2025-06-13T00:45:33.660652Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.660654Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=9 col=78 text="|" (len=1)
+2025-06-13T00:45:33.660656Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.660659Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x4C, 0x5E]
+2025-06-13T00:45:33.660661Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="|" (len=1)
+🚨 CONVERTING SPECIAL CHARS: text="|"
+  [0] ASCII byte: 0x7C (|)
+2025-06-13T00:45:33.660667Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "|" (len=1)
+2025-06-13T00:45:33.660669Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 1 bytes
+2025-06-13T00:45:33.660672Z DEBUG tn3270: 🔍 EBCDIC HEX: [4F]
+2025-06-13T00:45:33.660674Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 1 bytes
+🚨 EBCDIC CONVERSION RESULT:
+  [0] EBCDIC byte: 0x4F
+2025-06-13T00:45:33.660679Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 553 total bytes
+2025-06-13T00:45:33.660682Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.660684Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "|" at template row 10 col 79 (0-indexed: 9,78) with color=Blue bright=false blink=false underline=false
+2025-06-13T00:45:33.660688Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="+=============================================================================+" (len=79) row=Some(11) col=Some(1)
+🚨 SPECIAL CHARS DETECTED: content="+=============================================================================+" at pos (Some(11),Some(1))
+  [0] char: '+' (U+002B)
+  [1] char: '=' (U+003D)
+  [2] char: '=' (U+003D)
+  [3] char: '=' (U+003D)
+  [4] char: '=' (U+003D)
+  [5] char: '=' (U+003D)
+  [6] char: '=' (U+003D)
+  [7] char: '=' (U+003D)
+  [8] char: '=' (U+003D)
+  [9] char: '=' (U+003D)
+  [10] char: '=' (U+003D)
+  [11] char: '=' (U+003D)
+  [12] char: '=' (U+003D)
+  [13] char: '=' (U+003D)
+  [14] char: '=' (U+003D)
+  [15] char: '=' (U+003D)
+  [16] char: '=' (U+003D)
+  [17] char: '=' (U+003D)
+  [18] char: '=' (U+003D)
+  [19] char: '=' (U+003D)
+  [20] char: '=' (U+003D)
+  [21] char: '=' (U+003D)
+  [22] char: '=' (U+003D)
+  [23] char: '=' (U+003D)
+  [24] char: '=' (U+003D)
+  [25] char: '=' (U+003D)
+  [26] char: '=' (U+003D)
+  [27] char: '=' (U+003D)
+  [28] char: '=' (U+003D)
+  [29] char: '=' (U+003D)
+  [30] char: '=' (U+003D)
+  [31] char: '=' (U+003D)
+  [32] char: '=' (U+003D)
+  [33] char: '=' (U+003D)
+  [34] char: '=' (U+003D)
+  [35] char: '=' (U+003D)
+  [36] char: '=' (U+003D)
+  [37] char: '=' (U+003D)
+  [38] char: '=' (U+003D)
+  [39] char: '=' (U+003D)
+  [40] char: '=' (U+003D)
+  [41] char: '=' (U+003D)
+  [42] char: '=' (U+003D)
+  [43] char: '=' (U+003D)
+  [44] char: '=' (U+003D)
+  [45] char: '=' (U+003D)
+  [46] char: '=' (U+003D)
+  [47] char: '=' (U+003D)
+  [48] char: '=' (U+003D)
+  [49] char: '=' (U+003D)
+  [50] char: '=' (U+003D)
+  [51] char: '=' (U+003D)
+  [52] char: '=' (U+003D)
+  [53] char: '=' (U+003D)
+  [54] char: '=' (U+003D)
+  [55] char: '=' (U+003D)
+  [56] char: '=' (U+003D)
+  [57] char: '=' (U+003D)
+  [58] char: '=' (U+003D)
+  [59] char: '=' (U+003D)
+  [60] char: '=' (U+003D)
+  [61] char: '=' (U+003D)
+  [62] char: '=' (U+003D)
+  [63] char: '=' (U+003D)
+  [64] char: '=' (U+003D)
+  [65] char: '=' (U+003D)
+  [66] char: '=' (U+003D)
+  [67] char: '=' (U+003D)
+  [68] char: '=' (U+003D)
+  [69] char: '=' (U+003D)
+  [70] char: '=' (U+003D)
+  [71] char: '=' (U+003D)
+  [72] char: '=' (U+003D)
+  [73] char: '=' (U+003D)
+  [74] char: '=' (U+003D)
+  [75] char: '=' (U+003D)
+  [76] char: '=' (U+003D)
+  [77] char: '=' (U+003D)
+  [78] char: '+' (U+002B)
+2025-06-13T00:45:33.660800Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=10 col=0 text="+=============================================================================+" (len=79)
+2025-06-13T00:45:33.660803Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.660805Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=10 col=0 text="+=============================================================================+" (len=79)
+2025-06-13T00:45:33.660808Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.660810Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x4C, 0x60]
+2025-06-13T00:45:33.660813Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="+=============================================================================+" (len=79)
+🚨 CONVERTING SPECIAL CHARS: text="+=============================================================================+"
+  [0] ASCII byte: 0x2B (+)
+  [1] ASCII byte: 0x3D (=)
+  [2] ASCII byte: 0x3D (=)
+  [3] ASCII byte: 0x3D (=)
+  [4] ASCII byte: 0x3D (=)
+  [5] ASCII byte: 0x3D (=)
+  [6] ASCII byte: 0x3D (=)
+  [7] ASCII byte: 0x3D (=)
+  [8] ASCII byte: 0x3D (=)
+  [9] ASCII byte: 0x3D (=)
+  [10] ASCII byte: 0x3D (=)
+  [11] ASCII byte: 0x3D (=)
+  [12] ASCII byte: 0x3D (=)
+  [13] ASCII byte: 0x3D (=)
+  [14] ASCII byte: 0x3D (=)
+  [15] ASCII byte: 0x3D (=)
+  [16] ASCII byte: 0x3D (=)
+  [17] ASCII byte: 0x3D (=)
+  [18] ASCII byte: 0x3D (=)
+  [19] ASCII byte: 0x3D (=)
+  [20] ASCII byte: 0x3D (=)
+  [21] ASCII byte: 0x3D (=)
+  [22] ASCII byte: 0x3D (=)
+  [23] ASCII byte: 0x3D (=)
+  [24] ASCII byte: 0x3D (=)
+  [25] ASCII byte: 0x3D (=)
+  [26] ASCII byte: 0x3D (=)
+  [27] ASCII byte: 0x3D (=)
+  [28] ASCII byte: 0x3D (=)
+  [29] ASCII byte: 0x3D (=)
+  [30] ASCII byte: 0x3D (=)
+  [31] ASCII byte: 0x3D (=)
+  [32] ASCII byte: 0x3D (=)
+  [33] ASCII byte: 0x3D (=)
+  [34] ASCII byte: 0x3D (=)
+  [35] ASCII byte: 0x3D (=)
+  [36] ASCII byte: 0x3D (=)
+  [37] ASCII byte: 0x3D (=)
+  [38] ASCII byte: 0x3D (=)
+  [39] ASCII byte: 0x3D (=)
+  [40] ASCII byte: 0x3D (=)
+  [41] ASCII byte: 0x3D (=)
+  [42] ASCII byte: 0x3D (=)
+  [43] ASCII byte: 0x3D (=)
+  [44] ASCII byte: 0x3D (=)
+  [45] ASCII byte: 0x3D (=)
+  [46] ASCII byte: 0x3D (=)
+  [47] ASCII byte: 0x3D (=)
+  [48] ASCII byte: 0x3D (=)
+  [49] ASCII byte: 0x3D (=)
+  [50] ASCII byte: 0x3D (=)
+  [51] ASCII byte: 0x3D (=)
+  [52] ASCII byte: 0x3D (=)
+  [53] ASCII byte: 0x3D (=)
+  [54] ASCII byte: 0x3D (=)
+  [55] ASCII byte: 0x3D (=)
+  [56] ASCII byte: 0x3D (=)
+  [57] ASCII byte: 0x3D (=)
+  [58] ASCII byte: 0x3D (=)
+  [59] ASCII byte: 0x3D (=)
+  [60] ASCII byte: 0x3D (=)
+  [61] ASCII byte: 0x3D (=)
+  [62] ASCII byte: 0x3D (=)
+  [63] ASCII byte: 0x3D (=)
+  [64] ASCII byte: 0x3D (=)
+  [65] ASCII byte: 0x3D (=)
+  [66] ASCII byte: 0x3D (=)
+  [67] ASCII byte: 0x3D (=)
+  [68] ASCII byte: 0x3D (=)
+  [69] ASCII byte: 0x3D (=)
+  [70] ASCII byte: 0x3D (=)
+  [71] ASCII byte: 0x3D (=)
+  [72] ASCII byte: 0x3D (=)
+  [73] ASCII byte: 0x3D (=)
+  [74] ASCII byte: 0x3D (=)
+  [75] ASCII byte: 0x3D (=)
+  [76] ASCII byte: 0x3D (=)
+  [77] ASCII byte: 0x3D (=)
+  [78] ASCII byte: 0x2B (+)
+2025-06-13T00:45:33.660923Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "+=============================================================================+" (len=79)
+2025-06-13T00:45:33.660927Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 79 bytes
+2025-06-13T00:45:33.660929Z DEBUG tn3270: 🔍 EBCDIC HEX: [4E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 4E]
+2025-06-13T00:45:33.660933Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 79 bytes
+🚨 EBCDIC CONVERSION RESULT:
+  [0] EBCDIC byte: 0x4E
+  [1] EBCDIC byte: 0x7E
+  [2] EBCDIC byte: 0x7E
+  [3] EBCDIC byte: 0x7E
+  [4] EBCDIC byte: 0x7E
+  [5] EBCDIC byte: 0x7E
+  [6] EBCDIC byte: 0x7E
+  [7] EBCDIC byte: 0x7E
+  [8] EBCDIC byte: 0x7E
+  [9] EBCDIC byte: 0x7E
+  [10] EBCDIC byte: 0x7E
+  [11] EBCDIC byte: 0x7E
+  [12] EBCDIC byte: 0x7E
+  [13] EBCDIC byte: 0x7E
+  [14] EBCDIC byte: 0x7E
+  [15] EBCDIC byte: 0x7E
+  [16] EBCDIC byte: 0x7E
+  [17] EBCDIC byte: 0x7E
+  [18] EBCDIC byte: 0x7E
+  [19] EBCDIC byte: 0x7E
+  [20] EBCDIC byte: 0x7E
+  [21] EBCDIC byte: 0x7E
+  [22] EBCDIC byte: 0x7E
+  [23] EBCDIC byte: 0x7E
+  [24] EBCDIC byte: 0x7E
+  [25] EBCDIC byte: 0x7E
+  [26] EBCDIC byte: 0x7E
+  [27] EBCDIC byte: 0x7E
+  [28] EBCDIC byte: 0x7E
+  [29] EBCDIC byte: 0x7E
+  [30] EBCDIC byte: 0x7E
+  [31] EBCDIC byte: 0x7E
+  [32] EBCDIC byte: 0x7E
+  [33] EBCDIC byte: 0x7E
+  [34] EBCDIC byte: 0x7E
+  [35] EBCDIC byte: 0x7E
+  [36] EBCDIC byte: 0x7E
+  [37] EBCDIC byte: 0x7E
+  [38] EBCDIC byte: 0x7E
+  [39] EBCDIC byte: 0x7E
+  [40] EBCDIC byte: 0x7E
+  [41] EBCDIC byte: 0x7E
+  [42] EBCDIC byte: 0x7E
+  [43] EBCDIC byte: 0x7E
+  [44] EBCDIC byte: 0x7E
+  [45] EBCDIC byte: 0x7E
+  [46] EBCDIC byte: 0x7E
+  [47] EBCDIC byte: 0x7E
+  [48] EBCDIC byte: 0x7E
+  [49] EBCDIC byte: 0x7E
+  [50] EBCDIC byte: 0x7E
+  [51] EBCDIC byte: 0x7E
+  [52] EBCDIC byte: 0x7E
+  [53] EBCDIC byte: 0x7E
+  [54] EBCDIC byte: 0x7E
+  [55] EBCDIC byte: 0x7E
+  [56] EBCDIC byte: 0x7E
+  [57] EBCDIC byte: 0x7E
+  [58] EBCDIC byte: 0x7E
+  [59] EBCDIC byte: 0x7E
+  [60] EBCDIC byte: 0x7E
+  [61] EBCDIC byte: 0x7E
+  [62] EBCDIC byte: 0x7E
+  [63] EBCDIC byte: 0x7E
+  [64] EBCDIC byte: 0x7E
+  [65] EBCDIC byte: 0x7E
+  [66] EBCDIC byte: 0x7E
+  [67] EBCDIC byte: 0x7E
+  [68] EBCDIC byte: 0x7E
+  [69] EBCDIC byte: 0x7E
+  [70] EBCDIC byte: 0x7E
+  [71] EBCDIC byte: 0x7E
+  [72] EBCDIC byte: 0x7E
+  [73] EBCDIC byte: 0x7E
+  [74] EBCDIC byte: 0x7E
+  [75] EBCDIC byte: 0x7E
+  [76] EBCDIC byte: 0x7E
+  [77] EBCDIC byte: 0x7E
+  [78] EBCDIC byte: 0x4E
+2025-06-13T00:45:33.661041Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 638 total bytes
+2025-06-13T00:45:33.661043Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.661046Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "+=============================================================================+" at template row 11 col 1 (0-indexed: 10,0) with color=Blue bright=false blink=false underline=false
+2025-06-13T00:45:33.661050Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="Comandos disponibles:" (len=21) row=Some(13) col=Some(4)
+2025-06-13T00:45:33.661053Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=12 col=3 text="Comandos disponibles:" (len=21)
+2025-06-13T00:45:33.661055Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.661058Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=12 col=3 text="Comandos disponibles:" (len=21)
+2025-06-13T00:45:33.661060Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.661063Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x4F, 0x43]
+2025-06-13T00:45:33.661065Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="Comandos disponibles:" (len=21)
+2025-06-13T00:45:33.661071Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "Comandos disponibles:" (len=21)
+2025-06-13T00:45:33.661074Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 21 bytes
+2025-06-13T00:45:33.661077Z DEBUG tn3270: 🔍 EBCDIC HEX: [C3, 96, 94, 81, 95, 84, 96, A2, 40, 84, 89, A2, 97, 96, 95, 89, 82, 93, 85, A2, 7A]
+2025-06-13T00:45:33.661080Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 21 bytes
+2025-06-13T00:45:33.661082Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 668 total bytes
+2025-06-13T00:45:33.661085Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.661087Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "Comandos disponibles:" at template row 13 col 4 (0-indexed: 12,3) with color=White bright=true blink=false underline=false
+2025-06-13T00:45:33.661092Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="> MENU     - Mostrar menu principal de opciones" (len=47) row=Some(14) col=Some(7)
+2025-06-13T00:45:33.661094Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=13 col=6 text="> MENU     - Mostrar menu principal de opciones" (len=47)
+2025-06-13T00:45:33.661098Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.661101Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=13 col=6 text="> MENU     - Mostrar menu principal de opciones" (len=47)
+2025-06-13T00:45:33.661104Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.661107Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x50, 0x56]
+2025-06-13T00:45:33.661110Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="> MENU     - Mostrar menu principal de opciones" (len=47)
+2025-06-13T00:45:33.661113Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "> MENU     - Mostrar menu principal de opciones" (len=47)
+2025-06-13T00:45:33.661117Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 47 bytes
+2025-06-13T00:45:33.661120Z DEBUG tn3270: 🔍 EBCDIC HEX: [6E, 40, D4, C5, D5, E4, 40, 40, 40, 40, 40, 60, 40, D4, 96, A2, A3, 99, 81, 99, 40, 94, 85, 95, A4, 40, 97, 99, 89, 95, 83, 89, 97, 81, 93, 40, 84, 85, 40, 96, 97, 83, 89, 96, 95, 85, A2]
+2025-06-13T00:45:33.661123Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 47 bytes
+2025-06-13T00:45:33.661126Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 721 total bytes
+2025-06-13T00:45:33.661128Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.661131Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "> MENU     - Mostrar menu principal de opciones" at template row 14 col 7 (0-indexed: 13,6) with color=Turquoise bright=false blink=false underline=false
+2025-06-13T00:45:33.661135Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="> STATUS   - Ver estado detallado del sistema" (len=45) row=Some(15) col=Some(7)
+2025-06-13T00:45:33.661138Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=14 col=6 text="> STATUS   - Ver estado detallado del sistema" (len=45)
+2025-06-13T00:45:33.661141Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.661143Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=14 col=6 text="> STATUS   - Ver estado detallado del sistema" (len=45)
+2025-06-13T00:45:33.661146Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.661148Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x51, 0x66]
+2025-06-13T00:45:33.661151Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="> STATUS   - Ver estado detallado del sistema" (len=45)
+2025-06-13T00:45:33.661154Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "> STATUS   - Ver estado detallado del sistema" (len=45)
+2025-06-13T00:45:33.661158Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 45 bytes
+2025-06-13T00:45:33.661161Z DEBUG tn3270: 🔍 EBCDIC HEX: [6E, 40, E2, E3, C1, E3, E4, E2, 40, 40, 40, 60, 40, E5, 85, 99, 40, 85, A2, A3, 81, 84, 96, 40, 84, 85, A3, 81, 93, 93, 81, 84, 96, 40, 84, 85, 93, 40, A2, 89, A2, A3, 85, 94, 81]
+2025-06-13T00:45:33.661165Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 45 bytes
+2025-06-13T00:45:33.661168Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 772 total bytes
+2025-06-13T00:45:33.661171Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.661174Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "> STATUS   - Ver estado detallado del sistema" at template row 15 col 7 (0-indexed: 14,6) with color=Turquoise bright=false blink=false underline=false
+2025-06-13T00:45:33.661178Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="> TRANS    - Ejecutar transaccion CICS" (len=38) row=Some(16) col=Some(7)
+2025-06-13T00:45:33.661181Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=15 col=6 text="> TRANS    - Ejecutar transaccion CICS" (len=38)
+2025-06-13T00:45:33.661184Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.661186Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=15 col=6 text="> TRANS    - Ejecutar transaccion CICS" (len=38)
+2025-06-13T00:45:33.661189Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.661191Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x52, 0x76]
+2025-06-13T00:45:33.661194Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="> TRANS    - Ejecutar transaccion CICS" (len=38)
+2025-06-13T00:45:33.661196Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "> TRANS    - Ejecutar transaccion CICS" (len=38)
+2025-06-13T00:45:33.661200Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 38 bytes
+2025-06-13T00:45:33.661202Z DEBUG tn3270: 🔍 EBCDIC HEX: [6E, 40, E3, D9, C1, D5, E2, 40, 40, 40, 40, 60, 40, C5, 91, 85, 83, A4, A3, 81, 99, 40, A3, 99, 81, 95, A2, 81, 83, 83, 89, 96, 95, 40, C3, C9, C3, E2]
+2025-06-13T00:45:33.661205Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 38 bytes
+2025-06-13T00:45:33.661208Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 816 total bytes
+2025-06-13T00:45:33.661210Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.661213Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "> TRANS    - Ejecutar transaccion CICS" at template row 16 col 7 (0-indexed: 15,6) with color=Turquoise bright=false blink=false underline=false
+2025-06-13T00:45:33.661217Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="> HELP     - Mostrar ayuda del sistema" (len=38) row=Some(17) col=Some(7)
+2025-06-13T00:45:33.661219Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=16 col=6 text="> HELP     - Mostrar ayuda del sistema" (len=38)
+2025-06-13T00:45:33.661222Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.661224Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=16 col=6 text="> HELP     - Mostrar ayuda del sistema" (len=38)
+2025-06-13T00:45:33.661227Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.661229Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x54, 0x46]
+2025-06-13T00:45:33.661232Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="> HELP     - Mostrar ayuda del sistema" (len=38)
+2025-06-13T00:45:33.661234Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "> HELP     - Mostrar ayuda del sistema" (len=38)
+2025-06-13T00:45:33.661238Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 38 bytes
+2025-06-13T00:45:33.661240Z DEBUG tn3270: 🔍 EBCDIC HEX: [6E, 40, C8, C5, D3, D7, 40, 40, 40, 40, 40, 60, 40, D4, 96, A2, A3, 99, 81, 99, 40, 81, A8, A4, 84, 81, 40, 84, 85, 93, 40, A2, 89, A2, A3, 85, 94, 81]
+2025-06-13T00:45:33.661243Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 38 bytes
+2025-06-13T00:45:33.661246Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 860 total bytes
+2025-06-13T00:45:33.661248Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.661251Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "> HELP     - Mostrar ayuda del sistema" at template row 17 col 7 (0-indexed: 16,6) with color=Turquoise bright=false blink=false underline=false
+2025-06-13T00:45:33.661255Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="> EXIT     - Salir del sistema" (len=30) row=Some(18) col=Some(7)
+2025-06-13T00:45:33.661257Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=17 col=6 text="> EXIT     - Salir del sistema" (len=30)
+2025-06-13T00:45:33.661260Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.661262Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=17 col=6 text="> EXIT     - Salir del sistema" (len=30)
+2025-06-13T00:45:33.661265Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.661267Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x55, 0x56]
+2025-06-13T00:45:33.661270Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="> EXIT     - Salir del sistema" (len=30)
+2025-06-13T00:45:33.661272Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "> EXIT     - Salir del sistema" (len=30)
+2025-06-13T00:45:33.661276Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 30 bytes
+2025-06-13T00:45:33.661278Z DEBUG tn3270: 🔍 EBCDIC HEX: [6E, 40, C5, E7, C9, E3, 40, 40, 40, 40, 40, 60, 40, E2, 81, 93, 89, 99, 40, 84, 85, 93, 40, A2, 89, A2, A3, 85, 94, 81]
+2025-06-13T00:45:33.661281Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 30 bytes
+2025-06-13T00:45:33.661284Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 896 total bytes
+2025-06-13T00:45:33.661287Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.661289Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "> EXIT     - Salir del sistema" at template row 18 col 7 (0-indexed: 17,6) with color=Turquoise bright=false blink=false underline=false
+2025-06-13T00:45:33.661294Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content="COMANDO === " (len=12) row=Some(21) col=Some(1)
+2025-06-13T00:45:33.661296Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=20 col=0 text="COMANDO === " (len=12)
+2025-06-13T00:45:33.661299Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.661301Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=20 col=0 text="COMANDO === " (len=12)
+2025-06-13T00:45:33.661304Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.661306Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x59, 0x40]
+2025-06-13T00:45:33.661308Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text="COMANDO === " (len=12)
+🚨 CONVERTING SPECIAL CHARS: text="COMANDO === "
+  [0] ASCII byte: 0x43 (C)
+  [1] ASCII byte: 0x4F (O)
+  [2] ASCII byte: 0x4D (M)
+  [3] ASCII byte: 0x41 (A)
+  [4] ASCII byte: 0x4E (N)
+  [5] ASCII byte: 0x44 (D)
+  [6] ASCII byte: 0x4F (O)
+  [7] ASCII byte: 0x20 ( )
+  [8] ASCII byte: 0x3D (=)
+  [9] ASCII byte: 0x3D (=)
+  [10] ASCII byte: 0x3D (=)
+  [11] ASCII byte: 0x20 ( )
+2025-06-13T00:45:33.661329Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: "COMANDO === " (len=12)
+2025-06-13T00:45:33.661332Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 12 bytes
+2025-06-13T00:45:33.661334Z DEBUG tn3270: 🔍 EBCDIC HEX: [C3, D6, D4, C1, D5, C4, D6, 40, 7E, 7E, 7E, 40]
+2025-06-13T00:45:33.661337Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 12 bytes
+🚨 EBCDIC CONVERSION RESULT:
+  [0] EBCDIC byte: 0xC3
+  [1] EBCDIC byte: 0xD6
+  [2] EBCDIC byte: 0xD4
+  [3] EBCDIC byte: 0xC1
+  [4] EBCDIC byte: 0xD5
+  [5] EBCDIC byte: 0xC4
+  [6] EBCDIC byte: 0xD6
+  [7] EBCDIC byte: 0x40
+  [8] EBCDIC byte: 0x7E
+  [9] EBCDIC byte: 0x7E
+  [10] EBCDIC byte: 0x7E
+  [11] EBCDIC byte: 0x40
+2025-06-13T00:45:33.661357Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 914 total bytes
+2025-06-13T00:45:33.661359Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.661362Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: "COMANDO === " at template row 21 col 1 (0-indexed: 20,0) with color=Pink bright=false blink=false underline=false
+2025-06-13T00:45:33.661366Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content=">" (len=1) row=Some(21) col=Some(13)
+2025-06-13T00:45:33.661369Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=20 col=12 text=">" (len=1)
+2025-06-13T00:45:33.661371Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.661374Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=20 col=12 text=">" (len=1)
+2025-06-13T00:45:33.661376Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.661379Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x59, 0x4C]
+2025-06-13T00:45:33.661381Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text=">" (len=1)
+2025-06-13T00:45:33.661384Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: ">" (len=1)
+2025-06-13T00:45:33.661387Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 1 bytes
+2025-06-13T00:45:33.661389Z DEBUG tn3270: 🔍 EBCDIC HEX: [6E]
+2025-06-13T00:45:33.661392Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 1 bytes
+2025-06-13T00:45:33.661394Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 921 total bytes
+2025-06-13T00:45:33.661397Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.661399Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: ">" at template row 21 col 13 (0-indexed: 20,12) with color=Yellow bright=false blink=false underline=false
+2025-06-13T00:45:33.661403Z DEBUG tn3270::tn3270_screens: 🔍 PROCESSING TEXT ELEMENT: content=" " (len=1) row=Some(21) col=Some(14)
+2025-06-13T00:45:33.661406Z DEBUG tn3270::tn3270_screens: 🔍 CALLING add_positioned_colored_text with: row=20 col=13 text=" " (len=1)
+2025-06-13T00:45:33.661408Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::add_positioned_colored_text
+2025-06-13T00:45:33.661411Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text ENTRY: row=20 col=13 text=" " (len=1)
+2025-06-13T00:45:33.661413Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.661415Z DEBUG tn3270::tn3270_screens: 🔍 SBA added: [0x11, 0x59, 0x4D]
+2025-06-13T00:45:33.661418Z DEBUG tn3270::tn3270_screens: 🔍 BEFORE EBCDIC CONVERSION: text=" " (len=1)
+2025-06-13T00:45:33.661420Z DEBUG tn3270: 🔍 EBCDIC CONVERSION INPUT: " " (len=1)
+2025-06-13T00:45:33.661423Z DEBUG tn3270: 🔍 EBCDIC CONVERSION OUTPUT: 1 bytes
+2025-06-13T00:45:33.661425Z DEBUG tn3270: 🔍 EBCDIC HEX: [40]
+2025-06-13T00:45:33.661428Z DEBUG tn3270::tn3270_screens: 🔍 AFTER EBCDIC CONVERSION: 1 bytes
+2025-06-13T00:45:33.661430Z DEBUG tn3270::tn3270_screens: 🔍 SCREEN DATA AFTER ADDING TEXT: 925 total bytes
+2025-06-13T00:45:33.661433Z DEBUG tn3270::tn3270_screens: 🔍 add_positioned_colored_text COMPLETE
+2025-06-13T00:45:33.661435Z DEBUG tn3270::tn3270_screens: 🔍 COMPLETED add_positioned_colored_text
+🔍 DEBUG: Added colored text: " " at template row 21 col 14 (0-indexed: 20,13) with color=Default bright=false blink=false underline=false
+2025-06-13T00:45:33.661440Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.661443Z DEBUG tn3270::template_parser: Entering FieldAttributes::to_byte
+🔍 FIELD DEBUG: name=command protected=false numeric=false attr=0xC4 (includes FA_PRINTABLE)
+🔍 FIELD TERMINATION: Added 20 EBCDIC spaces + terminating protected field for unprotected field 'command'
+2025-06-13T00:45:33.661451Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+2025-06-13T00:45:33.661455Z DEBUG tn3270::field_navigation: Initializing FieldNavigator from FieldManager
+2025-06-13T00:45:33.661471Z DEBUG tn3270::field_navigation: Found 3 total fields in FieldManager
+2025-06-13T00:45:33.661474Z DEBUG tn3270::field_navigation: Added input field: 'command' at (20,14) length=20
+2025-06-13T00:45:33.661478Z DEBUG tn3270::field_navigation: Sorted 1 input fields by position
+2025-06-13T00:45:33.661481Z DEBUG tn3270::field_navigation: Positioned cursor at first input field 'command' - cursor at (20,15)
+2025-06-13T00:45:33.661485Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::encode_buffer_addr
+🔍 CURSOR POSITIONED: Field 'command' data area at TN3270 position (21,16) -> buffer (21,16)
+2025-06-13T00:45:33.661490Z DEBUG tn3270::tn3270_screens: Generic screen generated from welcome
+2025-06-13T00:45:33.661493Z DEBUG tn3270::tn3270_screens: Total elements: 38
+2025-06-13T00:45:33.661499Z DEBUG tn3270::tn3270_screens: Fields: 3
+2025-06-13T00:45:33.661502Z DEBUG tn3270::tn3270_screens: Bytes: 961
+[tn3270][SEND] TN3270E DATA (seq: 0, total 968 bytes)
+[tn3270][SEND] TN3270E Header: [00, 00, 00, 00, 00]
+[tn3270][SEND] 3270 Data (full): [F5, FE, 11, 40, 40, 1D, E0, D4, C5, E3, C1, C4, C1, E3, C1, 40, D7, 81, 95, A3, 81, 93, 93, 81, 40, 84, 85, 40, 82, 89, 85, 95, A5, 85, 95, 89, 84, 81, 40, 81, 93, 40, A2, 89, A2, A3, 85, 94, 81, 40, D5, C5, D6, F6, BD, 11, 40, 40, 28, 42, F1, 4E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 4E, 11, 41, 50, 28, 42, F1, 4F, 11, 41, 68, 28, 42, F6, 28, 41, F8, C1, C3, C3, C5, E2, D6, 40, E3, D5, F3, F2, F7, F0, 40, C1, 40, C5, D5, E3, D6, D9, D5, D6, 40, D5, C5, D6, F6, 11, 42, 5E, 28, 42, F1, 4F, 11, 42, 60, 28, 42, F1, 4E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 4E, 11, 43, 70, 28, 42, F1, 4F, 11, 44, 7E, 28, 42, F1, 4F, 11, 45, 40, 28, 42, F1, 4F, 11, 45, 46, 28, 42, F7, C2, 89, 85, 95, A5, 85, 95, 89, 84, 96, 40, 81, 93, 40, E2, 89, A2, A3, 85, 94, 81, 40, D5, C5, D6, F6, 40, 60, 40, D7, 93, 81, A3, 81, 86, 96, 99, 94, 81, 40, 84, 85, 40, C9, 95, A3, 85, 87, 99, 81, 83, 89, 96, 95, 11, 46, 4E, 28, 42, F1, 4F, 11, 46, 50, 28, 42, F1, 4F, 11, 47, 5E, 28, 42, F1, 4F, 11, 47, 60, 28, 42, F1, 4F, 11, 47, 63, 28, 42, F5, C5, A2, A3, 81, 84, 96, 40, 84, 85, 93, 40, A2, 89, A2, A3, 85, 94, 81, 7A, 11, 47, 78, 28, 42, F4, C1, C3, E3, C9, E5, D6, 11, 48, 6E, 28, 42, F1, 4F, 11, 48, 70, 28, 42, F1, 4F, 11, 48, 73, 28, 42, F5, E2, 85, A2, 89, 96, 95, 40, 89, 95, 89, 83, 89, 81, 84, 81, 7A, 11, 49, 47, 1D, E0, F2, F0, F2, F5, 60, F0, F6, 60, F1, F2, 40, F1, F8, 7A, F4, F5, 7A, F3, F3, 1D, E0, 11, 49, 7E, 28, 42, F1, 4F, 11, 4A, 40, 28, 42, F1, 4F, 11, 4A, 43, 28, 42, F5, E3, 85, 99, 94, 89, 95, 81, 93, 7A, 11, 4A, 57, 1D, E0, C9, C2, D4, 60, F3, F2, F7, F8, 60, F2, 60, C5, 1D, E0, 11, 4B, 4E, 28, 42, F1, 4F, 11, 4B, 50, 28, 42, F1, 4F, 11, 4C, 5E, 28, 42, F1, 4F, 11, 4C, 60, 28, 42, F1, 4E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 7E, 4E, 11, 4F, 43, 28, 42, F7, 28, 41, F8, C3, 96, 94, 81, 95, 84, 96, A2, 40, 84, 89, A2, 97, 96, 95, 89, 82, 93, 85, A2, 7A, 11, 50, 56, 28, 42, F5, 6E, 40, D4, C5, D5, E4, 40, 40, 40, 40, 40, 60, 40, D4, 96, A2, A3, 99, 81, 99, 40, 94, 85, 95, A4, 40, 97, 99, 89, 95, 83, 89, 97, 81, 93, 40, 84, 85, 40, 96, 97, 83, 89, 96, 95, 85, A2, 11, 51, 66, 28, 42, F5, 6E, 40, E2, E3, C1, E3, E4, E2, 40, 40, 40, 60, 40, E5, 85, 99, 40, 85, A2, A3, 81, 84, 96, 40, 84, 85, A3, 81, 93, 93, 81, 84, 96, 40, 84, 85, 93, 40, A2, 89, A2, A3, 85, 94, 81, 11, 52, 76, 28, 42, F5, 6E, 40, E3, D9, C1, D5, E2, 40, 40, 40, 40, 60, 40, C5, 91, 85, 83, A4, A3, 81, 99, 40, A3, 99, 81, 95, A2, 81, 83, 83, 89, 96, 95, 40, C3, C9, C3, E2, 11, 54, 46, 28, 42, F5, 6E, 40, C8, C5, D3, D7, 40, 40, 40, 40, 40, 60, 40, D4, 96, A2, A3, 99, 81, 99, 40, 81, A8, A4, 84, 81, 40, 84, 85, 93, 40, A2, 89, A2, A3, 85, 94, 81, 11, 55, 56, 28, 42, F5, 6E, 40, C5, E7, C9, E3, 40, 40, 40, 40, 40, 60, 40, E2, 81, 93, 89, 99, 40, 84, 85, 93, 40, A2, 89, A2, A3, 85, 94, 81, 11, 59, 40, 28, 42, F3, C3, D6, D4, C1, D5, C4, D6, 40, 7E, 7E, 7E, 40, 11, 59, 4C, 28, 42, F6, 6E, 11, 59, 4D, 40, 11, 59, 4E, 1D, C4, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 1D, E0, 11, 5D, 7F, 1D, E0, 11, 59, 4F, 13]
+[tn3270][SEND] 3270 Command: F5 (Erase/Write), WCC: FE
+[tn3270][SEND] 3270 Data structure: [11, 40, 40, 1D, E0, D4, C5, E3, C1, C4, C1, E3, C1, 40, D7, 81, 95, A3]...
+2025-06-13T00:45:33.661590Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::mark_screen_sent
+[tn3270][DEBUG] Pantalla inicial enviada. Manteniendo conexión abierta para entrada del usuario.
+2025-06-13T00:45:33.661596Z DEBUG tn3270: Sesión TN3270E bound completada, esperando entrada del usuario.
+2025-06-13T00:45:33.661601Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras procesar buffer: base_ready=true, tn3270e_enabled=false, binary_negotiated=true, eor_negotiated=true, tn3270e_negotiated=true, connect_sent=true
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T00:45:33.661608Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready_for_screen: true
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: true
+2025-06-13T00:45:33.661617Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] NO se enviará pantalla. Razones:
+2025-06-13T00:45:33.661621Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready: true
+[tn3270][DEBUG]   classic_ready: false
+2025-06-13T00:45:33.661628Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][RECV] Raw data (2 bytes): [FF, F1]
+[tn3270][RECV] handle_negotiation: buffer size=2, data=[FF, F1]
+[tn3270][DEBUG] Recibido IAC NOP (comando Telnet, no necesita respuesta)
+2025-06-13T00:45:40.868265Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras procesar buffer: base_ready=true, tn3270e_enabled=false, binary_negotiated=true, eor_negotiated=true, tn3270e_negotiated=true, connect_sent=true
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T00:45:40.868295Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready_for_screen: true
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: true
+2025-06-13T00:45:40.868318Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] NO se enviará pantalla. Razones:
+2025-06-13T00:45:40.868327Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready: true
+[tn3270][DEBUG]   classic_ready: false
+2025-06-13T00:45:40.868343Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][RECV] Raw data (2 bytes): [FF, F1]
+[tn3270][RECV] handle_negotiation: buffer size=2, data=[FF, F1]
+[tn3270][DEBUG] Recibido IAC NOP (comando Telnet, no necesita respuesta)
+2025-06-13T00:45:50.969518Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras procesar buffer: base_ready=true, tn3270e_enabled=false, binary_negotiated=true, eor_negotiated=true, tn3270e_negotiated=true, connect_sent=true
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T00:45:50.969563Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready_for_screen: true
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: true
+2025-06-13T00:45:50.969599Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] NO se enviará pantalla. Razones:
+2025-06-13T00:45:50.969613Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready: true
+[tn3270][DEBUG]   classic_ready: false
+2025-06-13T00:45:50.969637Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+2025-06-13T00:45:55.297570Z DEBUG neo6_proxy: Listener tn3270 nativo sigue activo...
+[tn3270][RECV] Raw data (2 bytes): [FF, F1]
+[tn3270][RECV] handle_negotiation: buffer size=2, data=[FF, F1]
+[tn3270][DEBUG] Recibido IAC NOP (comando Telnet, no necesita respuesta)
+2025-06-13T00:46:46.707093Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras procesar buffer: base_ready=true, tn3270e_enabled=false, binary_negotiated=true, eor_negotiated=true, tn3270e_negotiated=true, connect_sent=true
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T00:46:46.707123Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready_for_screen: true
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: true
+2025-06-13T00:46:46.707145Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] NO se enviará pantalla. Razones:
+2025-06-13T00:46:46.707153Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready: true
+[tn3270][DEBUG]   classic_ready: false
+2025-06-13T00:46:46.707168Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][RECV] Raw data (2 bytes): [FF, F1]
+[tn3270][RECV] handle_negotiation: buffer size=2, data=[FF, F1]
+[tn3270][DEBUG] Recibido IAC NOP (comando Telnet, no necesita respuesta)
+2025-06-13T00:46:56.794836Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras procesar buffer: base_ready=true, tn3270e_enabled=false, binary_negotiated=true, eor_negotiated=true, tn3270e_negotiated=true, connect_sent=true
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T00:46:56.794918Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready_for_screen: true
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: true
+2025-06-13T00:46:56.795005Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] NO se enviará pantalla. Razones:
+2025-06-13T00:46:56.795042Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready: true
+[tn3270][DEBUG]   classic_ready: false
+2025-06-13T00:46:56.795103Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][RECV] Raw data (2 bytes): [FF, F1]
+[tn3270][RECV] handle_negotiation: buffer size=2, data=[FF, F1]
+[tn3270][DEBUG] Recibido IAC NOP (comando Telnet, no necesita respuesta)
+2025-06-13T00:52:49.132870Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras procesar buffer: base_ready=true, tn3270e_enabled=false, binary_negotiated=true, eor_negotiated=true, tn3270e_negotiated=true, connect_sent=true
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T00:52:49.132919Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready_for_screen: true
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: true
+2025-06-13T00:52:49.132965Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] NO se enviará pantalla. Razones:
+2025-06-13T00:52:49.132983Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready: true
+[tn3270][DEBUG]   classic_ready: false
+2025-06-13T00:52:49.133015Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+2025-06-13T00:52:52.478989Z DEBUG neo6_proxy: Listener tn3270 nativo sigue activo...
+[tn3270][RECV] Raw data (2 bytes): [FF, F1]
+[tn3270][RECV] handle_negotiation: buffer size=2, data=[FF, F1]
+[tn3270][DEBUG] Recibido IAC NOP (comando Telnet, no necesita respuesta)
+2025-06-13T00:53:08.076314Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras procesar buffer: base_ready=true, tn3270e_enabled=false, binary_negotiated=true, eor_negotiated=true, tn3270e_negotiated=true, connect_sent=true
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T00:53:08.076396Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready_for_screen: true
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: true
+2025-06-13T00:53:08.076486Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] NO se enviará pantalla. Razones:
+2025-06-13T00:53:08.076522Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready: true
+[tn3270][DEBUG]   classic_ready: false
+2025-06-13T00:53:08.076601Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][RECV] Raw data (2 bytes): [FF, F1]
+[tn3270][RECV] handle_negotiation: buffer size=2, data=[FF, F1]
+[tn3270][DEBUG] Recibido IAC NOP (comando Telnet, no necesita respuesta)
+2025-06-13T00:54:17.629833Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras procesar buffer: base_ready=true, tn3270e_enabled=false, binary_negotiated=true, eor_negotiated=true, tn3270e_negotiated=true, connect_sent=true
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T00:54:17.629879Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready_for_screen: true
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: true
+2025-06-13T00:54:17.629913Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] NO se enviará pantalla. Razones:
+2025-06-13T00:54:17.629926Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready: true
+[tn3270][DEBUG]   classic_ready: false
+2025-06-13T00:54:17.629951Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][RECV] Raw data (2 bytes): [FF, F1]
+[tn3270][RECV] handle_negotiation: buffer size=2, data=[FF, F1]
+[tn3270][DEBUG] Recibido IAC NOP (comando Telnet, no necesita respuesta)
+2025-06-13T00:54:28.308714Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras procesar buffer: base_ready=true, tn3270e_enabled=false, binary_negotiated=true, eor_negotiated=true, tn3270e_negotiated=true, connect_sent=true
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T00:54:28.308755Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready_for_screen: true
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: true
+2025-06-13T00:54:28.308789Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] NO se enviará pantalla. Razones:
+2025-06-13T00:54:28.308803Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready: true
+[tn3270][DEBUG]   classic_ready: false
+2025-06-13T00:54:28.308827Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+2025-06-13T00:54:29.385963Z DEBUG neo6_proxy: Listener tn3270 nativo sigue activo...
+[tn3270][RECV] Raw data (2 bytes): [FF, F1]
+[tn3270][RECV] handle_negotiation: buffer size=2, data=[FF, F1]
+[tn3270][DEBUG] Recibido IAC NOP (comando Telnet, no necesita respuesta)
+2025-06-13T01:11:27.952263Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras procesar buffer: base_ready=true, tn3270e_enabled=false, binary_negotiated=true, eor_negotiated=true, tn3270e_negotiated=true, connect_sent=true
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T01:11:27.952308Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready_for_screen: true
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: true
+2025-06-13T01:11:27.952348Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] NO se enviará pantalla. Razones:
+2025-06-13T01:11:27.952380Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready: true
+[tn3270][DEBUG]   classic_ready: false
+2025-06-13T01:11:27.952428Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][RECV] Raw data (2 bytes): [FF, F1]
+[tn3270][RECV] handle_negotiation: buffer size=2, data=[FF, F1]
+[tn3270][DEBUG] Recibido IAC NOP (comando Telnet, no necesita respuesta)
+2025-06-13T01:12:21.914331Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras procesar buffer: base_ready=true, tn3270e_enabled=false, binary_negotiated=true, eor_negotiated=true, tn3270e_negotiated=true, connect_sent=true
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T01:12:21.914403Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready_for_screen: true
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: true
+2025-06-13T01:12:21.914442Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] NO se enviará pantalla. Razones:
+2025-06-13T01:12:21.914456Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready: true
+[tn3270][DEBUG]   classic_ready: false
+2025-06-13T01:12:21.914481Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+2025-06-13T01:12:32.076500Z DEBUG neo6_proxy: Listener tn3270 nativo sigue activo...
+[tn3270][RECV] Raw data (2 bytes): [FF, F1]
+[tn3270][RECV] handle_negotiation: buffer size=2, data=[FF, F1]
+[tn3270][DEBUG] Recibido IAC NOP (comando Telnet, no necesita respuesta)
+2025-06-13T01:12:36.456773Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras procesar buffer: base_ready=true, tn3270e_enabled=false, binary_negotiated=true, eor_negotiated=true, tn3270e_negotiated=true, connect_sent=true
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T01:12:36.456845Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready_for_screen: true
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: true
+2025-06-13T01:12:36.456930Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] NO se enviará pantalla. Razones:
+2025-06-13T01:12:36.456947Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready: true
+[tn3270][DEBUG]   classic_ready: false
+2025-06-13T01:12:36.456973Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][RECV] Raw data (2 bytes): [FF, F1]
+[tn3270][RECV] handle_negotiation: buffer size=2, data=[FF, F1]
+[tn3270][DEBUG] Recibido IAC NOP (comando Telnet, no necesita respuesta)
+2025-06-13T01:12:47.255839Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras procesar buffer: base_ready=true, tn3270e_enabled=false, binary_negotiated=true, eor_negotiated=true, tn3270e_negotiated=true, connect_sent=true
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T01:12:47.255908Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready_for_screen: true
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: true
+2025-06-13T01:12:47.255945Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] NO se enviará pantalla. Razones:
+2025-06-13T01:12:47.255959Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready: true
+[tn3270][DEBUG]   classic_ready: false
+2025-06-13T01:12:47.255983Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+2025-06-13T01:13:08.751142Z DEBUG neo6_proxy: Listener tn3270 nativo sigue activo...
+[tn3270][RECV] Raw data (2 bytes): [FF, F1]
+[tn3270][RECV] handle_negotiation: buffer size=2, data=[FF, F1]
+[tn3270][DEBUG] Recibido IAC NOP (comando Telnet, no necesita respuesta)
+2025-06-13T01:13:11.571485Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras procesar buffer: base_ready=true, tn3270e_enabled=false, binary_negotiated=true, eor_negotiated=true, tn3270e_negotiated=true, connect_sent=true
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T01:13:11.571535Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready_for_screen: true
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: true
+2025-06-13T01:13:11.571552Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] NO se enviará pantalla. Razones:
+2025-06-13T01:13:11.571561Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready: true
+[tn3270][DEBUG]   classic_ready: false
+2025-06-13T01:13:11.571595Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][RECV] Raw data (2 bytes): [FF, F1]
+[tn3270][RECV] handle_negotiation: buffer size=2, data=[FF, F1]
+[tn3270][DEBUG] Recibido IAC NOP (comando Telnet, no necesita respuesta)
+2025-06-13T01:13:21.681426Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras procesar buffer: base_ready=true, tn3270e_enabled=false, binary_negotiated=true, eor_negotiated=true, tn3270e_negotiated=true, connect_sent=true
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T01:13:21.697731Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready_for_screen: true
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: true
+2025-06-13T01:13:21.700593Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] NO se enviará pantalla. Razones:
+2025-06-13T01:13:21.700624Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready: true
+[tn3270][DEBUG]   classic_ready: false
+2025-06-13T01:13:21.700637Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][RECV] Raw data (2 bytes): [FF, F1]
+[tn3270][RECV] handle_negotiation: buffer size=2, data=[FF, F1]
+[tn3270][DEBUG] Recibido IAC NOP (comando Telnet, no necesita respuesta)
+2025-06-13T01:13:31.772875Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras procesar buffer: base_ready=true, tn3270e_enabled=false, binary_negotiated=true, eor_negotiated=true, tn3270e_negotiated=true, connect_sent=true
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T01:13:31.772917Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready_for_screen: true
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: true
+2025-06-13T01:13:31.772943Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] NO se enviará pantalla. Razones:
+2025-06-13T01:13:31.772953Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready: true
+[tn3270][DEBUG]   classic_ready: false
+2025-06-13T01:13:31.772969Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+2025-06-13T01:13:38.780185Z DEBUG neo6_proxy: Listener tn3270 nativo sigue activo...
+[tn3270][RECV] Raw data (2 bytes): [FF, F1]
+[tn3270][RECV] handle_negotiation: buffer size=2, data=[FF, F1]
+[tn3270][DEBUG] Recibido IAC NOP (comando Telnet, no necesita respuesta)
+2025-06-13T01:13:41.873287Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras procesar buffer: base_ready=true, tn3270e_enabled=false, binary_negotiated=true, eor_negotiated=true, tn3270e_negotiated=true, connect_sent=true
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T01:13:41.873307Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready_for_screen: true
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: true
+2025-06-13T01:13:41.873323Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] NO se enviará pantalla. Razones:
+2025-06-13T01:13:41.873329Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready: true
+[tn3270][DEBUG]   classic_ready: false
+2025-06-13T01:13:41.873340Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][RECV] Raw data (2 bytes): [FF, F1]
+[tn3270][RECV] handle_negotiation: buffer size=2, data=[FF, F1]
+[tn3270][DEBUG] Recibido IAC NOP (comando Telnet, no necesita respuesta)
+2025-06-13T01:13:51.972915Z DEBUG tn3270: Session::check_base_telnet_ready() - Verificando estado de negociaciones Telnet
+[tn3270][DEBUG] Estado tras procesar buffer: base_ready=true, tn3270e_enabled=false, binary_negotiated=true, eor_negotiated=true, tn3270e_negotiated=true, connect_sent=true
+[tn3270][DEBUG] maybe_send_screen - Estado de verificación:
+2025-06-13T01:13:51.972960Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready_for_screen: true
+[tn3270][DEBUG]   classic_telnet_ready_for_screen: false
+[tn3270][DEBUG]   tn3270e_enabled: false
+[tn3270][DEBUG]   tn3270e_bound: true
+2025-06-13T01:13:51.973007Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG] NO se enviará pantalla. Razones:
+2025-06-13T01:13:51.973021Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent
+[tn3270][DEBUG]   screen_sent: true
+[tn3270][DEBUG]   tn3270e_ready: true
+[tn3270][DEBUG]   classic_ready: false
+2025-06-13T01:13:51.973045Z DEBUG tn3270::tn3270_screens: Entering ScreenManager::is_screen_sent

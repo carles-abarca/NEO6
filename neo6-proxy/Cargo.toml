@@ -19,6 +19,7 @@ libc = "0.2"
 tower = "0.5"
 serde_yaml = "0.9.34"
 libloading = "0.8"
+atty = "0.2"
 neo6-protocols-lib = { path = "../neo6-protocols/neo6-protocols-lib" }
 lu62 = { path = "../neo6-protocols/lu62", optional = true }
 mq = { path = "../neo6-protocols/mq", optional = true }

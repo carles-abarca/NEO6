@@ -95,7 +95,7 @@ unsafe extern "C" fn rest_set_log_level(log_level: *const c_char) -> FfiResult {
         _ => EnvFilter::new("info"),
     };
     let _ = tracing_subscriber::registry()
-        .with(fmt::layer().with_target(true).with_level(true))
+        .with(fmt::layer().with_target(true).with_level(true).with_ansi(false))
         .with(filter).try_init();
     create_success_result(serde_json::json!({"status": "log_level_set", "level": level_str}))
 }
