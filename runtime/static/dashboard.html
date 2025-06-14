@@ -21,6 +21,23 @@
             border-radius: 8px;
             margin-bottom: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .header .logo {
+            width: 96px;
+            height: 96px;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+        .header .title-section {
+            flex: 1;
+        }
+        .header .title-section p {
+            margin: 5px 0 0 0;
+            color: #666;
+            font-size: 14px;
         }
         .header h1 {
             margin: 0;
@@ -117,8 +134,11 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚀 NEO6 Proxy Administration</h1>
-            <p>Manage and monitor your NEO6 proxy instances</p>
+            <img src="/static/neo6.png" alt="NEO6 Logo" class="logo">
+            <div class="title-section">
+                <h1>NEO6 Proxy Administration</h1>
+                <p>Manage and monitor your NEO6 proxy instances</p>
+            </div>
         </div>
 
         <div class="controls">

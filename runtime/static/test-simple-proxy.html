@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Proxy Test</title>
+</head>
+<body>
+    <h1>Simple Test for tn3270-primary</h1>
+    <div>Status: <span id="status">Loading...</span></div>
+    <div>Protocols: <div id="protocols">Loading...</div></div>
+    
+    <script>
+        console.log('=== SIMPLE TEST START ===');
+        
+        async function loadData() {
+            try {
+                console.log('Fetching data...');
+                const response = await fetch('/api/proxies/tn3270-primary');
+                console.log('Response status:', response.status);
+                
+                const data = await response.json();
+                console.log('Raw data:', data);
+                
+                // Update status
+                document.getElementById('status').textContent = data.status || 'Unknown';
+                
+                // Update protocols
+                const protocolsDiv = document.getElementById('protocols');
+                if (data.live_proxy_data && data.live_proxy_data.protocols_loaded) {
+                    const protocols = data.live_proxy_data.protocols_loaded;
+                    console.log('Protocols found:', protocols);
+                    protocolsDiv.innerHTML = protocols.map(p => 
+                        `<span style="background: #E5E5EA; color: #333; padding: 4px 8px; border-radius: 4px; margin-right: 8px;">${p}</span>`
+                    ).join('');
+                } else {
+                    protocolsDiv.textContent = 'No protocols found';
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('status').textContent = 'Error: ' + error.message;
+                document.getElementById('protocols').textContent = 'Error loading protocols';
+            }
+        }
+        
+        // Load immediately
+        loadData();
+        
+        console.log('=== SIMPLE TEST END ===');
+    </script>
+</body>
+</html>

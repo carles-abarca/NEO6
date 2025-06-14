@@ -15,7 +15,7 @@ else
 fi
 
 # Get the workspace root directory
-WORKSPACE_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+WORKSPACE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 RUNTIME_DIR="$WORKSPACE_ROOT/runtime"
 
 echo "NEO6 Deployment Script"
@@ -27,7 +27,7 @@ echo ""
 
 # Clean and create runtime directory structure
 echo "Creating runtime directory structure..."
-rm -rf "$RUNTIME_DIR"
+rm -rf "$RUNTIME_DIR"/{bin,lib,config,static,logs}
 mkdir -p "$RUNTIME_DIR"/{bin,lib,config,static,logs}
 
 # Function to build a Rust project
