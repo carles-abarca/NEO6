@@ -2,12 +2,14 @@
 // Provides a control socket interface for external administration
 
 use std::net::SocketAddr;
+use std::sync::Arc;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::sync::mpsc;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use tracing::{debug, error, info};
+use crate::metrics::MetricsCollector;
 
 /// Commands that can be sent to the proxy via the control socket
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,6 +29,16 @@ pub enum AdminCommand {
     GetProtocols,
     /// Test protocol connectivity
     TestProtocol { protocol: String },
+    /// Get active connections
+    GetConnections,
+    /// Kill a specific connection
+    KillConnection { connection_id: String },
+    /// Set protocol-specific configuration
+    SetProtocolConfig { protocol: String, config: serde_json::Value },
+    /// Get logs (last N lines)
+    GetLogs { lines: Option<u32> },
+    /// Get status of specific protocol
+    GetProtocolStatus { protocol: String },
 }
 
 /// Response from the proxy to admin commands
@@ -43,6 +55,7 @@ pub enum ControlMessage {
     Shutdown,
     ReloadConfig,
     SetLogLevel(String),
+    ConfigReloaded(bool), // Success/failure status
 }
 
 /// Administrative control server
@@ -50,6 +63,7 @@ pub struct AdminControlServer {
     control_port: u16,
     control_tx: mpsc::Sender<ControlMessage>,
     proxy_info: ProxyInfo,
+    metrics_collector: Arc<MetricsCollector>,
 }
 
 /// Information about the proxy instance
@@ -64,13 +78,14 @@ pub struct ProxyInfo {
 
 impl AdminControlServer {
     /// Create a new admin control server
-    pub fn new(control_port: u16, proxy_info: ProxyInfo) -> (Self, mpsc::Receiver<ControlMessage>) {
+    pub fn new(control_port: u16, proxy_info: ProxyInfo, metrics_collector: Arc<MetricsCollector>) -> (Self, mpsc::Receiver<ControlMessage>) {
         let (control_tx, control_rx) = mpsc::channel(32);
         
         let server = AdminControlServer {
             control_port,
             control_tx,
             proxy_info,
+            metrics_collector,
         };
         
         (server, control_rx)
@@ -89,9 +104,10 @@ impl AdminControlServer {
                     debug!("Admin connection from {}", peer_addr);
                     let proxy_info = self.proxy_info.clone();
                     let control_tx = self.control_tx.clone();
+                    let metrics_collector = self.metrics_collector.clone();
                     
                     tokio::spawn(async move {
-                        if let Err(e) = Self::handle_admin_connection(stream, proxy_info, control_tx).await {
+                        if let Err(e) = Self::handle_admin_connection(stream, proxy_info, control_tx, metrics_collector).await {
                             error!("Error handling admin connection from {}: {}", peer_addr, e);
                         }
                     });
@@ -108,6 +124,7 @@ impl AdminControlServer {
         mut stream: TcpStream,
         proxy_info: ProxyInfo,
         control_tx: mpsc::Sender<ControlMessage>,
+        metrics_collector: Arc<MetricsCollector>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let (reader, writer) = stream.split();
         let mut reader = BufReader::new(reader);
@@ -135,7 +152,7 @@ impl AdminControlServer {
                     debug!("Admin command received: {}", trimmed);
                     
                     let response = match serde_json::from_str::<AdminCommand>(trimmed) {
-                        Ok(command) => Self::process_command(command, &proxy_info, &control_tx).await,
+                        Ok(command) => Self::process_command(command, &proxy_info, &control_tx, &metrics_collector).await,
                         Err(e) => AdminResponse::Error {
                             message: format!("Invalid command format: {}", e),
                         },
@@ -160,6 +177,7 @@ impl AdminControlServer {
         command: AdminCommand,
         proxy_info: &ProxyInfo,
         control_tx: &mpsc::Sender<ControlMessage>,
+        metrics_collector: &Arc<MetricsCollector>,
     ) -> AdminResponse {
         match command {
             AdminCommand::Status => {
@@ -217,12 +235,9 @@ impl AdminControlServer {
                 }
             }
             AdminCommand::GetMetrics => {
-                // TODO: Implement metrics collection
+                let metrics = metrics_collector.get_metrics().await;
                 AdminResponse::Success {
-                    data: serde_json::json!({
-                        "metrics": "not_implemented_yet",
-                        "message": "Metrics collection not yet implemented"
-                    }),
+                    data: serde_json::to_value(metrics).unwrap_or_default(),
                 }
             }
             AdminCommand::GetProtocols => {
@@ -239,6 +254,57 @@ impl AdminControlServer {
                         "protocol": protocol,
                         "test_result": "not_implemented_yet",
                         "message": "Protocol testing not yet implemented"
+                    }),
+                }
+            }
+            AdminCommand::GetConnections => {
+                let connections = metrics_collector.get_connections().await;
+                AdminResponse::Success {
+                    data: serde_json::to_value(connections).unwrap_or_default(),
+                }
+            }
+            AdminCommand::KillConnection { connection_id } => {
+                let success = metrics_collector.kill_connection(&connection_id).await;
+                if success {
+                    AdminResponse::Success {
+                        data: serde_json::json!({
+                            "message": format!("Connection {} terminated", connection_id)
+                        }),
+                    }
+                } else {
+                    AdminResponse::Error {
+                        message: format!("Connection {} not found", connection_id),
+                    }
+                }
+            }
+            AdminCommand::SetProtocolConfig { protocol, config } => {
+                // TODO: Implement protocol-specific configuration
+                AdminResponse::Success {
+                    data: serde_json::json!({
+                        "protocol": protocol,
+                        "config": config,
+                        "message": "Protocol configuration not yet implemented"
+                    }),
+                }
+            }
+            AdminCommand::GetLogs { lines } => {
+                // TODO: Implement log retrieval
+                let lines = lines.unwrap_or(100);
+                AdminResponse::Success {
+                    data: serde_json::json!({
+                        "lines": lines,
+                        "logs": [],
+                        "message": "Log retrieval not yet implemented"
+                    }),
+                }
+            }
+            AdminCommand::GetProtocolStatus { protocol } => {
+                // TODO: Implement protocol status check
+                AdminResponse::Success {
+                    data: serde_json::json!({
+                        "protocol": protocol,
+                        "status": "unknown",
+                        "message": "Protocol status check not yet implemented"
                     }),
                 }
             }

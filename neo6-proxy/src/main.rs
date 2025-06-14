@@ -1,4 +1,5 @@
 use std::net::SocketAddr;
+use std::sync::Arc;
 use tokio::net::TcpListener;
 use tracing::{info, error, warn, debug};
 use std::collections::HashSet;
@@ -9,6 +10,7 @@ use neo6_proxy::logging::{init_logging_with_level};
 use neo6_proxy::cics::mapping::load_transaction_map;
 use neo6_proxy::protocol_loader::ProtocolLoader;
 use neo6_proxy::admin_control::{AdminControlServer, ProxyInfo, ControlMessage};
+use neo6_proxy::metrics::MetricsCollector;
 
 #[tokio::main]
 async fn main() {
@@ -71,17 +73,17 @@ async fn main() {
     config.load_from_dir(&config_dir);
     
     // Aplicar argumentos CLI (tienen precedencia sobre el archivo)
-    if let Some(protocol) = cmd_protocol {
-        config.protocol = Some(protocol);
+    if let Some(ref protocol) = cmd_protocol {
+        config.protocol = Some(protocol.clone());
     }
     if let Some(port) = cmd_port {
         config.port = Some(port);
     }
-    if let Some(log_level) = cmd_log_level {
-        config.log_level = log_level;
+    if let Some(ref log_level) = cmd_log_level {
+        config.log_level = log_level.clone();
     }
-    if let Some(library_path) = cmd_library_path {
-        config.library_path = Some(library_path);
+    if let Some(ref library_path) = cmd_library_path {
+        config.library_path = Some(library_path.clone());
     }
     
     // Inicializar logging con el nivel configurado
@@ -157,6 +159,9 @@ async fn main() {
     info!("Configurando nivel de log '{}' para todas las librerías dinámicas", config.log_level);
     protocol_loader.set_log_level_for_all(&config.log_level);
 
+    // Crear colector de métricas
+    let metrics_collector = Arc::new(MetricsCollector::new());
+
     // Crear información del proxy para el control administrativo
     let proxy_info = ProxyInfo {
         protocol: protocol.clone(),
@@ -167,7 +172,7 @@ async fn main() {
     };
 
     // Crear el servidor de control administrativo
-    let (admin_server, mut control_rx) = AdminControlServer::new(admin_port, proxy_info);
+    let (admin_server, mut control_rx) = AdminControlServer::new(admin_port, proxy_info, metrics_collector.clone());
 
     // Lanzar el servidor de control administrativo en segundo plano
     let admin_handle = tokio::spawn(async move {
@@ -202,13 +207,46 @@ async fn main() {
                         break;
                     }
                     Some(ControlMessage::ReloadConfig) => {
-                        info!("Recibido comando de reload config (no implementado aún)");
-                        // TODO: Implementar recarga de configuración
+                        info!("Recibido comando de reload config, recargando...");
+                        
+                        // Intentar recargar la configuración
+                        let mut new_config = ProxyConfig::default();
+                        new_config.load_from_dir(&config_dir);
+                        
+                        // Aplicar argumentos CLI (tienen precedencia sobre el archivo)
+                        if let Some(ref protocol) = cmd_protocol {
+                            new_config.protocol = Some(protocol.clone());
+                        }
+                        if let Some(port) = cmd_port {
+                            new_config.port = Some(port);
+                        }
+                        if let Some(ref log_level) = cmd_log_level {
+                            new_config.log_level = log_level.clone();
+                        }
+                        if let Some(ref library_path) = cmd_library_path {
+                            new_config.library_path = Some(library_path.clone());
+                        }
+                        
+                        // Actualizar configuración global
+                        config = new_config;
+                        
+                        // Aplicar cambios que pueden ser aplicados dinámicamente
+                        protocol_loader.set_log_level_for_all(&config.log_level);
+                        
+                        info!("Configuración recargada exitosamente. Nivel de log: {}", config.log_level);
+                        // TODO: Implementar recarga completa (protocolo, puerto, etc.)
+                        // Para cambios como puerto o protocolo, sería necesario reiniciar el listener
                     }
                     Some(ControlMessage::SetLogLevel(level)) => {
                         info!("Cambiando nivel de log a: {}", level);
-                        // TODO: Implementar cambio dinámico de nivel de log
+                        // Actualizar la configuración con el nuevo nivel
+                        config.log_level = level.clone();
                         protocol_loader.set_log_level_for_all(&level);
+                        info!("Nivel de log cambiado a: {}", level);
+                    }
+                    Some(ControlMessage::ConfigReloaded(_success)) => {
+                        // Este mensaje es para comunicación interna, no necesita acción
+                        debug!("Confirmación de recarga de configuración recibida");
                     }
                     None => {
                         warn!("Canal de control cerrado");
