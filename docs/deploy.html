@@ -2,22 +2,311 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Despliegue de NEO6-proxy | NEO6</title>
+  <title>Despliegue y Runtime | NEO6</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="header-meta">
-  <span>3 de junio de 2025</span>
-  <span>Despliegue de NEO6-proxy</span>
-  <span>v0.1.0 (neo6-proxy)</span>
+  <span>14 de junio de 2025</span>
+  <span>Despliegue y Runtime</span>
+  <span>v0.2.0 (Automated Deployment)</span>
 </div>
-<h1>Despliegue de NEO6-proxy</h1>
-<p>Esta sección describe cómo desplegar el servicio <b>neo6-proxy</b> en diferentes entornos (local, servidor, contenedor Docker, etc.).</p>
+<h1>Despliegue y Runtime de NEO6</h1>
+<p>NEO6 incluye un sistema completo de despliegue automatizado que configura un entorno de runtime listo para producción con todos los componentes necesarios.</p>
+
+<h2>Despliegue Automatizado</h2>
+
+<h3>Script de Despliegue</h3>
+<p>El script <code>neo6deploy.sh</code> automatiza todo el proceso de construcción y despliegue:</p>
+<pre><code># Ubicación del script
+cd /path/to/NEO6/neo6-admin
+./scripts/neo6deploy.sh
+
+# Opciones disponibles
+./scripts/neo6deploy.sh --release    # Build optimizado
+./scripts/neo6deploy.sh --debug      # Build con debug info (default)</code></pre>
+
+<h3>Proceso de Despliegue</h3>
+<p>El script ejecuta automáticamente:</p>
+<ol>
+  <li>Construcción de todos los componentes Rust</li>
+  <li>Compilación de bibliotecas de protocolos</li>
+  <li>Creación de estructura de runtime</li>
+  <li>Copia de binarios y bibliotecas</li>
+  <li>Generación de configuraciones</li>
+  <li>Creación de scripts de control</li>
+  <li>Validación del despliegue</li>
+</ol>
+
+<h2>Estructura del Runtime</h2>
+
+<h3>Directorio Principal</h3>
+<pre><code>runtime/
+├── neo6.sh                 # Script principal de control
+├── neo6deploy.sh          # Script auxiliar de despliegue
+├── bin/                   # Binarios ejecutables
+│   ├── neo6-admin
+│   └── neo6-proxy
+├── lib/                   # Bibliotecas de protocolos
+│   ├── libtn3270.dylib
+│   ├── liblu62.dylib
+│   ├── libmq.dylib
+│   ├── librest.dylib
+│   ├── libtcp.dylib
+│   └── libjca.dylib
+├── config/                # Configuraciones
+│   ├── admin/
+│   │   └── admin.yaml
+│   └── proxy/
+│       ├── default.toml
+│       ├── transactions.yaml
+│       └── screens/
+├── logs/                  # Archivos de log
+│   ├── neo6-admin.log
+│   └── {proxy-name}.log
+└── static/                # Assets del dashboard
+    ├── dashboard.html
+    ├── proxy-detail.html
+    └── neo6.png</code></pre>
+
+<h3>Archivos de Configuración</h3>
+
+<h4>Admin Configuration (admin.yaml)</h4>
+<pre><code>admin_settings:
+  port: 8090
+  log_level: "info"
+
+proxy_defaults:
+  binary_path: "./bin/neo6-proxy"
+  working_directory: "."
+  library_path: "./lib"
+  config_path: "./config/proxy"
+  log_level: "info"
+
+proxy_instances:
+  - name: "rest-api"
+    protocol: "rest"
+    port: 8080
+    admin_port: 9080
+    
+  - name: "tn3270-primary"
+    protocol: "tn3270"
+    port: 2323
+    admin_port: 3323
+    
+  - name: "mq-gateway"
+    protocol: "mq"
+    port: 5001
+    admin_port: 6001</code></pre>
+
+<h4>Proxy Configuration (default.toml)</h4>
+<pre><code>[proxy]
+default_port = 8080
+log_level = "info"
+max_connections = 1000
+
+[protocols]
+library_path = "./lib"
+config_path = "./config"
+
+[admin]
+enabled = true
+port = 9090</code></pre>
+
+<h2>Control del Sistema</h2>
+
+<h3>Script de Control Principal</h3>
+<p>El script <code>neo6.sh</code> proporciona control completo del sistema:</p>
+
+<pre><code># Iniciar el sistema completo
+./neo6.sh start
+
+# Detener el sistema
+./neo6.sh stop
+
+# Reiniciar el sistema
+./neo6.sh restart
+
+# Ver estado de todos los componentes
+./neo6.sh status
+
+# Ver logs en tiempo real
+./neo6.sh logs
+
+# Parar todos los procesos (incluso colgados)
+./neo6.sh kill</code></pre>
+
+<h3>Comandos Detallados</h3>
+
+<h4>Inicio del Sistema</h4>
+<pre><code>$ ./neo6.sh start
+Starting NEO6 environment...
+Starting NEO6 Admin server...
+NEO6 Admin started successfully (PID: 1234)
+Dashboard available at: http://localhost:8090
+Admin API available at: http://localhost:8090/api
+Logs in: /path/to/runtime/logs/</code></pre>
+
+<h4>Estado del Sistema</h4>
+<pre><code>$ ./neo6.sh status
+NEO6 System Status
+==================
+NEO6 Admin: Running (PID: 1234)
+  - Port: 8090
+  - Uptime: 01:23:45
+  - Dashboard: http://localhost:8090
+
+Managed Proxies:
+  rest-api: Stopped
+  tn3270-primary: Running (PID: 5678)
+  mq-gateway: Stopped
+
+Total processes: 2</code></pre>
+
+<h2>Validación del Despliegue</h2>
+
+<h3>Verificaciones Automáticas</h3>
+<p>El sistema incluye validación automática:</p>
 <ul>
-  <li>Requisitos previos: Rust, Docker, configuración de red y puertos.</li>
-  <li>Despliegue local: <code>cargo run --release</code></li>
-  <li>Despliegue en Docker: <code>docker build -t neo6-proxy .</code> y <code>docker run -p 8080:8080 neo6-proxy</code></li>
-  <li>Variables de entorno y configuración en <code>config/default.toml</code></li>
+  <li>✓ Binarios son ejecutables</li>
+  <li>✓ Bibliotecas de protocolos disponibles</li>
+  <li>✓ Archivos de configuración presentes</li>
+  <li>✓ Estructura de directorios correcta</li>
+  <li>✓ Permisos de archivos apropiados</li>
 </ul>
+
+<h3>Verificación Manual</h3>
+<pre><code># Verificar binarios
+ls -la runtime/bin/
+
+# Verificar bibliotecas
+ls -la runtime/lib/
+
+# Verificar configuraciones
+cat runtime/config/admin/admin.yaml
+
+# Test de conectividad
+curl http://localhost:8090/api/proxies</code></pre>
+
+<h2>Configuración de Proxy Defaults</h2>
+
+<h3>Eliminación de Redundancia</h3>
+<p>El nuevo sistema de <code>proxy_defaults</code> elimina la duplicación:</p>
+
+<h4>Antes (Redundante)</h4>
+<pre><code>proxy_instances:
+  - name: "proxy1"
+    binary_path: "./bin/neo6-proxy"
+    working_directory: "."
+    library_path: "./lib"
+    config_path: "./config/proxy"
+    log_level: "info"
+    # ... argumentos específicos
+  - name: "proxy2"
+    binary_path: "./bin/neo6-proxy"    # Duplicado
+    working_directory: "."              # Duplicado
+    library_path: "./lib"               # Duplicado
+    # ...</code></pre>
+
+<h4>Después (Limpio)</h4>
+<pre><code>proxy_defaults:
+  binary_path: "./bin/neo6-proxy"
+  working_directory: "."
+  library_path: "./lib"
+  config_path: "./config/proxy"
+  log_level: "info"
+
+proxy_instances:
+  - name: "proxy1"
+    protocol: "rest"
+    port: 8080
+    admin_port: 9080
+  - name: "proxy2"
+    protocol: "tn3270"
+    port: 2323
+    admin_port: 3323
+    log_level: "debug"  # Override del default</code></pre>
+
+<h2>Gestión de Logs</h2>
+
+<h3>Archivos de Log</h3>
+<ul>
+  <li><b>neo6-admin.log:</b> Logs del sistema de administración</li>
+  <li><b>{proxy-name}.log:</b> Logs específicos de cada proxy</li>
+  <li><b>{protocol}-{instance}.error.log:</b> Logs de errores de protocolos</li>
+</ul>
+
+<h3>Rotación de Logs</h3>
+<p>Configuración automática de rotación:</p>
+<pre><code># Configuración recomendada
+max_size: 10MB
+max_files: 5
+rotation: daily</code></pre>
+
+<h2>Requisitos del Sistema</h2>
+
+<h3>Dependencias</h3>
+<ul>
+  <li><b>Rust 1.70+:</b> Para compilación</li>
+  <li><b>Cargo:</b> Gestor de paquetes Rust</li>
+  <li><b>Sistema operativo:</b> Linux, macOS, Windows</li>
+  <li><b>Memoria:</b> Mínimo 512MB RAM</li>
+  <li><b>Disco:</b> Mínimo 100MB espacio libre</li>
+</ul>
+
+<h3>Puertos Requeridos</h3>
+<ul>
+  <li><b>8090:</b> Dashboard y API del admin</li>
+  <li><b>Puertos de protocolo:</b> Según configuración (ej: 2323, 8080, 5001)</li>
+  <li><b>Puertos admin:</b> Para control de proxies (ej: 3323, 9080, 6001)</li>
+</ul>
+
+<h2>Entornos de Despliegue</h2>
+
+<h3>Desarrollo Local</h3>
+<pre><code># Despliegue de desarrollo
+./scripts/neo6deploy.sh --debug
+cd runtime
+./neo6.sh start</code></pre>
+
+<h3>Producción</h3>
+<pre><code># Despliegue optimizado
+./scripts/neo6deploy.sh --release
+cd runtime
+./neo6.sh start
+
+# Verificación
+./neo6.sh status</code></pre>
+
+<h3>Contenedor Docker</h3>
+<pre><code># Dockerfile incluido (futuro)
+docker build -t neo6 .
+docker run -p 8090:8090 -p 2323:2323 neo6</code></pre>
+
+<h2>Troubleshooting</h2>
+
+<h3>Problemas Comunes</h3>
+<ul>
+  <li><b>Puerto ocupado:</b> Verificar puertos con <code>netstat -tulpn</code></li>
+  <li><b>Permisos:</b> Verificar permisos de ejecución con <code>chmod +x</code></li>
+  <li><b>Bibliotecas:</b> Verificar que las .dylib/.so estén en lib/</li>
+  <li><b>Configuración:</b> Validar sintaxis YAML y TOML</li>
+</ul>
+
+<h3>Logs de Diagnóstico</h3>
+<pre><code># Ver logs en tiempo real
+tail -f runtime/logs/neo6-admin.log
+
+# Buscar errores
+grep -i error runtime/logs/*.log
+
+# Verificar estado de procesos
+ps aux | grep neo6</code></pre>
+
+<h3>Reinicio Limpio</h3>
+<pre><code># Parar todo y limpiar
+./neo6.sh kill
+rm -f runtime/logs/*.log
+./neo6.sh start</code></pre>
 </body>
 </html>

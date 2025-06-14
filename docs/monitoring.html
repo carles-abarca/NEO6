@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Monitoreo y Métricas | NEO6</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="header-meta">
+  <span>14 de junio de 2025</span>
+  <span>Monitoreo y Métricas</span>
+  <span>v0.2.0 (Metrics System)</span>
+</div>
+<h1>Monitoreo y Métricas en NEO6</h1>
+<p>NEO6 incluye un sistema completo de monitoreo y métricas que proporciona visibilidad en tiempo real del estado y rendimiento de todos los componentes del sistema.</p>
+
+<h2>Arquitectura de Métricas</h2>
+<h3>Componentes</h3>
+<ul>
+  <li><b>MetricsCollector:</b> Recolector de métricas por proxy</li>
+  <li><b>Admin API:</b> Agregación y exposición de métricas</li>
+  <li><b>Dashboard Web:</b> Visualización en tiempo real</li>
+  <li><b>Structured Logging:</b> Logging estructurado con niveles</li>
+</ul>
+
+<h2>Tipos de Métricas</h2>
+
+<h3>Métricas de Conexión</h3>
+<p>Seguimiento detallado de cada conexión individual:</p>
+<pre><code>{
+  "connection_id": "conn_12345",
+  "protocol": "tn3270",
+  "remote_address": "192.168.1.100:45678",
+  "connected_at_timestamp": 1718366400,
+  "bytes_sent": 2048,
+  "bytes_received": 1024,
+  "requests_processed": 15,
+  "last_activity_timestamp": 1718366460
+}</code></pre>
+
+<h3>Métricas de Protocolo</h3>
+<p>Estadísticas agregadas por tipo de protocolo:</p>
+<pre><code>{
+  "protocol_name": "tn3270",
+  "total_connections": 1250,
+  "active_connections": 23,
+  "failed_connections": 15,
+  "total_bytes_sent": 1048576,
+  "total_bytes_received": 524288,
+  "total_requests": 5000,
+  "avg_response_time_ms": 125.5,
+  "uptime_seconds": 86400
+}</code></pre>
+
+<h3>Métricas de Proxy</h3>
+<p>Métricas generales del proxy:</p>
+<pre><code>{
+  "uptime_seconds": 86400,
+  "total_connections": 1250,
+  "active_connections": 23,
+  "protocols": {
+    "tn3270": { /* métricas específicas */ },
+    "rest": { /* métricas específicas */ }
+  },
+  "memory_usage_mb": 45.2,
+  "cpu_usage_percent": 12.5
+}</code></pre>
+
+<h2>Recolección de Métricas</h2>
+
+<h3>Registro de Conexiones</h3>
+<p>Automático en cada nueva conexión:</p>
+<pre><code>// Registro automático
+metrics_collector.register_connection(
+    "conn_id",
+    "protocol",
+    "remote_addr"
+).await;</code></pre>
+
+<h3>Actualización de Actividad</h3>
+<p>Seguimiento continuo de la actividad:</p>
+<pre><code>// Actualización automática
+metrics_collector.update_connection_activity(
+    "conn_id",
+    bytes_sent,
+    bytes_received
+).await;</code></pre>
+
+<h3>Finalización de Conexiones</h3>
+<pre><code>// Limpieza automática
+metrics_collector.remove_connection("conn_id").await;</code></pre>
+
+<h2>Exposición de Métricas</h2>
+
+<h3>Via Admin API</h3>
+<pre><code># Obtener métricas generales
+GET /api/proxies/{name}/status
+
+# Obtener conexiones activas  
+POST /api/proxies/{name}/command
+{
+  "command": "GetConnections"
+}
+
+# Obtener métricas detalladas
+POST /api/proxies/{name}/command
+{
+  "command": "GetMetrics"
+}</code></pre>
+
+<h3>Via Socket Admin</h3>
+<pre><code># Conexión directa al proxy
+echo '{"command": "GetMetrics"}' | nc localhost 3323
+echo '{"command": "GetConnections"}' | nc localhost 3323</code></pre>
+
+<h2>Dashboard de Monitoreo</h2>
+
+<h3>Vista General</h3>
+<p>El dashboard web muestra:</p>
+<ul>
+  <li>Estado de todos los proxies</li>
+  <li>Conexiones activas totales</li>
+  <li>Throughput en tiempo real</li>
+  <li>Alertas y errores</li>
+</ul>
+
+<h3>Vista Detallada de Proxy</h3>
+<p>Para cada proxy individual:</p>
+<ul>
+  <li>Métricas en tiempo real</li>
+  <li>Lista de conexiones activas</li>
+  <li>Gráficos de rendimiento</li>
+  <li>Logs recientes</li>
+</ul>
+
+<h3>Datos Live vs Admin</h3>
+<p>El dashboard distingue entre:</p>
+<ul>
+  <li><b>Datos Live:</b> Obtenidos directamente del proxy en ejecución</li>
+  <li><b>Datos Admin:</b> Información administrativa (configuración, estado)</li>
+  <li><b>Indicadores:</b> Marcadores visuales de disponibilidad</li>
+</ul>
+
+<h2>Logging Estructurado</h2>
+
+<h3>Niveles de Log</h3>
+<ul>
+  <li><b>ERROR:</b> Errores críticos que requieren atención inmediata</li>
+  <li><b>WARN:</b> Situaciones problemáticas que no impiden el funcionamiento</li>
+  <li><b>INFO:</b> Información general de operaciones</li>
+  <li><b>DEBUG:</b> Información detallada para debugging</li>
+  <li><b>TRACE:</b> Información muy detallada (protocolos, datos)</li>
+</ul>
+
+<h3>Configuración de Logging</h3>
+<pre><code># Cambio dinámico de nivel
+curl -X POST /api/proxies/tn3270-primary/command \
+  -d '{"command": "SetLogLevel", "level": "debug"}'
+
+# Via admin socket
+echo '{"command": "SetLogLevel", "level": "trace"}' | nc localhost 3323</code></pre>
+
+<h3>Formato de Logs</h3>
+<p>Logging estructurado con contexto:</p>
+<pre><code>2025-06-14T10:30:45.123Z INFO neo6_proxy::tn3270 
+  [connection_id=conn_12345 protocol=tn3270 remote=192.168.1.100:45678] 
+  Connection established successfully</code></pre>
+
+<h2>Alertas y Monitoreo</h2>
+
+<h3>Detección de Problemas</h3>
+<ul>
+  <li>Conexiones fallidas frecuentes</li>
+  <li>Timeouts y desconexiones</li>
+  <li>Uso excesivo de recursos</li>
+  <li>Errores de protocolo</li>
+</ul>
+
+<h3>Indicadores de Salud</h3>
+<ul>
+  <li><b>Proxy Status:</b> Running/Stopped/Error</li>
+  <li><b>Connection Health:</b> Active/Idle/Failed</li>
+  <li><b>Protocol Status:</b> Available/Degraded/Unavailable</li>
+  <li><b>Resource Usage:</b> Normal/High/Critical</li>
+</ul>
+
+<h2>Gestión de Conexiones</h2>
+
+<h3>Conexiones Activas</h3>
+<p>Monitoreo de conexiones en tiempo real:</p>
+<pre><code># Listar conexiones activas
+curl -X POST /api/proxies/tn3270-primary/command \
+  -d '{"command": "GetConnections"}'</code></pre>
+
+<h3>Terminación de Conexiones</h3>
+<p>Capacidad de terminar conexiones problemáticas:</p>
+<pre><code># Terminar conexión específica
+curl -X POST /api/proxies/tn3270-primary/command \
+  -d '{"command": "KillConnection", "connection_id": "conn_12345"}'</code></pre>
+
+<h2>Métricas de Rendimiento</h2>
+
+<h3>Latencia y Throughput</h3>
+<ul>
+  <li>Tiempo de respuesta promedio</li>
+  <li>Bytes por segundo transferidos</li>
+  <li>Requests por segundo</li>
+  <li>Conexiones por minuto</li>
+</ul>
+
+<h3>Métricas de Recursos</h3>
+<ul>
+  <li>Uso de CPU por proxy</li>
+  <li>Consumo de memoria</li>
+  <li>Conexiones de red</li>
+  <li>Handles de archivo</li>
+</ul>
+
+<h2>Configuración de Monitoreo</h2>
+
+<h3>Intervalos de Recolección</h3>
+<p>Configuración de frecuencia de métricas:</p>
+<pre><code># En configuración del proxy
+monitoring:
+  metrics_interval: 30s
+  connection_timeout: 300s
+  cleanup_interval: 60s</code></pre>
+
+<h3>Retención de Datos</h3>
+<ul>
+  <li>Métricas en tiempo real: En memoria</li>
+  <li>Conexiones históricas: 24 horas</li>
+  <li>Logs: Rotación automática</li>
+</ul>
+
+<h2>APIs de Monitoreo</h2>
+
+<h3>Endpoints de Métricas</h3>
+<pre><code>GET  /api/metrics                    # Métricas globales
+GET  /api/proxies/{name}/metrics     # Métricas específicas
+GET  /api/proxies/{name}/connections # Conexiones activas
+GET  /api/proxies/{name}/health      # Health check
+POST /api/proxies/{name}/test        # Test de conectividad</code></pre>
+
+<h3>Formatos de Respuesta</h3>
+<p>Soporte para múltiples formatos:</p>
+<ul>
+  <li>JSON (default)</li>
+  <li>Prometheus (futuro)</li>
+  <li>Plain text</li>
+</ul>
+
+<h2>Troubleshooting con Métricas</h2>
+
+<h3>Identificación de Problemas</h3>
+<ul>
+  <li>Conexiones con alto tiempo de inactividad</li>
+  <li>Protocolos con alta tasa de errores</li>
+  <li>Proxies con uso excesivo de recursos</li>
+  <li>Patrones de conexión anómalos</li>
+</ul>
+
+<h3>Análisis de Rendimiento</h3>
+<ul>
+  <li>Comparación de métricas históricas</li>
+  <li>Identificación de cuellos de botella</li>
+  <li>Optimización basada en datos</li>
+  <li>Planificación de capacidad</li>
+</ul>
+</body>
+</html>

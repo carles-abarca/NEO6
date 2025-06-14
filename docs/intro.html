@@ -10,18 +10,40 @@
   <img src="neo6.png" alt="NEO6 logo" style="max-width:180px; margin: 1.5em auto 0.5em auto; display:block;">
 </div>
 <div class="header-meta">
-  <span>3 de junio de 2025</span>
+  <span>14 de junio de 2025</span>
   <span>Introducción</span>
-  <span>v0.1.0 (neo6-proxy)</span>
+  <span>v0.2.0 (neo6-proxy + neo6-admin)</span>
 </div>
 <h1>Introducción a NEO6</h1>
-<p><b>NEO6</b> es un ecosistema de componentes para la interoperabilidad entre aplicaciones modernas y sistemas COBOL legacy (IBM z/OS, Micro Focus, etc.), permitiendo exponer transacciones CICS a través de APIs REST, MQ, TCP y otros protocolos.</p>
+<p><b>NEO6</b> es un ecosistema completo de componentes para la interoperabilidad entre aplicaciones modernas y sistemas COBOL legacy (IBM z/OS, Micro Focus, etc.), permitiendo exponer transacciones CICS a través de APIs REST, MQ, TCP y otros protocolos.</p>
+
+<h2>Componentes Principales</h2>
 <ul>
-  <li>Proxy de alto rendimiento escrito en Rust.</li>
-  <li>Soporte para múltiples protocolos y adaptadores.</li>
-  <li>Arquitectura modular y extensible.</li>
-  <li>Observabilidad, métricas y logging estructurado.</li>
+  <li><b>neo6-proxy:</b> Proxy de alto rendimiento escrito en Rust con soporte para múltiples protocolos.</li>
+  <li><b>neo6-admin:</b> Sistema de administración centralizado con dashboard web y API REST.</li>
+  <li><b>neo6-protocols:</b> Bibliotecas de protocolos modulares (TN3270, LU6.2, MQ, REST, TCP, JCA).</li>
+  <li><b>Runtime Environment:</b> Entorno de ejecución completo con despliegue automatizado.</li>
 </ul>
-<p>Esta documentación cubre la arquitectura, los módulos principales y la guía de desarrollo para contribuir o integrar NEO6 en tu entorno.</p>
+
+<h2>Características Destacadas</h2>
+<ul>
+  <li><b>Arquitectura modular y extensible:</b> Protocolos cargados dinámicamente, configuración flexible.</li>
+  <li><b>Administración centralizada:</b> Dashboard web, API REST, gestión de múltiples proxies.</li>
+  <li><b>Monitoreo avanzado:</b> Métricas en tiempo real, logging estructurado, observabilidad.</li>
+  <li><b>Gestión de configuración:</b> Recarga dinámica, configuración por defecto, overrides por instancia.</li>
+  <li><b>Control administrativo:</b> Comandos de control, gestión de conexiones, testing de protocolos.</li>
+  <li><b>Despliegue automatizado:</b> Scripts de deployment, validación automática, estructura de runtime.</li>
+</ul>
+
+<h2>Casos de Uso</h2>
+<ul>
+  <li>Modernización de aplicaciones mainframe z/OS</li>
+  <li>Integración de sistemas CICS con arquitecturas cloud-native</li>
+  <li>Exposición de transacciones COBOL como APIs REST</li>
+  <li>Conectividad híbrida entre sistemas legacy y modernos</li>
+  <li>Gestión centralizada de múltiples endpoints de integración</li>
+</ul>
+
+<p>Esta documentación cubre la arquitectura completa, los módulos principales, el sistema de administración y la guía de desarrollo para contribuir o integrar NEO6 en tu entorno.</p>
 </body>
 </html>

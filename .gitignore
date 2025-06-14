@@ -45,3 +45,4 @@ runtime/lib/
 
 # Ignore logs
 runtime/logs/
+neo6-proxy/target/.rustc_info.json

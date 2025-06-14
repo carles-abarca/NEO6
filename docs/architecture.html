@@ -7,13 +7,242 @@
 </head>
 <body>
 <div class="header-meta">
-  <span>3 de junio de 2025</span>
+  <span>14 de junio de 2025</span>
   <span>Arquitectura General</span>
-  <span>v0.1.0 (neo6-proxy)</span>
+  <span>v0.2.0 (Complete System)</span>
 </div>
 <h1>Arquitectura NEO6</h1>
 <img src="architecture.svg" alt="Diagrama de arquitectura" style="max-width:100%;margin:2em 0;">
-<h2>Descripción</h2>
-<p>La arquitectura de NEO6 permite la interoperabilidad entre aplicaciones modernas y sistemas legacy, soportando múltiples protocolos y adaptadores.</p>
+
+<h2>Visión General</h2>
+<p>NEO6 es un ecosistema completo de componentes diseñado para la interoperabilidad entre aplicaciones modernas y sistemas legacy. La arquitectura está basada en microservicios con administración centralizada y protocolos modulares.</p>
+
+<h2>Componentes Principales</h2>
+
+<h3>neo6-admin (Sistema de Administración)</h3>
+<ul>
+  <li><b>Función:</b> Administración centralizada de todos los proxies</li>
+  <li><b>Tecnología:</b> Rust + Axum + Dashboard Web</li>
+  <li><b>Puerto:</b> 8090 (configurable)</li>
+  <li><b>Características:</b>
+    <ul>
+      <li>Dashboard web interactivo</li>
+      <li>API REST completa</li>
+      <li>Gestión del ciclo de vida de proxies</li>
+      <li>Monitoreo en tiempo real</li>
+      <li>Configuración centralizada</li>
+    </ul>
+  </li>
+</ul>
+
+<h3>neo6-proxy (Proxy de Protocolos)</h3>
+<ul>
+  <li><b>Función:</b> Instancias individuales por protocolo</li>
+  <li><b>Tecnología:</b> Rust + carga dinámica de protocolos</li>
+  <li><b>Puertos:</b> Variables según protocolo y configuración</li>
+  <li><b>Características:</b>
+    <ul>
+      <li>Carga dinámica de bibliotecas de protocolo</li>
+      <li>Interface de control administrativo</li>
+      <li>Métricas y monitoreo integrado</li>
+      <li>Configuración flexible</li>
+      <li>Logging estructurado</li>
+    </ul>
+  </li>
+</ul>
+
+<h3>neo6-protocols (Bibliotecas de Protocolo)</h3>
+<ul>
+  <li><b>Función:</b> Implementación modular de protocolos</li>
+  <li><b>Tecnología:</b> Rust + FFI (Foreign Function Interface)</li>
+  <li><b>Protocolos soportados:</b>
+    <ul>
+      <li>TN3270 - Terminal emulation</li>
+      <li>LU6.2 - IBM APPC protocol</li>
+      <li>MQ - IBM Message Queue</li>
+      <li>REST - HTTP/REST APIs</li>
+      <li>TCP - TCP/IP proprietary</li>
+      <li>JCA - CICS Transaction Gateway</li>
+    </ul>
+  </li>
+</ul>
+
+<h2>Arquitectura de Despliegue</h2>
+
+<h3>Runtime Environment</h3>
+<pre><code>NEO6 Runtime
+├── neo6-admin (Puerto 8090)
+│   ├── Dashboard Web
+│   ├── API REST
+│   └── Proxy Manager
+│
+├── neo6-proxy instances
+│   ├── rest-api (Puerto 8080, Admin 9080)
+│   ├── tn3270-primary (Puerto 2323, Admin 3323)
+│   └── mq-gateway (Puerto 5001, Admin 6001)
+│
+└── Shared Resources
+    ├── Protocol Libraries (lib/)
+    ├── Configurations (config/)
+    └── Logs (logs/)</code></pre>
+
+<h3>Comunicación entre Componentes</h3>
+<ul>
+  <li><b>Admin → Proxies:</b> TCP sockets en puertos admin</li>
+  <li><b>Web UI → Admin:</b> HTTP/REST API</li>
+  <li><b>External → Proxies:</b> Protocolos nativos en puertos de servicio</li>
+  <li><b>Proxies → Protocols:</b> Dynamic library loading (FFI)</li>
+</ul>
+
+<h2>Flujo de Datos</h2>
+
+<h3>Inicio del Sistema</h3>
+<ol>
+  <li>neo6-admin lee configuración centralizada</li>
+  <li>ProxyManager inicia instancias según admin.yaml</li>
+  <li>Cada proxy carga bibliotecas de protocolo necesarias</li>
+  <li>Se establecen interfaces de control administrativo</li>
+  <li>Dashboard web queda disponible para monitoreo</li>
+</ol>
+
+<h3>Procesamiento de Requests</h3>
+<ol>
+  <li>Request externo llega al puerto de protocolo</li>
+  <li>neo6-proxy procesa usando biblioteca de protocolo</li>
+  <li>Se actualiza métricas y logging</li>
+  <li>Response se envía de vuelta al cliente</li>
+  <li>Métricas disponibles via admin interface</li>
+</ol>
+
+<h2>Gestión de Configuración</h2>
+
+<h3>Configuración Jerárquica</h3>
+<pre><code>Configuración NEO6
+├── proxy_defaults (Configuración base)
+│   ├── binary_path
+│   ├── library_path
+│   ├── config_path
+│   └── log_level
+│
+└── proxy_instances (Configuración específica)
+    ├── Override de defaults
+    ├── Configuración de protocolo
+    └── Configuración de red</code></pre>
+
+<h3>Recarga Dinámica</h3>
+<ul>
+  <li>Cambios de configuración sin reinicio</li>
+  <li>Recarga de bibliotecas de protocolo</li>
+  <li>Actualización de niveles de log</li>
+  <li>Validación automática de configuración</li>
+</ul>
+
+<h2>Sistema de Métricas</h2>
+
+<h3>Arquitectura de Monitoreo</h3>
+<pre><code>Métricas NEO6
+├── MetricsCollector (Por proxy)
+│   ├── Connection metrics
+│   ├── Protocol metrics
+│   └── Performance metrics
+│
+├── Admin Aggregation
+│   ├── Global metrics
+│   ├── Cross-proxy analytics
+│   └── Health status
+│
+└── Dashboard Visualization
+    ├── Real-time charts
+    ├── Connection tracking
+    └── Alert management</code></pre>
+
+<h3>Tipos de Métricas</h3>
+<ul>
+  <li><b>Conexión:</b> Estado, throughput, latencia</li>
+  <li><b>Protocolo:</b> Requests, errores, tiempo de respuesta</li>
+  <li><b>Sistema:</b> CPU, memoria, uptime</li>
+  <li><b>Aplicación:</b> Transacciones CICS, estados de sesión</li>
+</ul>
+
+<h2>Seguridad y Confiabilidad</h2>
+
+<h3>Aislamiento de Componentes</h3>
+<ul>
+  <li>Cada proxy ejecuta en proceso separado</li>
+  <li>Fallos aislados no afectan el sistema completo</li>
+  <li>Reinicio individual de componentes</li>
+  <li>Configuración y logs por instancia</li>
+</ul>
+
+<h3>Gestión de Errores</h3>
+<ul>
+  <li>Logging estructurado con niveles</li>
+  <li>Recovery automático de conexiones</li>
+  <li>Timeouts y circuit breakers</li>
+  <li>Métricas de health checking</li>
+</ul>
+
+<h2>Extensibilidad</h2>
+
+<h3>Nuevos Protocolos</h3>
+<p>Agregar soporte para nuevos protocolos:</p>
+<ol>
+  <li>Implementar biblioteca de protocolo en Rust</li>
+  <li>Compilar como biblioteca dinámica</li>
+  <li>Agregar configuración en admin.yaml</li>
+  <li>Deploy automático via neo6deploy.sh</li>
+</ol>
+
+<h3>Integración con Sistemas Externos</h3>
+<ul>
+  <li>API REST para integración</li>
+  <li>Webhooks para notificaciones</li>
+  <li>Exportación de métricas (Prometheus)</li>
+  <li>SIEM integration via structured logs</li>
+</ul>
+
+<h2>Patrones de Arquitectura</h2>
+
+<h3>Microservicios</h3>
+<ul>
+  <li>Servicios independientes y deployables</li>
+  <li>Comunicación via APIs well-defined</li>
+  <li>Escalabilidad horizontal</li>
+  <li>Tecnologías heterogéneas donde sea beneficioso</li>
+</ul>
+
+<h3>Event-Driven</h3>
+<ul>
+  <li>Eventos de conexión y desconexión</li>
+  <li>Notificaciones de cambios de estado</li>
+  <li>Métricas como eventos en tiempo real</li>
+  <li>Configuración reactive</li>
+</ul>
+
+<h3>Circuit Breaker</h3>
+<ul>
+  <li>Prevención de cascading failures</li>
+  <li>Timeout y retry policies</li>
+  <li>Health checking automático</li>
+  <li>Degraded service handling</li>
+</ul>
+
+<h2>Performance y Escalabilidad</h2>
+
+<h3>Características de Performance</h3>
+<ul>
+  <li>Async/await en Rust para concurrencia</li>
+  <li>Zero-copy donde sea posible</li>
+  <li>Connection pooling</li>
+  <li>Efficient protocol parsing</li>
+</ul>
+
+<h3>Escalabilidad</h3>
+<ul>
+  <li>Múltiples instancias de proxy por protocolo</li>
+  <li>Load balancing entre instancias</li>
+  <li>Horizontal scaling del admin</li>
+  <li>Resource monitoring y auto-scaling</li>
+</ul>
 </body>
 </html>

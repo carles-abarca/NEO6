@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Sistema de Administración | NEO6</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="header-meta">
+  <span>14 de junio de 2025</span>
+  <span>Sistema de Administración</span>
+  <span>v0.2.0 (neo6-admin)</span>
+</div>
+<h1>Sistema de Administración NEO6</h1>
+<p>El <b>neo6-admin</b> es el componente central de administración que proporciona gestión centralizada, monitoreo y control de todos los proxies NEO6 en el entorno.</p>
+
+<h2>Características Principales</h2>
+<ul>
+  <li><b>Dashboard Web Interactivo:</b> Interfaz web moderna para monitoreo y gestión visual</li>
+  <li><b>API REST Completa:</b> Control programático de proxies y configuraciones</li>
+  <li><b>Gestión de Múltiples Proxies:</b> Administración centralizada de instancias distribuidas</li>
+  <li><b>Monitoreo en Tiempo Real:</b> Estado, métricas y conexiones activas</li>
+  <li><b>Control Administrativo:</b> Start/stop, reload config, cambio de log levels</li>
+</ul>
+
+<h2>Arquitectura del Sistema</h2>
+<h3>Componentes</h3>
+<ul>
+  <li><b>Web Server (Rust/Axum):</b> Servidor HTTP para dashboard y API</li>
+  <li><b>Proxy Manager:</b> Gestión del ciclo de vida de proxies</li>
+  <li><b>Configuration Manager:</b> Carga y gestión de configuraciones</li>
+  <li><b>Admin Control Interface:</b> Comunicación con proxies via sockets TCP</li>
+</ul>
+
+<h3>Puertos y Servicios</h3>
+<ul>
+  <li><b>Puerto 8090:</b> Dashboard web y API REST del admin</li>
+  <li><b>Puertos admin por proxy:</b> Interfaces de control administrativo (ej: 3323, 9080, 6001)</li>
+  <li><b>Puertos de servicio:</b> Interfaces de protocol de cada proxy (ej: 2323, 8080, 5001)</li>
+</ul>
+
+<h2>Dashboard Web</h2>
+<p>Accesible en <code>http://localhost:8090</code>, el dashboard proporciona:</p>
+<ul>
+  <li><b>Vista General:</b> Estado de todos los proxies, estadísticas generales</li>
+  <li><b>Detalle de Proxies:</b> Información específica de cada instancia</li>
+  <li><b>Monitoreo de Conexiones:</b> Conexiones activas, historial, métricas</li>
+  <li><b>Gestión de Configuración:</b> Visualización y edición de configuraciones</li>
+  <li><b>Logs en Tiempo Real:</b> Seguimiento de eventos y troubleshooting</li>
+</ul>
+
+<h2>API REST</h2>
+<p>La API REST del admin está disponible en <code>http://localhost:8090/api</code>:</p>
+
+<h3>Endpoints Principales</h3>
+<pre><code>GET    /api/proxies                 # Lista todos los proxies
+GET    /api/proxies/{name}          # Detalle de un proxy específico
+POST   /api/proxies/{name}/start    # Iniciar proxy
+POST   /api/proxies/{name}/stop     # Detener proxy
+POST   /api/proxies/{name}/restart  # Reiniciar proxy
+GET    /api/proxies/{name}/status   # Estado detallado con métricas live
+POST   /api/proxies/{name}/reload   # Recargar configuración
+POST   /api/proxies/{name}/command  # Enviar comando administrativo
+</code></pre>
+
+<h3>Comandos Administrativos</h3>
+<p>Los proxies soportan los siguientes comandos via interface admin:</p>
+<pre><code>{
+  "command": "Status"                          // Estado del proxy
+}
+{
+  "command": "GetMetrics"                      // Métricas detalladas
+}
+{
+  "command": "GetConnections"                  // Conexiones activas
+}
+{
+  "command": "SetLogLevel", "level": "debug"   // Cambiar nivel de log
+}
+{
+  "command": "ReloadConfig"                    // Recargar configuración
+}
+{
+  "command": "TestProtocol", "protocol": "tn3270"  // Test de conectividad
+}
+{
+  "command": "KillConnection", "connection_id": "..." // Terminar conexión
+}
+</code></pre>
+
+<h2>Configuración</h2>
+<p>La configuración del admin se encuentra en <code>config/admin/admin.yaml</code>:</p>
+
+<h3>Estructura de Configuración</h3>
+<pre><code>admin_settings:
+  port: 8090
+  log_level: "info"
+
+proxy_defaults:
+  binary_path: "./bin/neo6-proxy"
+  working_directory: "."
+  library_path: "./lib"
+  config_path: "./config/proxy"
+  log_level: "info"
+
+proxy_instances:
+  - name: "tn3270-primary"
+    protocol: "tn3270"
+    port: 2323
+    admin_port: 3323
+    # Hereda proxy_defaults, puede override campos específicos
+  
+  - name: "rest-api"
+    protocol: "rest"
+    port: 8080
+    admin_port: 9080
+    log_level: "debug"  # Override del default
+</code></pre>
+
+<h3>Proxy Defaults</h3>
+<p>Los <code>proxy_defaults</code> eliminan la redundancia en la configuración:</p>
+<ul>
+  <li>Campos comunes definidos una vez</li>
+  <li>Instancias pueden hacer override de campos específicos</li>
+  <li>Generación automática de argumentos CLI</li>
+  <li>Configuración más limpia y mantenible</li>
+</ul>
+
+<h2>Despliegue y Operación</h2>
+<h3>Script de Despliegue</h3>
+<p>El script <code>neo6deploy.sh</code> automatiza el despliegue completo:</p>
+<pre><code># Construcción y despliegue
+./scripts/neo6deploy.sh
+
+# Inicio del sistema
+cd runtime
+./neo6.sh start
+
+# Verificar estado
+./neo6.sh status
+</code></pre>
+
+<h3>Estructura del Runtime</h3>
+<pre><code>runtime/
+├── bin/                    # Binarios ejecutables
+│   ├── neo6-admin
+│   └── neo6-proxy
+├── lib/                    # Bibliotecas de protocolos
+│   ├── libtn3270.dylib
+│   ├── liblu62.dylib
+│   └── ...
+├── config/                 # Configuraciones
+│   ├── admin/
+│   └── proxy/
+├── logs/                   # Archivos de log
+└── static/                 # Assets del dashboard
+</code></pre>
+
+<h2>Monitoreo y Métricas</h2>
+<p>El sistema incluye monitoreo avanzado:</p>
+<ul>
+  <li><b>Métricas de Proxy:</b> Conexiones, throughput, latencia, errores</li>
+  <li><b>Métricas de Protocolo:</b> Estadísticas específicas por protocolo</li>
+  <li><b>Métricas de Sistema:</b> CPU, memoria, uptime</li>
+  <li><b>Logging Estruturado:</b> Niveles configurables, formato JSON</li>
+  <li><b>Trazabilidad:</b> Tracking de conexiones y transacciones</li>
+</ul>
+
+<h2>Comandos de Control</h2>
+<h3>Via Dashboard Web</h3>
+<p>Control visual desde <code>http://localhost:8090</code></p>
+
+<h3>Via API REST</h3>
+<pre><code># Iniciar proxy
+curl -X POST http://localhost:8090/api/proxies/tn3270-primary/start
+
+# Obtener métricas
+curl http://localhost:8090/api/proxies/tn3270-primary/status
+
+# Cambiar log level
+curl -X POST http://localhost:8090/api/proxies/tn3270-primary/command \
+  -d '{"command": "SetLogLevel", "level": "debug"}'
+</code></pre>
+
+<h3>Via Socket Directo</h3>
+<pre><code># Conectar al admin socket del proxy
+echo '{"command": "Status"}' | nc localhost 3323
+</code></pre>
+
+<h2>Troubleshooting</h2>
+<h3>Logs</h3>
+<ul>
+  <li><b>Admin logs:</b> <code>runtime/logs/neo6-admin.log</code></li>
+  <li><b>Proxy logs:</b> <code>runtime/logs/{proxy-name}.log</code></li>
+  <li><b>Protocol logs:</b> <code>runtime/logs/{protocol}-{instance}.log</code></li>
+</ul>
+
+<h3>Problemas Comunes</h3>
+<ul>
+  <li><b>Puerto ocupado:</b> Verificar que puertos admin y service estén disponibles</li>
+  <li><b>Biblioteca no encontrada:</b> Verificar <code>library_path</code> en configuración</li>
+  <li><b>Proxy no responde:</b> Verificar logs y estado del proceso</li>
+  <li><b>Configuración inválida:</b> Validar sintaxis YAML y campos requeridos</li>
+</ul>
+</body>
+</html>
